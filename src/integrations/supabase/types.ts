@@ -14,6 +14,51 @@ export type Database = {
   }
   public: {
     Tables: {
+      custom_texts: {
+        Row: {
+          category: string
+          created_at: string | null
+          created_by: string | null
+          id: string
+          is_favorite: boolean | null
+          is_public: boolean | null
+          occasion: string | null
+          season: string | null
+          tags: string[] | null
+          text_content: string
+          updated_at: string | null
+          usage_count: number | null
+        }
+        Insert: {
+          category: string
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          is_favorite?: boolean | null
+          is_public?: boolean | null
+          occasion?: string | null
+          season?: string | null
+          tags?: string[] | null
+          text_content: string
+          updated_at?: string | null
+          usage_count?: number | null
+        }
+        Update: {
+          category?: string
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          is_favorite?: boolean | null
+          is_public?: boolean | null
+          occasion?: string | null
+          season?: string | null
+          tags?: string[] | null
+          text_content?: string
+          updated_at?: string | null
+          usage_count?: number | null
+        }
+        Relationships: []
+      }
       customers: {
         Row: {
           address: string | null
@@ -59,6 +104,122 @@ export type Database = {
           total_orders?: number | null
           total_spent?: number | null
           updated_at?: string | null
+        }
+        Relationships: []
+      }
+      design_analytics: {
+        Row: {
+          created_at: string | null
+          customer_id: string | null
+          event_data: Json | null
+          event_type: string
+          id: string
+          invoice_id: string | null
+          template_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          customer_id?: string | null
+          event_data?: Json | null
+          event_type: string
+          id?: string
+          invoice_id?: string | null
+          template_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          customer_id?: string | null
+          event_data?: Json | null
+          event_type?: string
+          id?: string
+          invoice_id?: string | null
+          template_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "design_analytics_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "design_analytics_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "invoices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "design_analytics_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "invoice_templates"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "design_analytics_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "template_performance"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      design_assets: {
+        Row: {
+          asset_type: string
+          category: string | null
+          created_at: string | null
+          description: string | null
+          file_name: string | null
+          file_size: number | null
+          file_url: string
+          height: number | null
+          id: string
+          is_public: boolean | null
+          mime_type: string | null
+          name: string
+          tags: string[] | null
+          uploaded_by: string | null
+          usage_count: number | null
+          width: number | null
+        }
+        Insert: {
+          asset_type: string
+          category?: string | null
+          created_at?: string | null
+          description?: string | null
+          file_name?: string | null
+          file_size?: number | null
+          file_url: string
+          height?: number | null
+          id?: string
+          is_public?: boolean | null
+          mime_type?: string | null
+          name: string
+          tags?: string[] | null
+          uploaded_by?: string | null
+          usage_count?: number | null
+          width?: number | null
+        }
+        Update: {
+          asset_type?: string
+          category?: string | null
+          created_at?: string | null
+          description?: string | null
+          file_name?: string | null
+          file_size?: number | null
+          file_url?: string
+          height?: number | null
+          id?: string
+          is_public?: boolean | null
+          mime_type?: string | null
+          name?: string
+          tags?: string[] | null
+          uploaded_by?: string | null
+          usage_count?: number | null
+          width?: number | null
         }
         Relationships: []
       }
@@ -156,41 +317,79 @@ export type Database = {
       invoice_templates: {
         Row: {
           active: boolean | null
+          category: string | null
+          colors: Json | null
           created_at: string | null
+          created_by: string | null
           css_styles: string | null
+          fonts: Json | null
           html_template: string
           id: string
+          is_default: boolean | null
+          is_public: boolean | null
+          layout_config: Json | null
           name: string
-          season: string
+          occasion: string | null
+          season: string | null
+          theme: string | null
+          thumbnail_url: string | null
           updated_at: string | null
+          usage_count: number | null
         }
         Insert: {
           active?: boolean | null
+          category?: string | null
+          colors?: Json | null
           created_at?: string | null
+          created_by?: string | null
           css_styles?: string | null
+          fonts?: Json | null
           html_template: string
           id?: string
+          is_default?: boolean | null
+          is_public?: boolean | null
+          layout_config?: Json | null
           name: string
-          season: string
+          occasion?: string | null
+          season?: string | null
+          theme?: string | null
+          thumbnail_url?: string | null
           updated_at?: string | null
+          usage_count?: number | null
         }
         Update: {
           active?: boolean | null
+          category?: string | null
+          colors?: Json | null
           created_at?: string | null
+          created_by?: string | null
           css_styles?: string | null
+          fonts?: Json | null
           html_template?: string
           id?: string
+          is_default?: boolean | null
+          is_public?: boolean | null
+          layout_config?: Json | null
           name?: string
-          season?: string
+          occasion?: string | null
+          season?: string | null
+          theme?: string | null
+          thumbnail_url?: string | null
           updated_at?: string | null
+          usage_count?: number | null
         }
         Relationships: []
       }
       invoices: {
         Row: {
           created_at: string | null
+          custom_design: Json | null
+          custom_message: string | null
+          customer_feedback_rating: number | null
+          customer_feedback_text: string | null
           customer_id: string | null
           due_date: string | null
+          generated_leads: number | null
           id: string
           invoice_date: string
           invoice_number: string
@@ -205,8 +404,13 @@ export type Database = {
         }
         Insert: {
           created_at?: string | null
+          custom_design?: Json | null
+          custom_message?: string | null
+          customer_feedback_rating?: number | null
+          customer_feedback_text?: string | null
           customer_id?: string | null
           due_date?: string | null
+          generated_leads?: number | null
           id?: string
           invoice_date?: string
           invoice_number: string
@@ -221,8 +425,13 @@ export type Database = {
         }
         Update: {
           created_at?: string | null
+          custom_design?: Json | null
+          custom_message?: string | null
+          customer_feedback_rating?: number | null
+          customer_feedback_text?: string | null
           customer_id?: string | null
           due_date?: string | null
+          generated_leads?: number | null
           id?: string
           invoice_date?: string
           invoice_number?: string
@@ -248,6 +457,13 @@ export type Database = {
             columns: ["template_id"]
             isOneToOne: false
             referencedRelation: "invoice_templates"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoices_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "template_performance"
             referencedColumns: ["id"]
           },
         ]
@@ -288,6 +504,69 @@ export type Database = {
         }
         Relationships: []
       }
+      template_elements: {
+        Row: {
+          content: string | null
+          created_at: string | null
+          element_type: string
+          height: number | null
+          id: string
+          is_editable: boolean | null
+          is_required: boolean | null
+          position_x: number | null
+          position_y: number | null
+          styles: Json | null
+          template_id: string | null
+          width: number | null
+          z_index: number | null
+        }
+        Insert: {
+          content?: string | null
+          created_at?: string | null
+          element_type: string
+          height?: number | null
+          id?: string
+          is_editable?: boolean | null
+          is_required?: boolean | null
+          position_x?: number | null
+          position_y?: number | null
+          styles?: Json | null
+          template_id?: string | null
+          width?: number | null
+          z_index?: number | null
+        }
+        Update: {
+          content?: string | null
+          created_at?: string | null
+          element_type?: string
+          height?: number | null
+          id?: string
+          is_editable?: boolean | null
+          is_required?: boolean | null
+          position_x?: number | null
+          position_y?: number | null
+          styles?: Json | null
+          template_id?: string | null
+          width?: number | null
+          z_index?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "template_elements_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "invoice_templates"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "template_elements_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "template_performance"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       dashboard_stats: {
@@ -300,11 +579,46 @@ export type Database = {
         }
         Relationships: []
       }
+      design_impact: {
+        Row: {
+          avg_design_rating: number | null
+          month: string | null
+          total_invoices: number | null
+          total_leads_generated: number | null
+          unique_customers: number | null
+        }
+        Relationships: []
+      }
       monthly_revenue: {
         Row: {
           invoice_count: number | null
           month: string | null
           revenue: number | null
+        }
+        Relationships: []
+      }
+      popular_assets: {
+        Row: {
+          asset_type: string | null
+          category: string | null
+          file_url: string | null
+          id: string | null
+          name: string | null
+          usage_count: number | null
+        }
+        Relationships: []
+      }
+      template_performance: {
+        Row: {
+          avg_rating: number | null
+          category: string | null
+          id: string | null
+          name: string | null
+          season: string | null
+          theme: string | null
+          total_invoices: number | null
+          total_leads: number | null
+          usage_count: number | null
         }
         Relationships: []
       }
