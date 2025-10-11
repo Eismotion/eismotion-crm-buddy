@@ -1,5 +1,5 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -8,12 +8,17 @@ const corsHeaders = {
 
 interface ImportRow {
   customerName: string;
-  customerEmail: string;
-  customerCity: string;
+  customerEmail?: string;
+  customerPhone?: string;
+  customerCity?: string;
   invoiceNumber: string;
   invoiceDate: string;
-  amount: number;
-  status: string;
+  items: Array<{
+    description: string;
+    quantity: number;
+    unitPrice: number;
+  }>;
+  status?: string;
 }
 
 serve(async (req) => {
@@ -23,131 +28,153 @@ serve(async (req) => {
   }
 
   try {
-    console.log('Starting InvoiceHome import function');
-
-    const { csvData, importType } = await req.json();
+    console.log('InvoiceHome Import: Starting import process');
     
-    if (!csvData || !Array.isArray(csvData)) {
-      throw new Error('Invalid CSV data format');
+    const { data: importData, importType } = await req.json();
+    
+    if (!importData || !Array.isArray(importData)) {
+      throw new Error('Invalid import data format');
     }
 
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const supabase = createClient(supabaseUrl, supabaseKey);
+    const supabaseClient = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+    );
 
-    let recordsProcessed = 0;
-    let recordsSuccessful = 0;
-    let recordsFailed = 0;
-    const errorDetails: any[] = [];
-
-    // Create import log
-    const { data: importLog, error: logError } = await supabase
+    // Create import log entry
+    const { data: importLog, error: logError } = await supabaseClient
       .from('import_logs')
       .insert({
-        filename: 'upload.csv',
+        filename: 'import_' + new Date().toISOString(),
         import_type: importType || 'invoicehome_csv',
+        records_processed: 0,
+        records_successful: 0,
+        records_failed: 0,
         status: 'processing'
       })
       .select()
       .single();
 
-    if (logError) {
-      console.error('Error creating import log:', logError);
-      throw logError;
-    }
+    if (logError) throw logError;
 
-    console.log(`Processing ${csvData.length} rows`);
+    let successCount = 0;
+    let failCount = 0;
+    const errors: string[] = [];
 
     // Process each row
-    for (const row of csvData as ImportRow[]) {
-      recordsProcessed++;
-
+    for (const row of importData as ImportRow[]) {
       try {
-        // Check if customer exists or create new one
-        let customer;
-        const { data: existingCustomer } = await supabase
+        console.log(`Processing invoice: ${row.invoiceNumber}`);
+        
+        // Find or create customer
+        let customerId: string;
+        const { data: existingCustomer } = await supabaseClient
           .from('customers')
           .select('id')
           .eq('email', row.customerEmail)
           .maybeSingle();
 
         if (existingCustomer) {
-          customer = existingCustomer;
+          customerId = existingCustomer.id;
         } else {
-          const { data: newCustomer, error: customerError } = await supabase
+          // Create new customer
+          const customerNumber = `CUST-${String(Math.floor(Math.random() * 9999)).padStart(4, '0')}`;
+          const { data: newCustomer, error: customerError } = await supabaseClient
             .from('customers')
             .insert({
               name: row.customerName,
               email: row.customerEmail,
+              phone: row.customerPhone,
               city: row.customerCity,
-              customer_number: `CUST-${Date.now()}`
+              customer_number: customerNumber
             })
             .select()
             .single();
 
           if (customerError) throw customerError;
-          customer = newCustomer;
+          customerId = newCustomer.id;
         }
 
         // Create invoice
-        const { error: invoiceError } = await supabase
+        const { data: invoice, error: invoiceError } = await supabaseClient
           .from('invoices')
           .insert({
             invoice_number: row.invoiceNumber,
-            customer_id: customer.id,
+            customer_id: customerId,
             invoice_date: row.invoiceDate,
-            total_amount: row.amount,
-            status: row.status || 'draft'
-          });
+            status: row.status || 'draft',
+            subtotal: 0,
+            tax_amount: 0,
+            total_amount: 0
+          })
+          .select()
+          .single();
 
         if (invoiceError) throw invoiceError;
 
-        recordsSuccessful++;
-        console.log(`Successfully imported row ${recordsProcessed}`);
-      } catch (error: any) {
-        recordsFailed++;
-        errorDetails.push({
-          row: recordsProcessed,
-          error: error.message
-        });
-        console.error(`Error processing row ${recordsProcessed}:`, error.message);
+        // Create invoice items
+        if (row.items && Array.isArray(row.items)) {
+          for (const item of row.items) {
+            const totalPrice = item.quantity * item.unitPrice;
+            
+            const { error: itemError } = await supabaseClient
+              .from('invoice_items')
+              .insert({
+                invoice_id: invoice.id,
+                description: item.description,
+                quantity: item.quantity,
+                unit_price: item.unitPrice,
+                total_price: totalPrice
+              });
+
+            if (itemError) throw itemError;
+          }
+        }
+
+        successCount++;
+        console.log(`Successfully imported invoice: ${row.invoiceNumber}`);
+      } catch (error) {
+        failCount++;
+        const errorMsg = `Failed to import ${row.invoiceNumber}: ${error instanceof Error ? error.message : String(error)}`;
+        errors.push(errorMsg);
+        console.error(errorMsg);
       }
     }
 
     // Update import log
-    await supabase
+    await supabaseClient
       .from('import_logs')
       .update({
-        records_processed: recordsProcessed,
-        records_successful: recordsSuccessful,
-        records_failed: recordsFailed,
-        error_details: errorDetails,
-        status: recordsFailed === 0 ? 'completed' : 'completed_with_errors'
+        records_processed: importData.length,
+        records_successful: successCount,
+        records_failed: failCount,
+        error_details: errors.length > 0 ? { errors } : null,
+        status: failCount === 0 ? 'completed' : 'completed'
       })
       .eq('id', importLog.id);
 
-    console.log(`Import completed: ${recordsSuccessful}/${recordsProcessed} successful`);
+    const result = {
+      success: true,
+      importLogId: importLog.id,
+      processed: importData.length,
+      successful: successCount,
+      failed: failCount,
+      errors: errors
+    };
 
-    return new Response(
-      JSON.stringify({
-        success: true,
-        recordsProcessed,
-        recordsSuccessful,
-        recordsFailed,
-        errorDetails: recordsFailed > 0 ? errorDetails : undefined
-      }),
-      {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      }
-    );
-  } catch (error: any) {
-    console.error('Error in import-invoicehome function:', error);
+    console.log('Import completed:', result);
+
+    return new Response(JSON.stringify(result), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+
+  } catch (error) {
+    console.error('Import error:', error);
     return new Response(
       JSON.stringify({ 
-        success: false,
-        error: error.message 
-      }),
-      {
+        success: false, 
+        error: error instanceof Error ? error.message : String(error)
+      }), {
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       }
