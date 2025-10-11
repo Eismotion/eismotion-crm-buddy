@@ -1,0 +1,68 @@
+import { Upload, Plus, Edit, Trash2 } from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { mockCustomers, formatCurrency } from '@/data/mockData';
+
+export const CustomerManagement = () => {
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-3xl font-bold text-foreground">Kundenverwaltung</h2>
+          <p className="text-muted-foreground">Verwalten Sie Ihre Kundendaten</p>
+        </div>
+        <div className="flex gap-2">
+          <Button variant="outline">
+            <Upload className="h-4 w-4 mr-2" />
+            InvoiceHome Import
+          </Button>
+          <Button>
+            <Plus className="h-4 w-4 mr-2" />
+            Neuer Kunde
+          </Button>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {mockCustomers.map((customer) => (
+          <Card key={customer.id}>
+            <CardHeader>
+              <CardTitle className="text-lg">{customer.name}</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <div>
+                <p className="text-sm text-muted-foreground">E-Mail</p>
+                <p className="text-sm font-medium">{customer.email}</p>
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">Stadt</p>
+                <p className="text-sm font-medium">{customer.city}</p>
+              </div>
+              <div className="flex justify-between pt-2 border-t">
+                <div>
+                  <p className="text-sm text-muted-foreground">Gesamtumsatz</p>
+                  <p className="text-lg font-bold text-primary">
+                    {formatCurrency(customer.totalSpent)}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Bestellungen</p>
+                  <p className="text-lg font-bold">{customer.totalOrders}</p>
+                </div>
+              </div>
+              <div className="flex gap-2 pt-2">
+                <Button variant="outline" size="sm" className="flex-1">
+                  <Edit className="h-4 w-4 mr-1" />
+                  Bearbeiten
+                </Button>
+                <Button variant="outline" size="sm">
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+    </div>
+  );
+};

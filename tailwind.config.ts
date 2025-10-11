@@ -57,6 +57,18 @@ export default {
           border: "hsl(var(--sidebar-border))",
           ring: "hsl(var(--sidebar-ring))",
         },
+        season: {
+          winter: "hsl(var(--season-winter))",
+          summer: "hsl(var(--season-summer))",
+          autumn: "hsl(var(--season-autumn))",
+          spring: "hsl(var(--season-spring))",
+          yearround: "hsl(var(--season-yearround))",
+        },
+        status: {
+          paid: "hsl(var(--status-paid))",
+          sent: "hsl(var(--status-sent))",
+          overdue: "hsl(var(--status-overdue))",
+        },
       },
       borderRadius: {
         lg: "var(--radius)",
