@@ -55,6 +55,121 @@ export const mockProducts: Product[] = [
   { id: 11, name: 'Matcha-Eis', category: 'Eis', price: 5.20, season: 'Frühling' },
 ];
 
+export interface InvoiceTemplate {
+  id: number;
+  name: string;
+  category: 'Saisonal' | 'Themen' | 'Anlässe';
+  season?: 'Winter' | 'Frühling' | 'Sommer' | 'Herbst';
+  theme?: string;
+  thumbnail: string;
+  colors: {
+    primary: string;
+    secondary: string;
+    accent: string;
+  };
+  elements: Array<{
+    type: 'text' | 'image';
+    content?: string;
+    src?: string;
+    position: { x: number; y: number };
+    size?: { w: number; h: number };
+  }>;
+}
+
+export interface Spruch {
+  category: 'Lustig' | 'Saisonal' | 'Dankbar' | 'Motivierend';
+  text: string;
+}
+
+export const mockTemplates: InvoiceTemplate[] = [
+  {
+    id: 1,
+    name: 'Winter Wonderland',
+    category: 'Saisonal',
+    season: 'Winter',
+    thumbnail: '/templates/winter-wonderland.jpg',
+    colors: { primary: '#1565c0', secondary: '#e3f2fd', accent: '#0d47a1' },
+    elements: [
+      { type: 'text', content: 'Lassen Sie sich den Winter versüßen! ❄️', position: { x: 50, y: 400 } },
+      { type: 'image', src: '/icons/snowflake.svg', position: { x: 20, y: 20 }, size: { w: 40, h: 40 } }
+    ]
+  },
+  {
+    id: 2,
+    name: 'Sommer Vibes',
+    category: 'Saisonal',
+    season: 'Sommer',
+    thumbnail: '/templates/sommer-vibes.jpg',
+    colors: { primary: '#ff8f00', secondary: '#fff3e0', accent: '#ef6c00' },
+    elements: [
+      { type: 'text', content: 'Danke für Ihren Einkauf - Sie sind so cool wie unser Eis! 🍦', position: { x: 50, y: 400 } },
+      { type: 'image', src: '/icons/sun.svg', position: { x: 20, y: 20 }, size: { w: 40, h: 40 } }
+    ]
+  },
+  {
+    id: 3,
+    name: 'Geburtstags-Special',
+    category: 'Anlässe',
+    thumbnail: '/templates/geburtstag.jpg',
+    colors: { primary: '#e91e63', secondary: '#fce4ec', accent: '#c2185b' },
+    elements: [
+      { type: 'text', content: 'Alles Gute zum Geburtstag! 🎉', position: { x: 50, y: 400 } },
+      { type: 'image', src: '/icons/gift.svg', position: { x: 20, y: 20 }, size: { w: 40, h: 40 } }
+    ]
+  },
+  {
+    id: 4,
+    name: 'Business Elegant',
+    category: 'Themen',
+    theme: 'Business',
+    thumbnail: '/templates/business.jpg',
+    colors: { primary: '#37474f', secondary: '#eceff1', accent: '#263238' },
+    elements: [
+      { type: 'text', content: 'Vielen Dank für Ihr Vertrauen', position: { x: 50, y: 400 } }
+    ]
+  },
+  {
+    id: 5,
+    name: 'Herbst Zauber',
+    category: 'Saisonal',
+    season: 'Herbst',
+    thumbnail: '/templates/herbst.jpg',
+    colors: { primary: '#ff6f00', secondary: '#fff3e0', accent: '#e65100' },
+    elements: [
+      { type: 'text', content: 'Herbstliche Grüße von Eismotion! 🍂', position: { x: 50, y: 400 } },
+      { type: 'image', src: '/icons/leaf.svg', position: { x: 20, y: 20 }, size: { w: 40, h: 40 } }
+    ]
+  },
+  {
+    id: 6,
+    name: 'Frühling Erwacht',
+    category: 'Saisonal',
+    season: 'Frühling',
+    thumbnail: '/templates/fruehling.jpg',
+    colors: { primary: '#66bb6a', secondary: '#f1f8e9', accent: '#43a047' },
+    elements: [
+      { type: 'text', content: 'Frühlingsfrische Genüsse! 🌸', position: { x: 50, y: 400 } },
+      { type: 'image', src: '/icons/flower.svg', position: { x: 20, y: 20 }, size: { w: 40, h: 40 } }
+    ]
+  }
+];
+
+export const mockSprueche: Spruch[] = [
+  { category: 'Lustig', text: 'Danke für Ihren Einkauf - Sie sind so cool wie unser Eis! 🍦' },
+  { category: 'Lustig', text: 'Ohne Sie wären wir nur eine leere Eisdiele 💙' },
+  { category: 'Lustig', text: 'Sie haben unseren Tag versüßt! 🎉' },
+  { category: 'Saisonal', text: 'Lassen Sie sich den Winter versüßen! ❄️' },
+  { category: 'Saisonal', text: 'Sommer, Sonne, Eisvergnügen! ☀️' },
+  { category: 'Saisonal', text: 'Herbstliche Grüße von Eismotion! 🍂' },
+  { category: 'Saisonal', text: 'Frühlingsfrische Genüsse! 🌸' },
+  { category: 'Dankbar', text: 'Sie haben einen ausgezeichneten Geschmack bewiesen!' },
+  { category: 'Dankbar', text: 'Vielen Dank für Ihr Vertrauen!' },
+  { category: 'Dankbar', text: 'Wir schätzen Ihre Treue sehr!' },
+  { category: 'Motivierend', text: 'Bis zum nächsten süßen Moment!' },
+  { category: 'Motivierend', text: 'Wir freuen uns auf Ihren nächsten Besuch!' },
+  { category: 'Motivierend', text: 'Bleiben Sie cool! 😎' }
+];
+
 export const formatCurrency = (amount: number): string => {
   return new Intl.NumberFormat('de-DE', {
     style: 'currency',

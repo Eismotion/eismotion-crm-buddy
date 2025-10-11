@@ -1,4 +1,4 @@
-import { Download, Euro, Users, FileText, TrendingUp, AlertTriangle } from 'lucide-react';
+import { Download, Euro, Users, FileText, TrendingUp, AlertTriangle, Heart, Palette } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -6,23 +6,31 @@ import { mockInvoices, mockProducts, mockCustomers, formatCurrency } from '@/dat
 
 export const Analytics = () => {
   const totalRevenue = mockInvoices.reduce((sum, inv) => sum + inv.amount, 0);
-  const openInvoices = mockInvoices.filter(inv => inv.status !== 'bezahlt').length;
+  const totalCustomers = mockCustomers.length;
+  const totalInvoices = mockInvoices.length;
+  const openInvoices = mockInvoices.filter(inv => inv.status === 'gesendet').length;
   const overdueInvoices = mockInvoices.filter(inv => inv.status === 'überfällig');
-  const avgInvoiceValue = totalRevenue / mockInvoices.length;
 
   const monthlyRevenue = [
     { month: 'Januar', amount: 245.50 },
-    { month: 'Februar', amount: 312.30 },
-    { month: 'März', amount: 189.75 },
-    { month: 'April', amount: 423.60 },
-    { month: 'Mai', amount: 356.80 },
-    { month: 'Juni', amount: 467.20 },
+    { month: 'Februar', amount: 312.80 },
+    { month: 'März', amount: 189.30 },
+    { month: 'April', amount: 456.90 },
+    { month: 'Mai', amount: 523.40 },
+    { month: 'Juni', amount: 564.65 }
   ];
 
   const topProducts = [
-    { name: 'Vanilleeis - 2 Kugeln', sales: 145, revenue: 652.50 },
-    { name: 'Schokoladeneis - 2 Kugeln', sales: 132, revenue: 594.00 },
-    { name: 'Eiskaffee', sales: 89, revenue: 462.80 },
+    { name: 'Vanilleeis - 2 Kugeln', sold: 156, revenue: 702.00 },
+    { name: 'Schokoladeneis - 2 Kugeln', sold: 134, revenue: 603.00 },
+    { name: 'Glühwein', sold: 89, revenue: 311.50 }
+  ];
+
+  // Mock design analytics
+  const popularDesigns = [
+    { name: 'Winter Wonderland', uses: 45, feedback: 92 },
+    { name: 'Sommer Vibes', uses: 38, feedback: 88 },
+    { name: 'Business Elegant', uses: 32, feedback: 85 }
   ];
 
   return (
@@ -30,11 +38,11 @@ export const Analytics = () => {
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-3xl font-bold text-foreground">Analysen & Berichte</h2>
-          <p className="text-muted-foreground">Detaillierte Übersicht Ihrer Geschäftsdaten</p>
+          <p className="text-muted-foreground">Detaillierte Einblicke in Ihr Geschäft</p>
         </div>
-        <Button>
+        <Button variant="outline">
           <Download className="h-4 w-4 mr-2" />
-          Bericht exportieren
+          Exportieren
         </Button>
       </div>
 
@@ -45,7 +53,10 @@ export const Analytics = () => {
             <CardTitle className="text-sm font-medium text-muted-foreground">
               Gesamtumsatz
             </CardTitle>
-            <Euro className="h-4 w-4 text-muted-foreground" />
+            <div className="flex gap-1">
+              <Euro className="h-4 w-4 text-muted-foreground" />
+              <TrendingUp className="h-4 w-4 text-status-paid" />
+            </div>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{formatCurrency(totalRevenue)}</div>
@@ -64,8 +75,8 @@ export const Analytics = () => {
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{mockCustomers.length}</div>
-            <p className="text-xs text-muted-foreground mt-1">
+            <div className="text-2xl font-bold">{totalCustomers}</div>
+            <p className="text-xs text-status-paid mt-1">
               +8 neue diesen Monat
             </p>
           </CardContent>
@@ -79,69 +90,95 @@ export const Analytics = () => {
             <FileText className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{mockInvoices.length}</div>
+            <div className="text-2xl font-bold">{totalInvoices}</div>
             <div className="flex gap-2 mt-1">
-              <Badge variant="outline" className="text-xs">{openInvoices} offen</Badge>
-              <Badge className="text-xs bg-status-overdue text-white">
+              <Badge variant="secondary" className="text-xs">{openInvoices} offen</Badge>
+              <Badge className="bg-status-overdue text-white text-xs">
                 {overdueInvoices.length} überfällig
               </Badge>
             </div>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="border-primary/20 bg-primary/5">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
-              Ø Rechnungswert
+              Design-Impact
             </CardTitle>
-            <Euro className="h-4 w-4 text-muted-foreground" />
+            <Heart className="h-4 w-4 text-primary" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{formatCurrency(avgInvoiceValue)}</div>
+            <div className="text-2xl font-bold text-primary">+15%</div>
             <p className="text-xs text-muted-foreground mt-1">
-              Durchschnitt pro Rechnung
+              mehr positive Feedbacks durch kreative Rechnungen
             </p>
           </CardContent>
         </Card>
       </div>
 
-      {/* Analytics Cards */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      {/* Analytics Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Monthly Revenue */}
         <Card>
           <CardHeader>
             <CardTitle>Umsatzentwicklung</CardTitle>
-            <p className="text-sm text-muted-foreground">Letzte 6 Monate</p>
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
-              {monthlyRevenue.map((data, index) => (
-                <div key={index} className="flex items-center justify-between">
-                  <span className="text-sm font-medium">{data.month}</span>
-                  <span className="text-sm font-bold">{formatCurrency(data.amount)}</span>
+              {monthlyRevenue.map((item) => (
+                <div key={item.month} className="flex items-center justify-between">
+                  <span className="text-sm text-muted-foreground">{item.month}</span>
+                  <span className="font-semibold">{formatCurrency(item.amount)}</span>
                 </div>
               ))}
             </div>
           </CardContent>
         </Card>
 
+        {/* Top Products */}
         <Card>
           <CardHeader>
             <CardTitle>Top Produkte</CardTitle>
-            <p className="text-sm text-muted-foreground">Bestseller nach Umsatz</p>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {topProducts.map((product, index) => (
-                <div key={index} className="space-y-1">
-                  <div className="flex items-center justify-between">
+              {topProducts.map((product) => (
+                <div key={product.name}>
+                  <div className="flex items-center justify-between mb-1">
                     <span className="text-sm font-medium">{product.name}</span>
                     <span className="text-sm font-bold text-primary">
                       {formatCurrency(product.revenue)}
                     </span>
                   </div>
                   <p className="text-xs text-muted-foreground">
-                    {product.sales} Verkäufe
+                    {product.sold}x verkauft
                   </p>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Popular Designs */}
+        <Card className="border-primary/20">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Palette className="h-5 w-5 text-primary" />
+              Beliebteste Designs
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {popularDesigns.map((design) => (
+                <div key={design.name}>
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-sm font-medium">{design.name}</span>
+                    <Badge variant="secondary">{design.uses} Nutzungen</Badge>
+                  </div>
+                  <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                    <Heart className="h-3 w-3 fill-primary text-primary" />
+                    {design.feedback}% positive Rückmeldungen
+                  </div>
                 </div>
               ))}
             </div>
@@ -149,7 +186,7 @@ export const Analytics = () => {
         </Card>
       </div>
 
-      {/* Overdue Invoices Warning */}
+      {/* Overdue Invoices */}
       {overdueInvoices.length > 0 && (
         <Card className="border-destructive">
           <CardHeader>
@@ -161,14 +198,17 @@ export const Analytics = () => {
           <CardContent>
             <div className="space-y-3">
               {overdueInvoices.map((invoice) => (
-                <div key={invoice.id} className="flex items-center justify-between p-3 bg-muted rounded-lg">
+                <div key={invoice.id} className="flex items-center justify-between p-3 bg-destructive/5 rounded-lg">
                   <div>
-                    <p className="font-medium">{invoice.number} - {invoice.customer}</p>
-                    <p className="text-sm text-muted-foreground">
-                      Fällig seit: {new Date(invoice.date).toLocaleDateString('de-DE')}
+                    <p className="font-medium">{invoice.number}</p>
+                    <p className="text-sm text-muted-foreground">{invoice.customer}</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="font-bold text-destructive">{formatCurrency(invoice.amount)}</p>
+                    <p className="text-xs text-muted-foreground">
+                      Fällig seit {new Date(invoice.date).toLocaleDateString('de-DE')}
                     </p>
                   </div>
-                  <p className="font-bold text-destructive">{formatCurrency(invoice.amount)}</p>
                 </div>
               ))}
             </div>

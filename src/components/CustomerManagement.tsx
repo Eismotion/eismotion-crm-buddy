@@ -31,23 +31,20 @@ export const CustomerManagement = () => {
             </CardHeader>
             <CardContent className="space-y-3">
               <div>
-                <p className="text-sm text-muted-foreground">E-Mail</p>
+                <p className="text-sm text-muted-foreground">Kontakt</p>
                 <p className="text-sm font-medium">{customer.email}</p>
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Stadt</p>
                 <p className="text-sm font-medium">{customer.city}</p>
               </div>
-              <div className="flex justify-between pt-2 border-t">
-                <div>
-                  <p className="text-sm text-muted-foreground">Gesamtumsatz</p>
-                  <p className="text-lg font-bold text-primary">
+              <div className="pt-2 border-t">
+                <div className="flex justify-between items-center mb-1">
+                  <span className="text-sm text-muted-foreground">Gesamtumsatz</span>
+                  <span className="text-lg font-bold text-primary">
                     {formatCurrency(customer.totalSpent)}
-                  </p>
+                  </span>
                 </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Bestellungen</p>
-                  <p className="text-lg font-bold">{customer.totalOrders}</p>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-muted-foreground">Bestellungen</span>
+                  <span className="text-sm font-medium">{customer.totalOrders}</span>
                 </div>
               </div>
               <div className="flex gap-2 pt-2">

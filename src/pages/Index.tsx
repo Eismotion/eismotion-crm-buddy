@@ -3,6 +3,7 @@ import { Sidebar } from '@/components/Sidebar';
 import { Dashboard } from '@/components/Dashboard';
 import { CustomerManagement } from '@/components/CustomerManagement';
 import { InvoiceManagement } from '@/components/InvoiceManagement';
+import { InvoiceDesignStudio } from '@/components/InvoiceDesignStudio';
 import { ProductManagement } from '@/components/ProductManagement';
 import { Analytics } from '@/components/Analytics';
 import { Settings } from '@/components/Settings';
@@ -18,6 +19,8 @@ const Index = () => {
         return <CustomerManagement />;
       case 'invoices':
         return <InvoiceManagement />;
+      case 'design-studio':
+        return <InvoiceDesignStudio />;
       case 'products':
         return <ProductManagement />;
       case 'analytics':
@@ -32,9 +35,15 @@ const Index = () => {
   return (
     <div className="flex min-h-screen w-full bg-background">
       <Sidebar activeTab={activeTab} onTabChange={setActiveTab} />
-      <main className="flex-1 p-8">
-        {renderContent()}
-      </main>
+      {activeTab === 'design-studio' ? (
+        <main className="flex-1">
+          {renderContent()}
+        </main>
+      ) : (
+        <main className="flex-1 p-8">
+          {renderContent()}
+        </main>
+      )}
     </div>
   );
 };
