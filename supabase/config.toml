@@ -1,1 +1,13 @@
 project_id = "ecijvteddzqczxagfhkm"
+
+[functions.import-invoicehome]
+verify_jwt = true
+
+[functions.generate-invoice-pdf]
+verify_jwt = true
+
+[functions.render-invoice-template]
+verify_jwt = true
+
+[functions.upload-design-asset]
+verify_jwt = true
