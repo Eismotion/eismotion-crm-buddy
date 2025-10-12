@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -11,12 +11,75 @@ import {
   ZoomIn, ZoomOut, Maximize2, Upload, Heart, Gift, Sun, 
   Snowflake, Leaf, Flower
 } from 'lucide-react';
-import { mockTemplates, mockSprueche } from '@/data/mockData';
+import { mockSprueche } from '@/data/mockData';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
+
+interface InvoiceTemplate {
+  id: string;
+  name: string;
+  category: string;
+  season?: string;
+  theme?: string;
+  colors: {
+    primary: string;
+    secondary: string;
+    accent: string;
+  };
+  html_template: string;
+}
 
 export const InvoiceDesignStudio = () => {
-  const [selectedTemplate, setSelectedTemplate] = useState(mockTemplates[0]);
+  const [templates, setTemplates] = useState<InvoiceTemplate[]>([]);
+  const [selectedTemplate, setSelectedTemplate] = useState<InvoiceTemplate | null>(null);
   const [zoom, setZoom] = useState(100);
   const [customText, setCustomText] = useState('');
+  const [loading, setLoading] = useState(true);
+  const { toast } = useToast();
+
+  useEffect(() => {
+    loadTemplates();
+  }, []);
+
+  const loadTemplates = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('invoice_templates')
+        .select('*')
+        .eq('active', true)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+
+      const formattedTemplates = data.map(template => ({
+        id: template.id,
+        name: template.name,
+        category: template.category || 'Themen',
+        season: template.season,
+        theme: template.theme,
+        colors: template.colors as any || {
+          primary: '#1565C0',
+          secondary: '#E3F2FD',
+          accent: '#0D47A1'
+        },
+        html_template: template.html_template
+      }));
+
+      setTemplates(formattedTemplates);
+      if (formattedTemplates.length > 0) {
+        setSelectedTemplate(formattedTemplates[0]);
+      }
+    } catch (error) {
+      console.error('Error loading templates:', error);
+      toast({
+        title: 'Fehler',
+        description: 'Vorlagen konnten nicht geladen werden',
+        variant: 'destructive'
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const zoomLevels = [50, 75, 100, 125, 150];
 
@@ -31,10 +94,26 @@ export const InvoiceDesignStudio = () => {
     }
   };
 
+  if (loading) {
+    return (
+      <div className="h-screen flex items-center justify-center">
+        <p>Lade Vorlagen...</p>
+      </div>
+    );
+  }
+
+  if (!selectedTemplate) {
+    return (
+      <div className="h-screen flex items-center justify-center">
+        <p>Keine Vorlagen verfügbar</p>
+      </div>
+    );
+  }
+
   return (
-    <div className="h-screen flex flex-col bg-background">
+    <div className="h-screen flex flex-col bg-background overflow-hidden">
       {/* Header */}
-      <div className="border-b p-4 flex items-center justify-between">
+      <div className="border-b p-4 flex items-center justify-between flex-shrink-0">
         <div>
           <h2 className="text-2xl font-bold">Rechnungsdesign-Studio</h2>
           <p className="text-sm text-muted-foreground">Erstellen Sie einzigartige Rechnungen</p>
@@ -52,21 +131,21 @@ export const InvoiceDesignStudio = () => {
       </div>
 
       {/* 3-Panel Layout */}
-      <div className="flex-1 flex overflow-hidden">
+      <div className="flex-1 flex overflow-hidden min-h-0">
         {/* Left Panel: Template Library */}
-        <div className="w-80 border-r flex flex-col bg-muted/30">
-          <div className="p-4 border-b">
+        <div className="w-80 border-r flex flex-col bg-muted/30 overflow-hidden">
+          <div className="p-4 border-b flex-shrink-0">
             <h3 className="font-semibold mb-3">Design-Bibliothek</h3>
-            <Tabs defaultValue="saisonal">
+            <Tabs defaultValue="themen" className="w-full">
               <TabsList className="grid w-full grid-cols-3">
                 <TabsTrigger value="saisonal">Saisonal</TabsTrigger>
                 <TabsTrigger value="themen">Themen</TabsTrigger>
                 <TabsTrigger value="anlaesse">Anlässe</TabsTrigger>
               </TabsList>
               
-              <ScrollArea className="h-[calc(100vh-250px)] mt-4">
-                <TabsContent value="saisonal" className="space-y-3">
-                  {mockTemplates.filter(t => t.category === 'Saisonal').map((template) => (
+              <ScrollArea className="h-[calc(100vh-200px)] mt-4">
+                <TabsContent value="saisonal" className="space-y-3 mt-0">
+                  {templates.filter(t => t.category === 'Saisonal').map((template) => (
                     <Card 
                       key={template.id}
                       className={`cursor-pointer transition-all hover:shadow-md ${
@@ -89,8 +168,8 @@ export const InvoiceDesignStudio = () => {
                   ))}
                 </TabsContent>
 
-                <TabsContent value="themen" className="space-y-3">
-                  {mockTemplates.filter(t => t.category === 'Themen').map((template) => (
+                <TabsContent value="themen" className="space-y-3 mt-0">
+                  {templates.filter(t => t.category === 'Themen').map((template) => (
                     <Card 
                       key={template.id}
                       className={`cursor-pointer transition-all hover:shadow-md ${
@@ -113,8 +192,8 @@ export const InvoiceDesignStudio = () => {
                   ))}
                 </TabsContent>
 
-                <TabsContent value="anlaesse" className="space-y-3">
-                  {mockTemplates.filter(t => t.category === 'Anlässe').map((template) => (
+                <TabsContent value="anlaesse" className="space-y-3 mt-0">
+                  {templates.filter(t => t.category === 'Anlässe').map((template) => (
                     <Card 
                       key={template.id}
                       className={`cursor-pointer transition-all hover:shadow-md ${
@@ -137,9 +216,9 @@ export const InvoiceDesignStudio = () => {
         </div>
 
         {/* Middle Panel: Live Preview */}
-        <div className="flex-1 flex flex-col bg-muted/10">
+        <div className="flex-1 flex flex-col bg-muted/10 overflow-hidden min-w-0">
           {/* Zoom Controls */}
-          <div className="p-4 border-b flex items-center justify-center gap-2">
+          <div className="p-4 border-b flex items-center justify-center gap-2 flex-shrink-0">
             <Button 
               variant="outline" 
               size="sm"
@@ -170,8 +249,8 @@ export const InvoiceDesignStudio = () => {
           </div>
 
           {/* Canvas */}
-          <ScrollArea className="flex-1 p-8">
-            <div className="flex items-center justify-center min-h-full">
+          <ScrollArea className="flex-1 p-8 overflow-auto">
+            <div className="flex items-center justify-center min-h-full py-8">
               <Card 
                 className="bg-white shadow-2xl"
                 style={{
@@ -194,14 +273,12 @@ export const InvoiceDesignStudio = () => {
                         </h1>
                         <p className="text-sm text-muted-foreground">Ihr Eisgenuss-Partner</p>
                       </div>
-                      {selectedTemplate.elements.find(e => e.type === 'image') && (
-                        <div 
-                          className="p-4 rounded-full"
-                          style={{ backgroundColor: selectedTemplate.colors.secondary }}
-                        >
-                          {getCategoryIcon(selectedTemplate.season || selectedTemplate.theme || '')}
-                        </div>
-                      )}
+                      <div 
+                        className="p-4 rounded-full"
+                        style={{ backgroundColor: selectedTemplate.colors.secondary }}
+                      >
+                        {getCategoryIcon(selectedTemplate.season || selectedTemplate.theme || '')}
+                      </div>
                     </div>
                   </div>
 
@@ -273,7 +350,7 @@ export const InvoiceDesignStudio = () => {
                     style={{ backgroundColor: selectedTemplate.colors.secondary }}
                   >
                     <p className="font-medium" style={{ color: selectedTemplate.colors.primary }}>
-                      {selectedTemplate.elements.find(e => e.type === 'text')?.content || 'Vielen Dank für Ihren Einkauf!'}
+                      {customText || 'Vielen Dank für Ihren Einkauf!'}
                     </p>
                   </div>
                 </CardContent>
@@ -283,12 +360,12 @@ export const InvoiceDesignStudio = () => {
         </div>
 
         {/* Right Panel: Design Editor */}
-        <div className="w-96 border-l flex flex-col bg-muted/30">
-          <div className="p-4 border-b">
+        <div className="w-96 border-l flex flex-col bg-muted/30 overflow-hidden">
+          <div className="p-4 border-b flex-shrink-0">
             <h3 className="font-semibold">Design-Editor</h3>
           </div>
 
-          <ScrollArea className="flex-1">
+          <ScrollArea className="flex-1 overflow-auto">
             <Tabs defaultValue="farben" className="p-4">
               <TabsList className="grid w-full grid-cols-2">
                 <TabsTrigger value="farben">
