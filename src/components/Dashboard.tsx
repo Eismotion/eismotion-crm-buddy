@@ -1,21 +1,45 @@
 import { Euro, Users, FileText, Snowflake, TrendingUp } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { mockCustomers, mockInvoices, formatCurrency } from '@/data/mockData';
+import { formatCurrency } from '@/data/mockData';
+import { supabase } from '@/integrations/supabase/client';
+import { useState, useEffect } from 'react';
 
 export const Dashboard = () => {
-  const totalRevenue = mockInvoices.reduce((sum, inv) => sum + inv.amount, 0);
-  const totalCustomers = mockCustomers.length;
-  const totalInvoices = mockInvoices.length;
-  const overdueInvoices = mockInvoices.filter(inv => inv.status === 'überfällig').length;
+  const [customers, setCustomers] = useState<any[]>([]);
+  const [invoices, setInvoices] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const topCustomers = [...mockCustomers]
-    .sort((a, b) => b.totalSpent - a.totalSpent)
+  useEffect(() => {
+    loadData();
+  }, []);
+
+  const loadData = async () => {
+    try {
+      const [customersRes, invoicesRes] = await Promise.all([
+        supabase.from('customers').select('*').order('created_at', { ascending: false }),
+        supabase.from('invoices').select('*, customer:customers(name)').order('created_at', { ascending: false })
+      ]);
+
+      if (customersRes.data) setCustomers(customersRes.data);
+      if (invoicesRes.data) setInvoices(invoicesRes.data);
+    } catch (error) {
+      console.error('Error loading data:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const totalRevenue = invoices.reduce((sum, inv) => sum + (Number(inv.total_amount) || 0), 0);
+  const totalCustomers = customers.length;
+  const totalInvoices = invoices.length;
+  const overdueInvoices = invoices.filter(inv => inv.status === 'überfällig').length;
+
+  const topCustomers = [...customers]
+    .sort((a, b) => (b.total_spent || 0) - (a.total_spent || 0))
     .slice(0, 3);
 
-  const recentInvoices = [...mockInvoices]
-    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-    .slice(0, 3);
+  const recentInvoices = invoices.slice(0, 3);
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -25,6 +49,10 @@ export const Dashboard = () => {
       default: return 'bg-muted';
     }
   };
+
+  if (loading) {
+    return <div className="p-8 text-center">Laden...</div>;
+  }
 
   return (
     <div className="space-y-6">
@@ -110,11 +138,11 @@ export const Dashboard = () => {
                 <div key={customer.id} className="flex items-center justify-between">
                   <div>
                     <p className="font-medium">{customer.name}</p>
-                    <p className="text-sm text-muted-foreground">{customer.city}</p>
+                    <p className="text-sm text-muted-foreground">{customer.city || 'N/A'}</p>
                   </div>
                   <div className="text-right">
-                    <p className="font-bold">{formatCurrency(customer.totalSpent)}</p>
-                    <p className="text-sm text-muted-foreground">{customer.totalOrders} Bestellungen</p>
+                    <p className="font-bold">{formatCurrency(customer.total_spent || 0)}</p>
+                    <p className="text-sm text-muted-foreground">{customer.total_orders || 0} Bestellungen</p>
                   </div>
                 </div>
               ))}
@@ -132,11 +160,11 @@ export const Dashboard = () => {
               {recentInvoices.map((invoice) => (
                 <div key={invoice.id} className="flex items-center justify-between">
                   <div>
-                    <p className="font-medium">{invoice.number}</p>
-                    <p className="text-sm text-muted-foreground">{invoice.customer}</p>
+                    <p className="font-medium">{invoice.invoice_number}</p>
+                    <p className="text-sm text-muted-foreground">{invoice.customer?.name || 'N/A'}</p>
                   </div>
                   <div className="flex items-center gap-2">
-                    <p className="font-bold">{formatCurrency(invoice.amount)}</p>
+                    <p className="font-bold">{formatCurrency(invoice.total_amount)}</p>
                     <Badge className={getStatusColor(invoice.status)}>
                       {invoice.status}
                     </Badge>
