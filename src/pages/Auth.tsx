@@ -28,7 +28,10 @@ export default function Auth() {
         setUser(session?.user ?? null);
         
         if (session?.user) {
-          navigate('/customer-portal');
+          // Check if admin and redirect accordingly
+          setTimeout(() => {
+            checkRoleAndRedirect(session.user.id);
+          }, 0);
         }
       }
     );
@@ -39,12 +42,32 @@ export default function Auth() {
       setUser(session?.user ?? null);
       
       if (session?.user) {
-        navigate('/customer-portal');
+        checkRoleAndRedirect(session.user.id);
       }
     });
 
     return () => subscription.unsubscribe();
   }, [navigate]);
+
+  const checkRoleAndRedirect = async (userId: string) => {
+    try {
+      const { data: roles } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', userId);
+      
+      const isAdmin = roles?.some(r => r.role === 'admin');
+      
+      if (isAdmin) {
+        navigate('/');
+      } else {
+        navigate('/customer-portal');
+      }
+    } catch (error) {
+      console.error('Error checking role:', error);
+      navigate('/customer-portal');
+    }
+  };
 
   // Try to bootstrap an admin account once (only when not logged in)
   useEffect(() => {
