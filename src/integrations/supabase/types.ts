@@ -270,6 +270,57 @@ export type Database = {
         }
         Relationships: []
       }
+      incoming_invoices: {
+        Row: {
+          amount: number | null
+          created_at: string | null
+          currency: string | null
+          file_name: string
+          file_path: string
+          file_size: number | null
+          id: string
+          invoice_date: string | null
+          invoice_number: string | null
+          invoice_type: string
+          notes: string | null
+          supplier_name: string | null
+          updated_at: string | null
+          uploaded_by: string | null
+        }
+        Insert: {
+          amount?: number | null
+          created_at?: string | null
+          currency?: string | null
+          file_name: string
+          file_path: string
+          file_size?: number | null
+          id?: string
+          invoice_date?: string | null
+          invoice_number?: string | null
+          invoice_type: string
+          notes?: string | null
+          supplier_name?: string | null
+          updated_at?: string | null
+          uploaded_by?: string | null
+        }
+        Update: {
+          amount?: number | null
+          created_at?: string | null
+          currency?: string | null
+          file_name?: string
+          file_path?: string
+          file_size?: number | null
+          id?: string
+          invoice_date?: string | null
+          invoice_number?: string | null
+          invoice_type?: string
+          notes?: string | null
+          supplier_name?: string | null
+          updated_at?: string | null
+          uploaded_by?: string | null
+        }
+        Relationships: []
+      }
       invoice_items: {
         Row: {
           created_at: string | null
