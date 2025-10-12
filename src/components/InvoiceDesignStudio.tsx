@@ -35,11 +35,20 @@ export const InvoiceDesignStudio = () => {
   const [zoom, setZoom] = useState(100);
   const [customText, setCustomText] = useState('');
   const [loading, setLoading] = useState(true);
+  const [previewHtml, setPreviewHtml] = useState<string>('');
+  const [previewLoading, setPreviewLoading] = useState<boolean>(false);
   const { toast } = useToast();
 
   useEffect(() => {
     loadTemplates();
   }, []);
+
+  useEffect(() => {
+    if (selectedTemplate) {
+      renderPreview(selectedTemplate);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedTemplate, customText]);
 
   const loadTemplates = async () => {
     try {
@@ -100,6 +109,33 @@ export const InvoiceDesignStudio = () => {
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const renderPreview = async (template: InvoiceTemplate) => {
+    setPreviewLoading(true);
+    try {
+      const body = {
+        templateId: template.id,
+        invoiceId: null,
+        customizations: {
+          colors: template.colors,
+          custom_message: customText
+        }
+      } as any;
+
+      const { data, error } = await supabase.functions.invoke('render-invoice-template', {
+        body
+      });
+
+      if (error) throw error as any;
+      const html = (data as any)?.html || (typeof data === 'string' ? data : template.html_template);
+      setPreviewHtml(html);
+    } catch (err) {
+      console.warn('Preview render failed, falling back to raw template:', err);
+      setPreviewHtml(template.html_template);
+    } finally {
+      setPreviewLoading(false);
     }
   };
 
@@ -273,110 +309,25 @@ export const InvoiceDesignStudio = () => {
           {/* Canvas */}
           <ScrollArea className="flex-1 p-8 overflow-auto">
             <div className="flex items-center justify-center min-h-full py-8">
-              <Card 
-                className="bg-white shadow-2xl"
+              <div 
+                className="bg-white shadow-2xl rounded overflow-hidden"
                 style={{
                   width: `${210 * (zoom / 100)}mm`,
-                  minHeight: `${297 * (zoom / 100)}mm`,
-                  transform: `scale(${zoom / 100})`,
-                  transformOrigin: 'top center'
+                  height: `${297 * (zoom / 100)}mm`,
                 }}
               >
-                <CardContent className="p-8">
-                  {/* Header */}
-                  <div 
-                    className="border-b-4 pb-6 mb-6"
-                    style={{ borderColor: selectedTemplate.colors.primary }}
-                  >
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <h1 className="text-4xl font-bold" style={{ color: selectedTemplate.colors.primary }}>
-                          Eismotion
-                        </h1>
-                        <p className="text-sm text-muted-foreground">Ihr Eisgenuss-Partner</p>
-                      </div>
-                      <div 
-                        className="p-4 rounded-full"
-                        style={{ backgroundColor: selectedTemplate.colors.secondary }}
-                      >
-                        {getCategoryIcon(selectedTemplate.season || selectedTemplate.theme || '')}
-                      </div>
-                    </div>
+                {previewLoading ? (
+                  <div className="w-full h-full flex items-center justify-center text-muted-foreground">
+                    Vorschau wird gerendert ...
                   </div>
-
-                  {/* Invoice Details */}
-                  <div className="grid grid-cols-2 gap-6 mb-8">
-                    <div>
-                      <p className="text-sm font-semibold mb-2">Rechnung an:</p>
-                      <p className="text-sm">Max Mustermann</p>
-                      <p className="text-sm">Musterstraße 123</p>
-                      <p className="text-sm">12345 Berlin</p>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-sm"><span className="font-semibold">Rechnungsnr.:</span> 2025-001</p>
-                      <p className="text-sm"><span className="font-semibold">Datum:</span> 11.10.2025</p>
-                      <p className="text-sm"><span className="font-semibold">Fällig am:</span> 25.10.2025</p>
-                    </div>
-                  </div>
-
-                  {/* Items Table */}
-                  <table className="w-full mb-8">
-                    <thead>
-                      <tr style={{ backgroundColor: selectedTemplate.colors.secondary }}>
-                        <th className="text-left p-2">Position</th>
-                        <th className="text-right p-2">Menge</th>
-                        <th className="text-right p-2">Preis</th>
-                        <th className="text-right p-2">Gesamt</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      <tr className="border-b">
-                        <td className="p-2">Vanilleeis - 2 Kugeln</td>
-                        <td className="text-right p-2">2</td>
-                        <td className="text-right p-2">€4,50</td>
-                        <td className="text-right p-2">€9,00</td>
-                      </tr>
-                      <tr className="border-b">
-                        <td className="p-2">Schokoladeneis - 2 Kugeln</td>
-                        <td className="text-right p-2">1</td>
-                        <td className="text-right p-2">€4,50</td>
-                        <td className="text-right p-2">€4,50</td>
-                      </tr>
-                    </tbody>
-                  </table>
-
-                  {/* Totals */}
-                  <div className="flex justify-end mb-8">
-                    <div className="w-64">
-                      <div className="flex justify-between mb-2">
-                        <span>Zwischensumme:</span>
-                        <span>€13,50</span>
-                      </div>
-                      <div className="flex justify-between mb-2">
-                        <span>MwSt. 19%:</span>
-                        <span>€2,57</span>
-                      </div>
-                      <div 
-                        className="flex justify-between text-lg font-bold pt-2 border-t-2"
-                        style={{ borderColor: selectedTemplate.colors.primary }}
-                      >
-                        <span>Gesamt:</span>
-                        <span style={{ color: selectedTemplate.colors.primary }}>€16,07</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Footer Message */}
-                  <div 
-                    className="p-4 rounded-lg text-center"
-                    style={{ backgroundColor: selectedTemplate.colors.secondary }}
-                  >
-                    <p className="font-medium" style={{ color: selectedTemplate.colors.primary }}>
-                      {customText || 'Vielen Dank für Ihren Einkauf!'}
-                    </p>
-                  </div>
-                </CardContent>
-              </Card>
+                ) : (
+                  <iframe
+                    title={`Vorschau ${selectedTemplate.name}`}
+                    srcDoc={previewHtml || selectedTemplate.html_template}
+                    className="w-full h-full"
+                  />
+                )}
+              </div>
             </div>
           </ScrollArea>
         </div>
