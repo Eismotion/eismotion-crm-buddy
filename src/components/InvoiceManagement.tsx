@@ -2,6 +2,8 @@ import { Settings, Plus, Edit, Download, Palette, RefreshCw } from 'lucide-react
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { formatCurrency } from '@/data/mockData';
 import { supabase } from '@/integrations/supabase/client';
 import { useState, useEffect } from 'react';
@@ -9,6 +11,7 @@ import { useState, useEffect } from 'react';
 export const InvoiceManagement = () => {
   const [invoices, setInvoices] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedYear, setSelectedYear] = useState('2025');
 
   useEffect(() => {
     loadInvoices();
@@ -24,7 +27,7 @@ export const InvoiceManagement = () => {
           customer:customers(name),
           template:invoice_templates(name)
         `)
-        .order('created_at', { ascending: false });
+        .order('invoice_date', { ascending: false });
 
       if (error) throw error;
       setInvoices(data || []);
@@ -33,6 +36,20 @@ export const InvoiceManagement = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const filterByYear = (year: string) => {
+    return invoices.filter(inv => {
+      const invoiceYear = new Date(inv.invoice_date).getFullYear().toString();
+      return invoiceYear === year;
+    });
+  };
+
+  const years = ['2023', '2024', '2025'];
+  const invoicesByYear = {
+    '2023': filterByYear('2023'),
+    '2024': filterByYear('2024'),
+    '2025': filterByYear('2025'),
   };
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -68,61 +85,95 @@ export const InvoiceManagement = () => {
 
       {loading ? (
         <div className="text-center p-8">Laden...</div>
-      ) : invoices.length === 0 ? (
-        <div className="text-center p-8 text-muted-foreground">Keine Rechnungen gefunden</div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {invoices.map((invoice) => (
-            <Card key={invoice.id}>
-              <CardHeader>
-                <CardTitle className="text-lg flex items-center justify-between">
-                  <span>{invoice.invoice_number}</span>
-                  <Badge className={getStatusColor(invoice.status)}>
-                    {invoice.status}
-                  </Badge>
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                {/* Design Preview */}
-                {invoice.template && (
-                  <div className="bg-muted/30 rounded-lg p-3 border">
-                    <p className="text-xs text-muted-foreground mb-1">Design-Vorlage</p>
-                    <div className="flex items-center gap-2">
-                      <Palette className="h-4 w-4 text-primary" />
-                      <span className="text-sm font-medium">{invoice.template.name}</span>
+        <Card>
+          <CardHeader>
+            <CardTitle>Rechnungen nach Jahr</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Tabs value={selectedYear} onValueChange={setSelectedYear}>
+              <TabsList className="grid w-full grid-cols-3 mb-4">
+                {years.map(year => (
+                  <TabsTrigger key={year} value={year}>
+                    {year} ({invoicesByYear[year as keyof typeof invoicesByYear].length})
+                  </TabsTrigger>
+                ))}
+              </TabsList>
+
+              {years.map(year => (
+                <TabsContent key={year} value={year}>
+                  {invoicesByYear[year as keyof typeof invoicesByYear].length === 0 ? (
+                    <div className="text-center p-8 text-muted-foreground">
+                      Keine Rechnungen für {year} gefunden
                     </div>
-                  </div>
-                )}
-                
-                <div>
-                  <p className="text-sm text-muted-foreground">Kunde</p>
-                  <p className="text-sm font-medium">{invoice.customer?.name || 'N/A'}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Datum</p>
-                  <p className="text-sm font-medium">
-                    {new Date(invoice.invoice_date).toLocaleDateString('de-DE')}
-                  </p>
-                </div>
-                <div className="pt-2 border-t">
-                  <p className="text-sm text-muted-foreground">Betrag</p>
-                  <p className="text-2xl font-bold text-primary">
-                    {formatCurrency(invoice.total_amount)}
-                  </p>
-                </div>
-                <div className="flex gap-2 pt-2">
-                  <Button variant="outline" size="sm" className="flex-1">
-                    <Edit className="h-4 w-4 mr-1" />
-                    Bearbeiten
-                  </Button>
-                  <Button variant="outline" size="sm">
-                    <Download className="h-4 w-4" />
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+                  ) : (
+                    <div className="rounded-md border">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Rechnungsnr.</TableHead>
+                            <TableHead>Kunde</TableHead>
+                            <TableHead>Datum</TableHead>
+                            <TableHead>Fällig</TableHead>
+                            <TableHead>Status</TableHead>
+                            <TableHead>Design</TableHead>
+                            <TableHead className="text-right">Betrag</TableHead>
+                            <TableHead className="text-right">Aktionen</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {invoicesByYear[year as keyof typeof invoicesByYear].map((invoice) => (
+                            <TableRow key={invoice.id}>
+                              <TableCell className="font-medium">{invoice.invoice_number}</TableCell>
+                              <TableCell>{invoice.customer?.name || 'N/A'}</TableCell>
+                              <TableCell>
+                                {new Date(invoice.invoice_date).toLocaleDateString('de-DE')}
+                              </TableCell>
+                              <TableCell>
+                                {invoice.due_date 
+                                  ? new Date(invoice.due_date).toLocaleDateString('de-DE')
+                                  : '-'
+                                }
+                              </TableCell>
+                              <TableCell>
+                                <Badge className={getStatusColor(invoice.status)}>
+                                  {invoice.status}
+                                </Badge>
+                              </TableCell>
+                              <TableCell>
+                                {invoice.template ? (
+                                  <div className="flex items-center gap-1 text-xs">
+                                    <Palette className="h-3 w-3 text-primary" />
+                                    {invoice.template.name}
+                                  </div>
+                                ) : (
+                                  <span className="text-xs text-muted-foreground">Standard</span>
+                                )}
+                              </TableCell>
+                              <TableCell className="text-right font-bold">
+                                {formatCurrency(invoice.total_amount)}
+                              </TableCell>
+                              <TableCell className="text-right">
+                                <div className="flex gap-1 justify-end">
+                                  <Button variant="ghost" size="sm">
+                                    <Edit className="h-4 w-4" />
+                                  </Button>
+                                  <Button variant="ghost" size="sm">
+                                    <Download className="h-4 w-4" />
+                                  </Button>
+                                </div>
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  )}
+                </TabsContent>
+              ))}
+            </Tabs>
+          </CardContent>
+        </Card>
       )}
     </div>
   );
