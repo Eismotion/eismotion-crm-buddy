@@ -51,19 +51,41 @@ export const InvoiceDesignStudio = () => {
 
       if (error) throw error;
 
-      const formattedTemplates = data.map(template => ({
-        id: template.id,
-        name: template.name,
-        category: template.category || 'Themen',
-        season: template.season,
-        theme: template.theme,
-        colors: template.colors as any || {
-          primary: '#1565C0',
-          secondary: '#E3F2FD',
-          accent: '#0D47A1'
-        },
-        html_template: template.html_template
-      }));
+      const formattedTemplates = data.map(template => {
+        // Extract colors from HTML template if not set in database
+        let colors = { primary: '#1565C0', secondary: '#E3F2FD', accent: '#0D47A1' };
+        
+        if (template.colors && Object.keys(template.colors).length > 0) {
+          colors = template.colors as any;
+        } else if (template.html_template) {
+          // Try to extract colors from CSS in HTML template based on template name
+          if (template.name === 'Eismotion Classic') {
+            colors = { primary: '#0ea5e9', secondary: '#eff6ff', accent: '#0284c7' };
+          } else if (template.name === 'Eismotion Elegant') {
+            colors = { primary: '#d4af37', secondary: '#fffbf0', accent: '#2c3e50' };
+          } else if (template.name === 'Eismotion Winter') {
+            colors = { primary: '#60a5fa', secondary: '#dbeafe', accent: '#93c5fd' };
+          } else {
+            // Generic extraction
+            const colorMatches = template.html_template.match(/#([0-9a-fA-F]{6})/g);
+            if (colorMatches && colorMatches.length >= 2) {
+              colors.primary = colorMatches[0];
+              colors.secondary = colorMatches[1];
+              if (colorMatches.length >= 3) colors.accent = colorMatches[2];
+            }
+          }
+        }
+
+        return {
+          id: template.id,
+          name: template.name,
+          category: template.category || 'Themen',
+          season: template.season,
+          theme: template.theme,
+          colors,
+          html_template: template.html_template
+        };
+      });
 
       setTemplates(formattedTemplates);
       if (formattedTemplates.length > 0) {
@@ -145,7 +167,7 @@ export const InvoiceDesignStudio = () => {
               
               <ScrollArea className="h-[calc(100vh-200px)] mt-4">
                 <TabsContent value="saisonal" className="space-y-3 mt-0">
-                  {templates.filter(t => t.category === 'Saisonal').map((template) => (
+                  {templates.filter(t => t.category === 'Saisonal' || t.category === 'Jahreszeiten').map((template) => (
                     <Card 
                       key={template.id}
                       className={`cursor-pointer transition-all hover:shadow-md ${
