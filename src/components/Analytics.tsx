@@ -29,7 +29,7 @@ export const Analytics = () => {
     try {
       const [statsRes, revenueRes, productsRes, designsRes, overdueRes] = await Promise.all([
         supabase.from('dashboard_stats').select('*').single(),
-        supabase.from('monthly_revenue').select('*').order('month', { ascending: false }).limit(6),
+        supabase.from('monthly_revenue').select('*').order('month', { ascending: true }).limit(12),
         supabase.from('top_products').select('*').order('total_revenue', { ascending: false }).limit(3),
         supabase.from('template_performance').select('*').order('usage_count', { ascending: false }).limit(3),
         supabase.from('invoices').select('*, customer:customers(name)').eq('status', 'überfällig')
@@ -47,12 +47,25 @@ export const Analytics = () => {
 
       if (revenueRes.data) {
         const monthNames = ['Januar', 'Februar', 'März', 'April', 'Mai', 'Juni', 'Juli', 'August', 'September', 'Oktober', 'November', 'Dezember'];
-        setMonthlyRevenue(
-          revenueRes.data.map(r => ({
-            month: monthNames[new Date(r.month).getMonth()],
-            amount: Number(r.revenue) || 0
-          })).reverse()
-        );
+        
+        // Erstelle alle 12 Monate mit 0 als Default
+        const currentYear = new Date().getFullYear();
+        const allMonths = monthNames.map((name, index) => ({
+          month: name,
+          amount: 0,
+          monthIndex: index
+        }));
+
+        // Fülle tatsächliche Daten ein
+        revenueRes.data.forEach(r => {
+          const monthIndex = new Date(r.month).getMonth();
+          const existingMonth = allMonths.find(m => m.monthIndex === monthIndex);
+          if (existingMonth) {
+            existingMonth.amount = Number(r.revenue) || 0;
+          }
+        });
+
+        setMonthlyRevenue(allMonths);
       }
 
       if (productsRes.data) {

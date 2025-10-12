@@ -272,19 +272,62 @@ export const Settings = () => {
           console.log('Parsed data:', jsonData);
 
           // Transform InvoiceHome format to our format
-          const importData = jsonData.map((row: any) => ({
-            customerName: row['Kunde'] || '',
-            invoiceNumber: row['Nummer'] || '',
-            invoiceDate: row['Datum'] || '',
-            paidDate: row['Bezahlt am'] || null,
-            dueDate: row['Fällig am'] || null,
-            subtotal: parseFloat(row['Betrag']) || 0,
-            taxAmount: parseFloat(row['Steuer']) || 0,
-            totalAmount: parseFloat(row['Gesamt']) || 0,
-            currency: row['Währung'] || 'EUR',
-            paymentMethod: row['Zahlungsmethode'] || '',
-            status: row['Bezahlt am'] ? 'bezahlt' : 'offen'
-          }));
+          const importData = jsonData.map((row: any) => {
+            // Versuche Produktinformationen zu extrahieren
+            const items: Array<{ description: string; quantity: number; unitPrice: number }> = [];
+            
+            // Suche nach Produkt-Spalten (verschiedene mögliche Namen)
+            const productKeys = Object.keys(row).filter(key => 
+              key.toLowerCase().includes('produkt') || 
+              key.toLowerCase().includes('artikel') ||
+              key.toLowerCase().includes('beschreibung') ||
+              key.toLowerCase().includes('position')
+            );
+            
+            const quantityKeys = Object.keys(row).filter(key => 
+              key.toLowerCase().includes('menge') ||
+              key.toLowerCase().includes('anzahl') ||
+              key.toLowerCase().includes('qty')
+            );
+            
+            const priceKeys = Object.keys(row).filter(key => 
+              key.toLowerCase().includes('preis') ||
+              key.toLowerCase().includes('einzelpreis') ||
+              key.toLowerCase().includes('price')
+            );
+
+            // Wenn Produkt-Spalten gefunden wurden, füge sie hinzu
+            if (productKeys.length > 0) {
+              productKeys.forEach((productKey, index) => {
+                const description = String(row[productKey] || '').trim();
+                if (description) {
+                  const quantityKey = quantityKeys[index] || quantityKeys[0];
+                  const priceKey = priceKeys[index] || priceKeys[0];
+                  
+                  items.push({
+                    description,
+                    quantity: parseFloat(row[quantityKey]) || 1,
+                    unitPrice: parseFloat(row[priceKey]) || (parseFloat(row['Betrag']) || 0)
+                  });
+                }
+              });
+            }
+
+            return {
+              customerName: row['Kunde'] || '',
+              invoiceNumber: row['Nummer'] || '',
+              invoiceDate: row['Datum'] || '',
+              paidDate: row['Bezahlt am'] || null,
+              dueDate: row['Fällig am'] || null,
+              subtotal: parseFloat(row['Betrag']) || 0,
+              taxAmount: parseFloat(row['Steuer']) || 0,
+              totalAmount: parseFloat(row['Gesamt']) || 0,
+              currency: row['Währung'] || 'EUR',
+              paymentMethod: row['Zahlungsmethode'] || '',
+              status: row['Bezahlt am'] ? 'bezahlt' : 'offen',
+              items: items.length > 0 ? items : undefined
+            };
+          });
 
           console.log('Transformed data:', importData);
 
