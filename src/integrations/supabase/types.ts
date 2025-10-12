@@ -69,6 +69,7 @@ export type Database = {
           id: string
           name: string
           notes: string | null
+          parent_customer_id: string | null
           phone: string | null
           postal_code: string | null
           total_orders: number | null
@@ -84,6 +85,7 @@ export type Database = {
           id?: string
           name: string
           notes?: string | null
+          parent_customer_id?: string | null
           phone?: string | null
           postal_code?: string | null
           total_orders?: number | null
@@ -99,13 +101,22 @@ export type Database = {
           id?: string
           name?: string
           notes?: string | null
+          parent_customer_id?: string | null
           phone?: string | null
           postal_code?: string | null
           total_orders?: number | null
           total_spent?: number | null
           updated_at?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "customers_parent_customer_id_fkey"
+            columns: ["parent_customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       design_analytics: {
         Row: {
