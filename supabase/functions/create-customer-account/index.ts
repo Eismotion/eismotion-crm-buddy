@@ -106,10 +106,11 @@ Deno.serve(async (req) => {
       }
     );
 
-  } catch (error) {
-    console.error('Error creating customer account:', error);
+  } catch (err) {
+    console.error('Error creating customer account:', err);
+    const message = err instanceof Error ? err.message : String(err);
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ error: message }),
       { 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 400 

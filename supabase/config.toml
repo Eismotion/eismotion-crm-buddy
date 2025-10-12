@@ -11,3 +11,11 @@ verify_jwt = true
 
 [functions.upload-design-asset]
 verify_jwt = true
+
+# Public bootstrap function to create the initial admin if none exists
+[functions.bootstrap-admin]
+verify_jwt = false
+
+# Existing function for creating customer accounts (auth required)
+[functions.create-customer-account]
+verify_jwt = true

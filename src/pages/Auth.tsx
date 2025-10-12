@@ -17,6 +17,8 @@ export default function Auth() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');
+  const [adminInfo, setAdminInfo] = useState<{ email: string; password: string } | null>(null);
+  const [bootstrapTried, setBootstrapTried] = useState(false);
 
   useEffect(() => {
     // Set up auth state listener FIRST
@@ -43,6 +45,32 @@ export default function Auth() {
 
     return () => subscription.unsubscribe();
   }, [navigate]);
+
+  // Try to bootstrap an admin account once (only when not logged in)
+  useEffect(() => {
+    if (bootstrapTried) return;
+    setBootstrapTried(true);
+
+    supabase.auth.getSession().then(async ({ data }) => {
+      if (data.session?.user) return; // already logged in, skip
+      try {
+        const { data: created, error } = await supabase.functions.invoke('bootstrap-admin', { body: {} });
+        if (error) {
+          // 409 means admin already exists – ignore
+          // @ts-ignore status can be present on error
+          if (error.status === 409) return;
+          console.error('bootstrap-admin invoke error', error);
+          return;
+        }
+        if (created?.email && created?.password) {
+          setAdminInfo({ email: created.email, password: created.password });
+          toast.success('Admin-Zugang wurde erstellt');
+        }
+      } catch (e) {
+        console.error('bootstrap-admin unexpected error', e);
+      }
+    });
+  }, [bootstrapTried]);
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -205,6 +233,23 @@ export default function Auth() {
               </form>
             </TabsContent>
           </Tabs>
+
+          {adminInfo && (
+            <div className="mt-6 rounded-md border p-3 text-sm">
+              <p className="font-medium">Admin-Zugang für die Ersteinrichtung</p>
+              <p className="text-muted-foreground mt-1">Bitte nach dem ersten Login das Passwort ändern.</p>
+              <div className="mt-3 space-y-1">
+                <div>
+                  <span className="text-muted-foreground">E-Mail: </span>
+                  <code>{adminInfo.email}</code>
+                </div>
+                <div>
+                  <span className="text-muted-foreground">Passwort: </span>
+                  <code>{adminInfo.password}</code>
+                </div>
+              </div>
+            </div>
+          )}
         </CardContent>
         <CardFooter className="flex flex-col space-y-2">
           <p className="text-sm text-muted-foreground text-center">
