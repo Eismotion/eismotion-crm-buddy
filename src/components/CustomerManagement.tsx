@@ -164,11 +164,9 @@ export const CustomerManagement = () => {
                         {customer.address || customer.postal_code || customer.city ? (
                           <div className="text-sm">
                             {customer.address && <div>{customer.address}</div>}
-                            {(customer.postal_code || customer.city) && (
-                              <div className="text-muted-foreground">
-                                {customer.postal_code} {customer.city}
-                              </div>
-                            )}
+                            <div className={customer.address ? 'text-muted-foreground' : ''}>
+                              {[customer.postal_code, customer.city].filter(Boolean).join(' ') || '-'}
+                            </div>
                           </div>
                         ) : '-'}
                       </TableCell>
