@@ -1,6 +1,8 @@
 import { Upload, Edit, Trash2, Plus, Palette, Image as ImageIcon, Type } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { mockTemplates, mockSprueche } from '@/data/mockData';
 import { supabase } from '@/integrations/supabase/client';
@@ -12,6 +14,9 @@ export const Settings = () => {
   const [assets, setAssets] = useState<any[]>([]);
   const [uploading, setUploading] = useState(false);
   const [importing, setImporting] = useState(false);
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [changingPassword, setChangingPassword] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const importInputRef = useRef<HTMLInputElement>(null);
 
@@ -29,6 +34,35 @@ export const Settings = () => {
       console.error('Error loading assets:', error);
     } else {
       setAssets(data || []);
+    }
+  };
+
+  const handleChangePassword = async () => {
+    if (!newPassword || !confirmPassword) {
+      toast.error('Bitte neues Passwort eingeben und bestätigen');
+      return;
+    }
+    if (newPassword.length < 8) {
+      toast.error('Passwort muss mindestens 8 Zeichen lang sein');
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      toast.error('Passwörter stimmen nicht überein');
+      return;
+    }
+
+    setChangingPassword(true);
+    try {
+      const { error } = await supabase.auth.updateUser({ password: newPassword });
+      if (error) throw error;
+      toast.success('Passwort erfolgreich geändert');
+      setNewPassword('');
+      setConfirmPassword('');
+    } catch (error: any) {
+      console.error('Change password error:', error);
+      toast.error('Passwort konnte nicht geändert werden: ' + (error.message || 'Unbekannter Fehler'));
+    } finally {
+      setChangingPassword(false);
     }
   };
 
@@ -192,6 +226,41 @@ export const Settings = () => {
         <h2 className="text-3xl font-bold text-foreground">Einstellungen</h2>
         <p className="text-muted-foreground">Konfigurieren Sie Ihr CRM-System</p>
       </div>
+
+      {/* Passwort ändern */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Passwort ändern</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid gap-4 md:grid-cols-2">
+            <div className="space-y-2">
+              <Label htmlFor="new-password">Neues Passwort</Label>
+              <Input
+                id="new-password"
+                type="password"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                placeholder="Mind. 8 Zeichen"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="confirm-password">Passwort bestätigen</Label>
+              <Input
+                id="confirm-password"
+                type="password"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+              />
+            </div>
+          </div>
+          <div className="mt-4">
+            <Button onClick={handleChangePassword} disabled={changingPassword || !newPassword || !confirmPassword}>
+              {changingPassword ? 'Wird aktualisiert...' : 'Passwort speichern'}
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Template Library */}
       <Card>
