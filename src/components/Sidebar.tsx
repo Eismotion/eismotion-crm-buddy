@@ -1,5 +1,9 @@
-import { Package, LayoutDashboard, Users, FileText, ShoppingBag, BarChart3, Settings, Palette, Receipt } from 'lucide-react';
+import { Package, LayoutDashboard, Users, FileText, ShoppingBag, BarChart3, Settings, Palette, Receipt, LogOut } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
+import { supabase } from '@/integrations/supabase/client';
+import { useNavigate } from 'react-router-dom';
+import { toast } from 'sonner';
 
 interface SidebarProps {
   activeTab: string;
@@ -18,6 +22,19 @@ const navItems = [
 ];
 
 export const Sidebar = ({ activeTab, onTabChange }: SidebarProps) => {
+  const navigate = useNavigate();
+
+  const handleLogout = async () => {
+    try {
+      await supabase.auth.signOut();
+      toast.success('Erfolgreich abgemeldet');
+      navigate('/auth');
+    } catch (error) {
+      console.error('Logout error:', error);
+      toast.error('Fehler beim Abmelden');
+    }
+  };
+
   return (
     <aside className="w-64 bg-sidebar border-r border-sidebar-border flex flex-col">
       <div className="p-6 border-b border-sidebar-border">
@@ -55,6 +72,17 @@ export const Sidebar = ({ activeTab, onTabChange }: SidebarProps) => {
           })}
         </ul>
       </nav>
+
+      <div className="p-4 border-t border-sidebar-border">
+        <Button
+          variant="outline"
+          className="w-full justify-start"
+          onClick={handleLogout}
+        >
+          <LogOut className="h-5 w-5 mr-3" />
+          Abmelden
+        </Button>
+      </div>
     </aside>
   );
 };
