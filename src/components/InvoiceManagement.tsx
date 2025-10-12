@@ -7,8 +7,10 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { formatCurrency } from '@/data/mockData';
 import { supabase } from '@/integrations/supabase/client';
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 export const InvoiceManagement = () => {
+  const navigate = useNavigate();
   const [invoices, setInvoices] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedYear, setSelectedYear] = useState('2025');
@@ -125,7 +127,18 @@ export const InvoiceManagement = () => {
                           {invoicesByYear[year as keyof typeof invoicesByYear].map((invoice) => (
                             <TableRow key={invoice.id}>
                               <TableCell className="font-medium">{invoice.invoice_number}</TableCell>
-                              <TableCell>{invoice.customer?.name || 'N/A'}</TableCell>
+                              <TableCell>
+                                {invoice.customer_id ? (
+                                  <button
+                                    onClick={() => navigate(`/customers/${invoice.customer_id}`)}
+                                    className="text-primary hover:underline"
+                                  >
+                                    {invoice.customer?.name || 'N/A'}
+                                  </button>
+                                ) : (
+                                  <span>{invoice.customer?.name || 'N/A'}</span>
+                                )}
+                              </TableCell>
                               <TableCell>
                                 {new Date(invoice.invoice_date).toLocaleDateString('de-DE')}
                               </TableCell>

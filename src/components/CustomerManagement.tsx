@@ -5,11 +5,13 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { formatCurrency } from '@/data/mockData';
 import { supabase } from '@/integrations/supabase/client';
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 type SortField = 'name' | 'created_at' | 'total_spent' | 'total_orders' | 'email';
 type SortDirection = 'asc' | 'desc';
 
 export const CustomerManagement = () => {
+  const navigate = useNavigate();
   const [customers, setCustomers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [sortField, setSortField] = useState<SortField>('name');
@@ -148,8 +150,14 @@ export const CustomerManagement = () => {
                 </TableHeader>
                 <TableBody>
                   {sortedCustomers.map((customer) => (
-                    <TableRow key={customer.id}>
-                      <TableCell className="font-medium">{customer.name}</TableCell>
+                    <TableRow 
+                      key={customer.id}
+                      className="cursor-pointer hover:bg-muted/50"
+                      onClick={() => navigate(`/customers/${customer.id}`)}
+                    >
+                      <TableCell className="font-medium text-primary hover:underline">
+                        {customer.name}
+                      </TableCell>
                       <TableCell>{customer.email || '-'}</TableCell>
                       <TableCell>{customer.phone || '-'}</TableCell>
                       <TableCell>{customer.city || '-'}</TableCell>
@@ -163,7 +171,7 @@ export const CustomerManagement = () => {
                         {formatCurrency(customer.total_spent || 0)}
                       </TableCell>
                       <TableCell className="text-right">
-                        <div className="flex gap-1 justify-end">
+                        <div className="flex gap-1 justify-end" onClick={(e) => e.stopPropagation()}>
                           <Button variant="ghost" size="sm">
                             <Edit className="h-4 w-4" />
                           </Button>
