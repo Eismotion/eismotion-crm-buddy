@@ -1,37 +1,93 @@
-import { Download, Euro, Users, FileText, TrendingUp, AlertTriangle, Heart, Palette } from 'lucide-react';
+import { Download, Euro, Users, FileText, TrendingUp, AlertTriangle, Heart, Palette, RefreshCw } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { mockInvoices, mockProducts, mockCustomers, formatCurrency } from '@/data/mockData';
+import { formatCurrency } from '@/data/mockData';
+import { supabase } from '@/integrations/supabase/client';
+import { useState, useEffect } from 'react';
 
 export const Analytics = () => {
-  const totalRevenue = mockInvoices.reduce((sum, inv) => sum + inv.amount, 0);
-  const totalCustomers = mockCustomers.length;
-  const totalInvoices = mockInvoices.length;
-  const openInvoices = mockInvoices.filter(inv => inv.status === 'gesendet').length;
-  const overdueInvoices = mockInvoices.filter(inv => inv.status === 'überfällig');
+  const [loading, setLoading] = useState(true);
+  const [stats, setStats] = useState({
+    totalRevenue: 0,
+    totalCustomers: 0,
+    totalInvoices: 0,
+    openInvoices: 0,
+    overdueInvoices: 0,
+  });
+  const [monthlyRevenue, setMonthlyRevenue] = useState<any[]>([]);
+  const [topProducts, setTopProducts] = useState<any[]>([]);
+  const [popularDesigns, setPopularDesigns] = useState<any[]>([]);
+  const [overdueInvoices, setOverdueInvoices] = useState<any[]>([]);
 
-  const monthlyRevenue = [
-    { month: 'Januar', amount: 245.50 },
-    { month: 'Februar', amount: 312.80 },
-    { month: 'März', amount: 189.30 },
-    { month: 'April', amount: 456.90 },
-    { month: 'Mai', amount: 523.40 },
-    { month: 'Juni', amount: 564.65 }
-  ];
+  useEffect(() => {
+    loadAnalytics();
+  }, []);
 
-  const topProducts = [
-    { name: 'Vanilleeis - 2 Kugeln', sold: 156, revenue: 702.00 },
-    { name: 'Schokoladeneis - 2 Kugeln', sold: 134, revenue: 603.00 },
-    { name: 'Glühwein', sold: 89, revenue: 311.50 }
-  ];
+  const loadAnalytics = async () => {
+    setLoading(true);
+    try {
+      const [statsRes, revenueRes, productsRes, designsRes, overdueRes] = await Promise.all([
+        supabase.from('dashboard_stats').select('*').single(),
+        supabase.from('monthly_revenue').select('*').order('month', { ascending: false }).limit(6),
+        supabase.from('top_products').select('*').order('total_revenue', { ascending: false }).limit(3),
+        supabase.from('template_performance').select('*').order('usage_count', { ascending: false }).limit(3),
+        supabase.from('invoices').select('*, customer:customers(name)').eq('status', 'überfällig')
+      ]);
 
-  // Mock design analytics
-  const popularDesigns = [
-    { name: 'Winter Wonderland', uses: 45, feedback: 92 },
-    { name: 'Sommer Vibes', uses: 38, feedback: 88 },
-    { name: 'Business Elegant', uses: 32, feedback: 85 }
-  ];
+      if (statsRes.data) {
+        setStats({
+          totalRevenue: Number(statsRes.data.total_revenue) || 0,
+          totalCustomers: Number(statsRes.data.total_customers) || 0,
+          totalInvoices: Number(statsRes.data.total_invoices) || 0,
+          openInvoices: 0,
+          overdueInvoices: Number(statsRes.data.overdue_invoices) || 0,
+        });
+      }
+
+      if (revenueRes.data) {
+        const monthNames = ['Januar', 'Februar', 'März', 'April', 'Mai', 'Juni', 'Juli', 'August', 'September', 'Oktober', 'November', 'Dezember'];
+        setMonthlyRevenue(
+          revenueRes.data.map(r => ({
+            month: monthNames[new Date(r.month).getMonth()],
+            amount: Number(r.revenue) || 0
+          })).reverse()
+        );
+      }
+
+      if (productsRes.data) {
+        setTopProducts(
+          productsRes.data.map(p => ({
+            name: p.name,
+            sold: Number(p.total_sold) || 0,
+            revenue: Number(p.total_revenue) || 0
+          }))
+        );
+      }
+
+      if (designsRes.data) {
+        setPopularDesigns(
+          designsRes.data.map(d => ({
+            name: d.name,
+            uses: d.usage_count || 0,
+            feedback: Math.round(Number(d.avg_rating) || 85)
+          }))
+        );
+      }
+
+      if (overdueRes.data) {
+        setOverdueInvoices(overdueRes.data);
+      }
+    } catch (error) {
+      console.error('Error loading analytics:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (loading) {
+    return <div className="p-8 text-center">Laden...</div>;
+  }
 
   return (
     <div className="space-y-6">
@@ -40,10 +96,16 @@ export const Analytics = () => {
           <h2 className="text-3xl font-bold text-foreground">Analysen & Berichte</h2>
           <p className="text-muted-foreground">Detaillierte Einblicke in Ihr Geschäft</p>
         </div>
-        <Button variant="outline">
-          <Download className="h-4 w-4 mr-2" />
-          Exportieren
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={loadAnalytics}>
+            <RefreshCw className="h-4 w-4 mr-2" />
+            Aktualisieren
+          </Button>
+          <Button variant="outline">
+            <Download className="h-4 w-4 mr-2" />
+            Exportieren
+          </Button>
+        </div>
       </div>
 
       {/* KPI Grid */}
@@ -59,10 +121,10 @@ export const Analytics = () => {
             </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{formatCurrency(totalRevenue)}</div>
+            <div className="text-2xl font-bold">{formatCurrency(stats.totalRevenue)}</div>
             <div className="flex items-center text-xs text-status-paid mt-1">
               <TrendingUp className="h-3 w-3 mr-1" />
-              +12.5% zum Vormonat
+              Gesamtumsatz aller Rechnungen
             </div>
           </CardContent>
         </Card>
@@ -75,9 +137,9 @@ export const Analytics = () => {
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{totalCustomers}</div>
-            <p className="text-xs text-status-paid mt-1">
-              +8 neue diesen Monat
+            <div className="text-2xl font-bold">{stats.totalCustomers}</div>
+            <p className="text-xs text-muted-foreground mt-1">
+              Gesamtanzahl Kunden
             </p>
           </CardContent>
         </Card>
@@ -90,11 +152,10 @@ export const Analytics = () => {
             <FileText className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{totalInvoices}</div>
+            <div className="text-2xl font-bold">{stats.totalInvoices}</div>
             <div className="flex gap-2 mt-1">
-              <Badge variant="secondary" className="text-xs">{openInvoices} offen</Badge>
               <Badge className="bg-status-overdue text-white text-xs">
-                {overdueInvoices.length} überfällig
+                {stats.overdueInvoices} überfällig
               </Badge>
             </div>
           </CardContent>
@@ -108,9 +169,9 @@ export const Analytics = () => {
             <Heart className="h-4 w-4 text-primary" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-primary">+15%</div>
+            <div className="text-2xl font-bold text-primary">{popularDesigns.length}</div>
             <p className="text-xs text-muted-foreground mt-1">
-              mehr positive Feedbacks durch kreative Rechnungen
+              aktive Design-Vorlagen im Einsatz
             </p>
           </CardContent>
         </Card>
@@ -124,14 +185,18 @@ export const Analytics = () => {
             <CardTitle>Umsatzentwicklung</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="space-y-3">
-              {monthlyRevenue.map((item) => (
-                <div key={item.month} className="flex items-center justify-between">
-                  <span className="text-sm text-muted-foreground">{item.month}</span>
-                  <span className="font-semibold">{formatCurrency(item.amount)}</span>
-                </div>
-              ))}
-            </div>
+            {monthlyRevenue.length === 0 ? (
+              <p className="text-sm text-muted-foreground text-center py-4">Keine Daten verfügbar</p>
+            ) : (
+              <div className="space-y-3">
+                {monthlyRevenue.map((item) => (
+                  <div key={item.month} className="flex items-center justify-between">
+                    <span className="text-sm text-muted-foreground">{item.month}</span>
+                    <span className="font-semibold">{formatCurrency(item.amount)}</span>
+                  </div>
+                ))}
+              </div>
+            )}
           </CardContent>
         </Card>
 
@@ -141,21 +206,25 @@ export const Analytics = () => {
             <CardTitle>Top Produkte</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
-              {topProducts.map((product) => (
-                <div key={product.name}>
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="text-sm font-medium">{product.name}</span>
-                    <span className="text-sm font-bold text-primary">
-                      {formatCurrency(product.revenue)}
-                    </span>
+            {topProducts.length === 0 ? (
+              <p className="text-sm text-muted-foreground text-center py-4">Keine Produkt-Daten verfügbar</p>
+            ) : (
+              <div className="space-y-4">
+                {topProducts.map((product) => (
+                  <div key={product.name}>
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-sm font-medium">{product.name}</span>
+                      <span className="text-sm font-bold text-primary">
+                        {formatCurrency(product.revenue)}
+                      </span>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      {product.sold}x verkauft
+                    </p>
                   </div>
-                  <p className="text-xs text-muted-foreground">
-                    {product.sold}x verkauft
-                  </p>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </CardContent>
         </Card>
 
@@ -168,20 +237,24 @@ export const Analytics = () => {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
-              {popularDesigns.map((design) => (
-                <div key={design.name}>
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="text-sm font-medium">{design.name}</span>
-                    <Badge variant="secondary">{design.uses} Nutzungen</Badge>
+            {popularDesigns.length === 0 ? (
+              <p className="text-sm text-muted-foreground text-center py-4">Keine Design-Daten verfügbar</p>
+            ) : (
+              <div className="space-y-4">
+                {popularDesigns.map((design) => (
+                  <div key={design.name}>
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-sm font-medium">{design.name}</span>
+                      <Badge variant="secondary">{design.uses} Nutzungen</Badge>
+                    </div>
+                    <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                      <Heart className="h-3 w-3 fill-primary text-primary" />
+                      {design.feedback}% Bewertung
+                    </div>
                   </div>
-                  <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                    <Heart className="h-3 w-3 fill-primary text-primary" />
-                    {design.feedback}% positive Rückmeldungen
-                  </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
@@ -200,13 +273,13 @@ export const Analytics = () => {
               {overdueInvoices.map((invoice) => (
                 <div key={invoice.id} className="flex items-center justify-between p-3 bg-destructive/5 rounded-lg">
                   <div>
-                    <p className="font-medium">{invoice.number}</p>
-                    <p className="text-sm text-muted-foreground">{invoice.customer}</p>
+                    <p className="font-medium">{invoice.invoice_number}</p>
+                    <p className="text-sm text-muted-foreground">{invoice.customer?.name || 'N/A'}</p>
                   </div>
                   <div className="text-right">
-                    <p className="font-bold text-destructive">{formatCurrency(invoice.amount)}</p>
+                    <p className="font-bold text-destructive">{formatCurrency(invoice.total_amount)}</p>
                     <p className="text-xs text-muted-foreground">
-                      Fällig seit {new Date(invoice.date).toLocaleDateString('de-DE')}
+                      Fällig seit {new Date(invoice.invoice_date).toLocaleDateString('de-DE')}
                     </p>
                   </div>
                 </div>
