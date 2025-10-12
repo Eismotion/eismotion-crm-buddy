@@ -1,13 +1,19 @@
-import { Upload, Plus, Edit, Trash2, RefreshCw } from 'lucide-react';
+import { Upload, Plus, Edit, Trash2, RefreshCw, ArrowUpDown } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { formatCurrency } from '@/data/mockData';
 import { supabase } from '@/integrations/supabase/client';
 import { useState, useEffect } from 'react';
 
+type SortField = 'name' | 'created_at' | 'total_spent' | 'total_orders' | 'email';
+type SortDirection = 'asc' | 'desc';
+
 export const CustomerManagement = () => {
   const [customers, setCustomers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [sortField, setSortField] = useState<SortField>('name');
+  const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
 
   useEffect(() => {
     loadCustomers();
@@ -29,6 +35,60 @@ export const CustomerManagement = () => {
       setLoading(false);
     }
   };
+
+  const handleSort = (field: SortField) => {
+    if (sortField === field) {
+      // Toggle direction if same field
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+    } else {
+      // New field, default to ascending
+      setSortField(field);
+      setSortDirection('asc');
+    }
+  };
+
+  const sortedCustomers = [...customers].sort((a, b) => {
+    let aVal = a[sortField];
+    let bVal = b[sortField];
+
+    // Handle null/undefined values
+    if (aVal === null || aVal === undefined) aVal = '';
+    if (bVal === null || bVal === undefined) bVal = '';
+
+    // Convert to numbers for numeric fields
+    if (sortField === 'total_spent' || sortField === 'total_orders') {
+      aVal = Number(aVal) || 0;
+      bVal = Number(bVal) || 0;
+    }
+
+    // Convert to dates for date fields
+    if (sortField === 'created_at') {
+      aVal = new Date(aVal).getTime();
+      bVal = new Date(bVal).getTime();
+    }
+
+    // String comparison for text fields
+    if (typeof aVal === 'string' && typeof bVal === 'string') {
+      aVal = aVal.toLowerCase();
+      bVal = bVal.toLowerCase();
+    }
+
+    if (sortDirection === 'asc') {
+      return aVal > bVal ? 1 : aVal < bVal ? -1 : 0;
+    } else {
+      return aVal < bVal ? 1 : aVal > bVal ? -1 : 0;
+    }
+  });
+
+  const SortButton = ({ field, children }: { field: SortField; children: React.ReactNode }) => (
+    <button
+      onClick={() => handleSort(field)}
+      className="flex items-center gap-1 hover:text-foreground transition-colors"
+    >
+      {children}
+      <ArrowUpDown className={`h-3 w-3 ${sortField === field ? 'text-primary' : 'text-muted-foreground'}`} />
+    </button>
+  );
 
   return (
     <div className="space-y-6">
@@ -54,43 +114,71 @@ export const CustomerManagement = () => {
       ) : customers.length === 0 ? (
         <div className="text-center p-8 text-muted-foreground">Keine Kunden gefunden</div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {customers.map((customer) => (
-          <Card key={customer.id}>
-            <CardHeader>
-              <CardTitle className="text-lg">{customer.name}</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <div>
-                <p className="text-sm text-muted-foreground">Kontakt</p>
-                <p className="text-sm font-medium">{customer.email}</p>
-                <p className="text-sm font-medium">{customer.city}</p>
-              </div>
-              <div className="pt-2 border-t">
-                <div className="flex justify-between items-center mb-1">
-                  <span className="text-sm text-muted-foreground">Gesamtumsatz</span>
-                  <span className="text-lg font-bold text-primary">
-                    {formatCurrency(customer.total_spent || 0)}
-                  </span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-muted-foreground">Bestellungen</span>
-                  <span className="text-sm font-medium">{customer.total_orders || 0}</span>
-                </div>
-              </div>
-              <div className="flex gap-2 pt-2">
-                <Button variant="outline" size="sm" className="flex-1">
-                  <Edit className="h-4 w-4 mr-1" />
-                  Bearbeiten
-                </Button>
-                <Button variant="outline" size="sm">
-                  <Trash2 className="h-4 w-4" />
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-          ))}
-        </div>
+        <Card>
+          <CardHeader>
+            <CardTitle>Kunden ({customers.length})</CardTitle>
+            <p className="text-sm text-muted-foreground">
+              Klicken Sie auf die Spaltenüberschriften zum Sortieren
+            </p>
+          </CardHeader>
+          <CardContent>
+            <div className="rounded-md border">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>
+                      <SortButton field="name">Kundenname</SortButton>
+                    </TableHead>
+                    <TableHead>
+                      <SortButton field="email">E-Mail</SortButton>
+                    </TableHead>
+                    <TableHead>Telefon</TableHead>
+                    <TableHead>Stadt</TableHead>
+                    <TableHead>
+                      <SortButton field="created_at">Eintrittsdatum</SortButton>
+                    </TableHead>
+                    <TableHead className="text-right">
+                      <SortButton field="total_orders">Bestellungen</SortButton>
+                    </TableHead>
+                    <TableHead className="text-right">
+                      <SortButton field="total_spent">Gesamtumsatz</SortButton>
+                    </TableHead>
+                    <TableHead className="text-right">Aktionen</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {sortedCustomers.map((customer) => (
+                    <TableRow key={customer.id}>
+                      <TableCell className="font-medium">{customer.name}</TableCell>
+                      <TableCell>{customer.email || '-'}</TableCell>
+                      <TableCell>{customer.phone || '-'}</TableCell>
+                      <TableCell>{customer.city || '-'}</TableCell>
+                      <TableCell>
+                        {new Date(customer.created_at).toLocaleDateString('de-DE')}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        {customer.total_orders || 0}
+                      </TableCell>
+                      <TableCell className="text-right font-bold text-primary">
+                        {formatCurrency(customer.total_spent || 0)}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex gap-1 justify-end">
+                          <Button variant="ghost" size="sm">
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                          <Button variant="ghost" size="sm">
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          </CardContent>
+        </Card>
       )}
     </div>
   );
