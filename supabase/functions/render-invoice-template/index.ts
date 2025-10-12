@@ -32,23 +32,63 @@ serve(async (req) => {
       throw new Error(`Template nicht gefunden: ${templateError.message}`);
     }
     
-    // Lade Rechnung mit Kunde und Items
-    const { data: invoice, error: invoiceError } = await supabase
-      .from('invoices')
-      .select(`
-        *,
-        customer:customers(*),
-        items:invoice_items(
-          *,
-          product:products(*)
-        )
-      `)
-      .eq('id', invoiceId)
-      .single();
+    // Lade Rechnung oder verwende Demo-Daten
+    let invoice: any;
     
-    if (invoiceError) {
-      console.error('Invoice error:', invoiceError);
-      throw new Error(`Rechnung nicht gefunden: ${invoiceError.message}`);
+    if (invoiceId && invoiceId !== 'null' && invoiceId !== null) {
+      const { data: invoiceData, error: invoiceError } = await supabase
+        .from('invoices')
+        .select(`
+          *,
+          customer:customers(*),
+          items:invoice_items(
+            *,
+            product:products(*)
+          )
+        `)
+        .eq('id', invoiceId)
+        .single();
+      
+      if (invoiceError) {
+        console.error('Invoice error:', invoiceError);
+        throw new Error(`Rechnung nicht gefunden: ${invoiceError.message}`);
+      }
+      invoice = invoiceData;
+    } else {
+      // Demo-Daten für Vorschau
+      console.log('Using demo data for preview');
+      invoice = {
+        invoice_number: 'DEMO-001',
+        invoice_date: new Date().toISOString(),
+        due_date: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString(),
+        custom_message: customizations?.custom_message || 'Vielen Dank für Ihren Einkauf!',
+        subtotal: 125.00,
+        tax_rate: 19,
+        tax_amount: 23.75,
+        total_amount: 148.75,
+        customer: {
+          name: 'Max Mustermann',
+          address: 'Musterstraße 123',
+          postal_code: '12345',
+          city: 'Musterstadt',
+          email: 'max@example.com',
+          phone: '+49 123 456789'
+        },
+        items: [
+          {
+            description: 'Eismotion Classic 500ml',
+            quantity: 2,
+            unit_price: 45.00,
+            total_price: 90.00
+          },
+          {
+            description: 'Eismotion Deluxe 750ml',
+            quantity: 1,
+            unit_price: 35.00,
+            total_price: 35.00
+          }
+        ]
+      };
     }
     
     // Template-Variablen ersetzen
