@@ -1,9 +1,11 @@
-import { Upload, Plus, Edit, Trash2, RefreshCw, ArrowUpDown, Link2 } from 'lucide-react';
+import { Upload, Plus, Edit, Trash2, RefreshCw, ArrowUpDown, Link2, UserPlus } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { formatCurrency } from '@/data/mockData';
 import { supabase } from '@/integrations/supabase/client';
 import { useState, useEffect } from 'react';
@@ -22,6 +24,10 @@ export const CustomerManagement = () => {
   const [linkDialogOpen, setLinkDialogOpen] = useState(false);
   const [selectedCustomer, setSelectedCustomer] = useState<any>(null);
   const [selectedParentId, setSelectedParentId] = useState<string>('');
+  const [createLoginDialogOpen, setCreateLoginDialogOpen] = useState(false);
+  const [loginEmail, setLoginEmail] = useState('');
+  const [loginPassword, setLoginPassword] = useState('');
+  const [creatingLogin, setCreatingLogin] = useState(false);
 
   useEffect(() => {
     loadCustomers();
@@ -93,6 +99,52 @@ export const CustomerManagement = () => {
     setSelectedCustomer(customer);
     setSelectedParentId('');
     setLinkDialogOpen(true);
+  };
+
+  const openCreateLoginDialog = (customer: any) => {
+    setSelectedCustomer(customer);
+    setLoginEmail(customer.email || '');
+    setLoginPassword('');
+    setCreateLoginDialogOpen(true);
+  };
+
+  const handleCreateLogin = async () => {
+    if (!selectedCustomer || !loginEmail || !loginPassword) {
+      toast.error('Bitte E-Mail und Passwort eingeben');
+      return;
+    }
+
+    setCreatingLogin(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        toast.error('Sie müssen angemeldet sein');
+        return;
+      }
+
+      const response = await supabase.functions.invoke('create-customer-account', {
+        body: {
+          customerId: selectedCustomer.id,
+          email: loginEmail,
+          password: loginPassword,
+          fullName: selectedCustomer.name
+        }
+      });
+
+      if (response.error) throw response.error;
+
+      toast.success('Kunden-Login erfolgreich erstellt');
+      setCreateLoginDialogOpen(false);
+      setSelectedCustomer(null);
+      setLoginEmail('');
+      setLoginPassword('');
+      loadCustomers();
+    } catch (error: any) {
+      console.error('Error creating login:', error);
+      toast.error(error.message || 'Fehler beim Erstellen des Logins');
+    } finally {
+      setCreatingLogin(false);
+    }
   };
 
   const availableParents = customers.filter(c => 
@@ -271,6 +323,17 @@ export const CustomerManagement = () => {
                             size="sm"
                             onClick={(e) => {
                               e.stopPropagation();
+                              openCreateLoginDialog(customer);
+                            }}
+                            title="Kunden-Login erstellen"
+                          >
+                            <UserPlus className="h-4 w-4" />
+                          </Button>
+                          <Button 
+                            variant="ghost" 
+                            size="sm"
+                            onClick={(e) => {
+                              e.stopPropagation();
                               openLinkDialog(customer);
                             }}
                             title="Kunde verknüpfen"
@@ -324,6 +387,53 @@ export const CustomerManagement = () => {
             </Button>
             <Button onClick={handleLinkCustomer} disabled={!selectedParentId}>
               Verknüpfen
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={createLoginDialogOpen} onOpenChange={setCreateLoginDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Kunden-Login erstellen</DialogTitle>
+            <DialogDescription>
+              Erstellen Sie ein Login für "{selectedCustomer?.name}", damit dieser Kunde seine Rechnungen im Portal einsehen kann.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="login-email">E-Mail</Label>
+              <Input
+                id="login-email"
+                type="email"
+                placeholder="kunde@beispiel.de"
+                value={loginEmail}
+                onChange={(e) => setLoginEmail(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="login-password">Passwort</Label>
+              <Input
+                id="login-password"
+                type="password"
+                placeholder="Mindestens 6 Zeichen"
+                value={loginPassword}
+                onChange={(e) => setLoginPassword(e.target.value)}
+                minLength={6}
+              />
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setCreateLoginDialogOpen(false)}>
+              Abbrechen
+            </Button>
+            <Button 
+              onClick={handleCreateLogin} 
+              disabled={!loginEmail || !loginPassword || loginPassword.length < 6 || creatingLogin}
+            >
+              {creatingLogin ? 'Wird erstellt...' : 'Login erstellen'}
             </Button>
           </DialogFooter>
         </DialogContent>
