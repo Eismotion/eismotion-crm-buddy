@@ -135,7 +135,7 @@ export const CustomerManagement = () => {
                       <SortButton field="email">E-Mail</SortButton>
                     </TableHead>
                     <TableHead>Telefon</TableHead>
-                    <TableHead>Stadt</TableHead>
+                    <TableHead>Adresse</TableHead>
                     <TableHead>
                       <SortButton field="created_at">Eintrittsdatum</SortButton>
                     </TableHead>
@@ -160,7 +160,18 @@ export const CustomerManagement = () => {
                       </TableCell>
                       <TableCell>{customer.email || '-'}</TableCell>
                       <TableCell>{customer.phone || '-'}</TableCell>
-                      <TableCell>{customer.city || '-'}</TableCell>
+                      <TableCell>
+                        {customer.address || customer.postal_code || customer.city ? (
+                          <div className="text-sm">
+                            {customer.address && <div>{customer.address}</div>}
+                            {(customer.postal_code || customer.city) && (
+                              <div className="text-muted-foreground">
+                                {customer.postal_code} {customer.city}
+                              </div>
+                            )}
+                          </div>
+                        ) : '-'}
+                      </TableCell>
                       <TableCell>
                         {new Date(customer.created_at).toLocaleDateString('de-DE')}
                       </TableCell>
