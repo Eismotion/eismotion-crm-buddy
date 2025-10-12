@@ -13,12 +13,19 @@ interface ImportRow {
   customerCity?: string;
   invoiceNumber: string;
   invoiceDate: string;
-  items: Array<{
+  paidDate?: string | null;
+  dueDate?: string | null;
+  subtotal: number;
+  taxAmount: number;
+  totalAmount: number;
+  currency?: string;
+  paymentMethod?: string;
+  status?: string;
+  items?: Array<{
     description: string;
     quantity: number;
     unitPrice: number;
   }>;
-  status?: string;
 }
 
 serve(async (req) => {
@@ -95,6 +102,11 @@ serve(async (req) => {
           customerId = newCustomer.id;
         }
 
+        // Calculate tax rate from amounts
+        const taxRate = row.subtotal > 0 
+          ? Math.round((row.taxAmount / row.subtotal) * 100) 
+          : 19;
+
         // Create invoice
         const { data: invoice, error: invoiceError } = await supabaseClient
           .from('invoices')
@@ -102,18 +114,21 @@ serve(async (req) => {
             invoice_number: row.invoiceNumber,
             customer_id: customerId,
             invoice_date: row.invoiceDate,
+            due_date: row.dueDate || null,
             status: row.status || 'draft',
-            subtotal: 0,
-            tax_amount: 0,
-            total_amount: 0
+            subtotal: row.subtotal,
+            tax_rate: taxRate,
+            tax_amount: row.taxAmount,
+            total_amount: row.totalAmount,
+            notes: row.paymentMethod ? `Zahlungsmethode: ${row.paymentMethod}` : null
           })
           .select()
           .single();
 
         if (invoiceError) throw invoiceError;
 
-        // Create invoice items
-        if (row.items && Array.isArray(row.items)) {
+        // Create invoice items if provided
+        if (row.items && Array.isArray(row.items) && row.items.length > 0) {
           for (const item of row.items) {
             const totalPrice = item.quantity * item.unitPrice;
             
@@ -129,6 +144,19 @@ serve(async (req) => {
 
             if (itemError) throw itemError;
           }
+        } else {
+          // Create a single generic item for invoices without detailed items
+          const { error: itemError } = await supabaseClient
+            .from('invoice_items')
+            .insert({
+              invoice_id: invoice.id,
+              description: 'Importierte Rechnung',
+              quantity: 1,
+              unit_price: row.subtotal,
+              total_price: row.subtotal
+            });
+
+          if (itemError) throw itemError;
         }
 
         successCount++;

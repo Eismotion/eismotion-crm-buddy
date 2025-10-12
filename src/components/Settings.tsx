@@ -6,11 +6,14 @@ import { mockTemplates, mockSprueche } from '@/data/mockData';
 import { supabase } from '@/integrations/supabase/client';
 import { useState, useEffect, useRef } from 'react';
 import { toast } from 'sonner';
+import * as XLSX from 'xlsx';
 
 export const Settings = () => {
   const [assets, setAssets] = useState<any[]>([]);
   const [uploading, setUploading] = useState(false);
+  const [importing, setImporting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const importInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     loadAssets();
@@ -96,6 +99,90 @@ export const Settings = () => {
     } catch (error: any) {
       console.error('Delete error:', error);
       toast.error('Fehler beim Löschen');
+    }
+  };
+
+  const handleImportFile = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    const validTypes = [
+      'application/vnd.ms-excel',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      'text/csv'
+    ];
+    
+    if (!validTypes.includes(file.type) && !file.name.match(/\.(xlsx?|csv)$/i)) {
+      toast.error('Ungültiges Dateiformat. Erlaubt: XLS, XLSX, CSV');
+      return;
+    }
+
+    setImporting(true);
+    
+    try {
+      const reader = new FileReader();
+      
+      reader.onload = async (e) => {
+        try {
+          const data = e.target?.result;
+          const workbook = XLSX.read(data, { type: 'array' });
+          const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+          const jsonData = XLSX.utils.sheet_to_json(firstSheet);
+
+          console.log('Parsed data:', jsonData);
+
+          // Transform InvoiceHome format to our format
+          const importData = jsonData.map((row: any) => ({
+            customerName: row['Kunde'] || '',
+            invoiceNumber: row['Nummer'] || '',
+            invoiceDate: row['Datum'] || '',
+            paidDate: row['Bezahlt am'] || null,
+            dueDate: row['Fällig am'] || null,
+            subtotal: parseFloat(row['Betrag']) || 0,
+            taxAmount: parseFloat(row['Steuer']) || 0,
+            totalAmount: parseFloat(row['Gesamt']) || 0,
+            currency: row['Währung'] || 'EUR',
+            paymentMethod: row['Zahlungsmethode'] || '',
+            status: row['Bezahlt am'] ? 'bezahlt' : 'offen'
+          }));
+
+          console.log('Transformed data:', importData);
+
+          // Call edge function
+          const { data: result, error } = await supabase.functions.invoke('import-invoicehome', {
+            body: {
+              data: importData,
+              importType: 'invoicehome_excel'
+            }
+          });
+
+          if (error) throw error;
+
+          toast.success(
+            `Import erfolgreich! ${result.successful} von ${result.processed} Rechnungen importiert.`
+          );
+
+          if (result.failed > 0) {
+            console.error('Import errors:', result.errors);
+            toast.warning(`${result.failed} Rechnungen konnten nicht importiert werden.`);
+          }
+        } catch (error: any) {
+          console.error('Parse error:', error);
+          toast.error('Fehler beim Verarbeiten der Datei: ' + error.message);
+        } finally {
+          setImporting(false);
+          if (importInputRef.current) {
+            importInputRef.current.value = '';
+          }
+        }
+      };
+
+      reader.readAsArrayBuffer(file);
+    } catch (error: any) {
+      console.error('Import error:', error);
+      toast.error('Fehler beim Import: ' + error.message);
+      setImporting(false);
     }
   };
 
@@ -275,16 +362,36 @@ export const Settings = () => {
           </p>
         </CardHeader>
         <CardContent>
-          <div className="border-2 border-dashed rounded-lg p-8 text-center hover:bg-muted/50 transition-colors cursor-pointer">
+          <input
+            ref={importInputRef}
+            type="file"
+            accept=".xls,.xlsx,.csv"
+            onChange={handleImportFile}
+            className="hidden"
+            disabled={importing}
+          />
+          <div 
+            onClick={() => !importing && importInputRef.current?.click()}
+            className="border-2 border-dashed rounded-lg p-8 text-center hover:bg-muted/50 transition-colors cursor-pointer"
+          >
             <Upload className="h-12 w-12 mx-auto mb-3 text-muted-foreground" />
-            <p className="text-sm font-medium mb-1">InvoiceHome CSV importieren</p>
-            <p className="text-xs text-muted-foreground">
-              Unterstützte Formate: CSV, Excel (.xlsx)
+            <p className="text-sm font-medium mb-1">
+              {importing ? 'Import läuft...' : 'InvoiceHome Datei importieren'}
             </p>
-            <Button className="mt-4">
+            <p className="text-xs text-muted-foreground">
+              Unterstützte Formate: XLS, XLSX, CSV
+            </p>
+            <Button className="mt-4" disabled={importing}>
               <Upload className="h-4 w-4 mr-2" />
-              Datei auswählen
+              {importing ? 'Wird importiert...' : 'Datei auswählen'}
             </Button>
+          </div>
+          <div className="mt-4 space-y-2">
+            <div className="p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg">
+              <p className="text-xs text-blue-700 dark:text-blue-300">
+                💡 <strong>Tipp:</strong> Sie können mehrere Dateien nacheinander hochladen (z.B. 2025, dann 2024, dann 2023)
+              </p>
+            </div>
           </div>
         </CardContent>
       </Card>
