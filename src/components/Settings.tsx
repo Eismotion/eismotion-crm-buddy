@@ -4,7 +4,10 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { mockTemplates, mockSprueche } from '@/data/mockData';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Textarea } from '@/components/ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { mockSprueche } from '@/data/mockData';
 import { supabase } from '@/integrations/supabase/client';
 import { useState, useEffect, useRef } from 'react';
 import { toast } from 'sonner';
@@ -12,16 +15,26 @@ import * as XLSX from 'xlsx';
 
 export const Settings = () => {
   const [assets, setAssets] = useState<any[]>([]);
+  const [templates, setTemplates] = useState<any[]>([]);
   const [uploading, setUploading] = useState(false);
   const [importing, setImporting] = useState(false);
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [changingPassword, setChangingPassword] = useState(false);
+  const [templateDialogOpen, setTemplateDialogOpen] = useState(false);
+  const [editingTemplate, setEditingTemplate] = useState<any>(null);
+  const [templateName, setTemplateName] = useState('');
+  const [templateCategory, setTemplateCategory] = useState('Themen');
+  const [templateTheme, setTemplateTheme] = useState('');
+  const [templateOccasion, setTemplateOccasion] = useState('');
+  const [templateSeason, setTemplateSeason] = useState('');
+  const [templateHtml, setTemplateHtml] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
   const importInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     loadAssets();
+    loadTemplates();
   }, []);
 
   const loadAssets = async () => {
@@ -34,6 +47,98 @@ export const Settings = () => {
       console.error('Error loading assets:', error);
     } else {
       setAssets(data || []);
+    }
+  };
+
+  const loadTemplates = async () => {
+    const { data, error } = await supabase
+      .from('invoice_templates')
+      .select('*')
+      .order('created_at', { ascending: false });
+    
+    if (error) {
+      console.error('Error loading templates:', error);
+    } else {
+      setTemplates(data || []);
+    }
+  };
+
+  const handleOpenTemplateDialog = (template?: any) => {
+    if (template) {
+      setEditingTemplate(template);
+      setTemplateName(template.name);
+      setTemplateCategory(template.category || 'Themen');
+      setTemplateTheme(template.theme || '');
+      setTemplateOccasion(template.occasion || '');
+      setTemplateSeason(template.season || '');
+      setTemplateHtml(template.html_template || '');
+    } else {
+      setEditingTemplate(null);
+      setTemplateName('');
+      setTemplateCategory('Themen');
+      setTemplateTheme('');
+      setTemplateOccasion('');
+      setTemplateSeason('');
+      setTemplateHtml('<div style="padding: 20px;">Rechnungsvorlage</div>');
+    }
+    setTemplateDialogOpen(true);
+  };
+
+  const handleSaveTemplate = async () => {
+    if (!templateName) {
+      toast.error('Bitte Template-Name eingeben');
+      return;
+    }
+
+    try {
+      const templateData = {
+        name: templateName,
+        category: templateCategory,
+        theme: templateTheme || null,
+        occasion: templateOccasion || null,
+        season: templateSeason || null,
+        html_template: templateHtml,
+        active: true,
+      };
+
+      if (editingTemplate) {
+        const { error } = await supabase
+          .from('invoice_templates')
+          .update(templateData)
+          .eq('id', editingTemplate.id);
+        
+        if (error) throw error;
+        toast.success('Template aktualisiert');
+      } else {
+        const { error } = await supabase
+          .from('invoice_templates')
+          .insert(templateData);
+        
+        if (error) throw error;
+        toast.success('Template erstellt');
+      }
+
+      setTemplateDialogOpen(false);
+      loadTemplates();
+    } catch (error: any) {
+      console.error('Save template error:', error);
+      toast.error('Fehler beim Speichern: ' + (error.message || 'Unbekannter Fehler'));
+    }
+  };
+
+  const handleDeleteTemplate = async (templateId: string) => {
+    try {
+      const { error } = await supabase
+        .from('invoice_templates')
+        .delete()
+        .eq('id', templateId);
+
+      if (error) throw error;
+      toast.success('Template gelöscht');
+      loadTemplates();
+    } catch (error: any) {
+      console.error('Delete template error:', error);
+      toast.error('Fehler beim Löschen');
     }
   };
 
@@ -274,47 +379,152 @@ export const Settings = () => {
               Verwalten Sie Ihre Design-Templates
             </p>
           </div>
-          <Button>
+          <Button onClick={() => handleOpenTemplateDialog()}>
             <Plus className="h-4 w-4 mr-2" />
             Neues Template
           </Button>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {mockTemplates.map((template) => (
-              <Card key={template.id} className="overflow-hidden">
-                <CardContent className="p-4">
-                  <div 
-                    className="aspect-[3/4] rounded-lg mb-3 flex items-center justify-center"
-                    style={{
-                      background: `linear-gradient(135deg, ${template.colors.secondary} 0%, ${template.colors.primary} 100%)`
-                    }}
-                  >
-                    <Palette className="h-12 w-12 text-white opacity-50" />
-                  </div>
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between">
-                      <h3 className="font-semibold">{template.name}</h3>
-                      <Badge variant="secondary" className="text-xs">
-                        {template.category}
-                      </Badge>
+          {templates.length === 0 ? (
+            <p className="text-muted-foreground text-center py-8">Noch keine Templates vorhanden</p>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {templates.map((template) => (
+                <Card key={template.id} className="overflow-hidden">
+                  <CardContent className="p-4">
+                    <div 
+                      className="aspect-[3/4] rounded-lg mb-3 flex items-center justify-center bg-gradient-to-br from-primary/20 to-primary/5"
+                    >
+                      <Palette className="h-12 w-12 text-primary opacity-50" />
                     </div>
-                    <div className="flex gap-2">
-                      <Button variant="outline" size="sm" className="flex-1">
-                        <Edit className="h-3 w-3 mr-1" />
-                        Bearbeiten
-                      </Button>
-                      <Button variant="outline" size="sm">
-                        <Trash2 className="h-3 w-3" />
-                      </Button>
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <h3 className="font-semibold">{template.name}</h3>
+                        <Badge variant="secondary" className="text-xs">
+                          {template.category}
+                        </Badge>
+                      </div>
+                      {(template.theme || template.occasion || template.season) && (
+                        <div className="flex gap-1 flex-wrap">
+                          {template.theme && <Badge variant="outline" className="text-xs">{template.theme}</Badge>}
+                          {template.occasion && <Badge variant="outline" className="text-xs">{template.occasion}</Badge>}
+                          {template.season && <Badge variant="outline" className="text-xs">{template.season}</Badge>}
+                        </div>
+                      )}
+                      <div className="flex gap-2">
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          className="flex-1"
+                          onClick={() => handleOpenTemplateDialog(template)}
+                        >
+                          <Edit className="h-3 w-3 mr-1" />
+                          Bearbeiten
+                        </Button>
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => handleDeleteTemplate(template.id)}
+                        >
+                          <Trash2 className="h-3 w-3" />
+                        </Button>
+                      </div>
                     </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
         </CardContent>
       </Card>
+
+      {/* Template Editor Dialog */}
+      <Dialog open={templateDialogOpen} onOpenChange={setTemplateDialogOpen}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>
+              {editingTemplate ? 'Template bearbeiten' : 'Neues Template erstellen'}
+            </DialogTitle>
+            <DialogDescription>
+              Erstellen Sie eine Rechnungsvorlage mit HTML/CSS
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="template-name">Name *</Label>
+                <Input
+                  id="template-name"
+                  value={templateName}
+                  onChange={(e) => setTemplateName(e.target.value)}
+                  placeholder="z.B. Weihnachts-Rechnung"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="template-category">Kategorie</Label>
+                <Select value={templateCategory} onValueChange={setTemplateCategory}>
+                  <SelectTrigger id="template-category">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Themen">Themen</SelectItem>
+                    <SelectItem value="Jahreszeiten">Jahreszeiten</SelectItem>
+                    <SelectItem value="Anlässe">Anlässe</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div className="grid grid-cols-3 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="template-theme">Thema</Label>
+                <Input
+                  id="template-theme"
+                  value={templateTheme}
+                  onChange={(e) => setTemplateTheme(e.target.value)}
+                  placeholder="z.B. Weihnachten"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="template-occasion">Anlass</Label>
+                <Input
+                  id="template-occasion"
+                  value={templateOccasion}
+                  onChange={(e) => setTemplateOccasion(e.target.value)}
+                  placeholder="z.B. Feiertag"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="template-season">Saison</Label>
+                <Input
+                  id="template-season"
+                  value={templateSeason}
+                  onChange={(e) => setTemplateSeason(e.target.value)}
+                  placeholder="z.B. Winter"
+                />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="template-html">HTML Template</Label>
+              <Textarea
+                id="template-html"
+                value={templateHtml}
+                onChange={(e) => setTemplateHtml(e.target.value)}
+                placeholder="<div>...</div>"
+                className="font-mono text-sm"
+                rows={12}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setTemplateDialogOpen(false)}>
+              Abbrechen
+            </Button>
+            <Button onClick={handleSaveTemplate}>
+              {editingTemplate ? 'Aktualisieren' : 'Erstellen'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Design Assets */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
