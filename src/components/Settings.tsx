@@ -31,6 +31,7 @@ export const Settings = () => {
   const [templateHtml, setTemplateHtml] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
   const importInputRef = useRef<HTMLInputElement>(null);
+  const templateUploadRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     loadAssets();
@@ -241,6 +242,104 @@ export const Settings = () => {
     }
   };
 
+  const handleTemplateUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    // Validate file size (10MB)
+    if (file.size > 10 * 1024 * 1024) {
+      toast.error('Datei ist zu groß. Maximale Größe: 10MB');
+      return;
+    }
+
+    // Validate file type
+    const isImage = file.type.match(/^image\/(png|jpg|jpeg)$/);
+    const isHtml = file.name.match(/\.html?$/i);
+    
+    if (!isImage && !isHtml) {
+      toast.error('Ungültiges Dateiformat. Erlaubt: HTML, JPG, PNG');
+      return;
+    }
+
+    setUploading(true);
+    
+    try {
+      const reader = new FileReader();
+      
+      reader.onload = async (e) => {
+        try {
+          const content = e.target?.result as string;
+          let htmlTemplate = '';
+          
+          if (isImage) {
+            // Convert image to base64 and create HTML template
+            htmlTemplate = `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <style>
+    body { margin: 0; padding: 0; font-family: Arial, sans-serif; }
+    .invoice-wrapper { 
+      width: 210mm; 
+      min-height: 297mm; 
+      margin: 0 auto; 
+      background-image: url('${content}');
+      background-size: cover;
+      background-position: center;
+      padding: 40px;
+      box-sizing: border-box;
+    }
+  </style>
+</head>
+<body>
+  <div class="invoice-wrapper">
+    <!-- Content wird dynamisch eingefügt -->
+  </div>
+</body>
+</html>`;
+          } else {
+            // Use HTML file directly
+            htmlTemplate = content;
+          }
+
+          const templateName = file.name.replace(/\.(html?|jpe?g|png)$/i, '');
+          
+          const { error } = await supabase
+            .from('invoice_templates')
+            .insert({
+              name: templateName,
+              category: 'Themen',
+              html_template: htmlTemplate,
+              active: true,
+            });
+
+          if (error) throw error;
+
+          toast.success('Template erfolgreich hochgeladen!');
+          loadTemplates();
+        } catch (error: any) {
+          console.error('Template upload error:', error);
+          toast.error('Fehler beim Hochladen: ' + error.message);
+        } finally {
+          setUploading(false);
+          if (templateUploadRef.current) {
+            templateUploadRef.current.value = '';
+          }
+        }
+      };
+
+      if (isImage) {
+        reader.readAsDataURL(file);
+      } else {
+        reader.readAsText(file);
+      }
+    } catch (error: any) {
+      console.error('Upload error:', error);
+      toast.error('Fehler beim Hochladen: ' + error.message);
+      setUploading(false);
+    }
+  };
+
   const handleImportFile = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
@@ -422,10 +521,27 @@ export const Settings = () => {
               Verwalten Sie Ihre Design-Templates
             </p>
           </div>
-          <Button onClick={() => handleOpenTemplateDialog()}>
-            <Plus className="h-4 w-4 mr-2" />
-            Neues Template
-          </Button>
+          <div className="flex gap-2">
+            <input
+              ref={templateUploadRef}
+              type="file"
+              accept=".html,.htm,.jpg,.jpeg,.png"
+              onChange={handleTemplateUpload}
+              className="hidden"
+            />
+            <Button 
+              variant="outline" 
+              onClick={() => templateUploadRef.current?.click()}
+              disabled={uploading}
+            >
+              <Upload className="h-4 w-4 mr-2" />
+              {uploading ? 'Lädt...' : 'Template hochladen'}
+            </Button>
+            <Button onClick={() => handleOpenTemplateDialog()}>
+              <Plus className="h-4 w-4 mr-2" />
+              Neues Template
+            </Button>
+          </div>
         </CardHeader>
         <CardContent>
           {templates.length === 0 ? (
