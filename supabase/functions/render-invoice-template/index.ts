@@ -95,61 +95,43 @@ serve(async (req) => {
     let html = template.html_template || '';
     let css = template.css_styles || '';
     
-    // Company Name
+    // Alle Template-Variablen ersetzen
     html = html.replace(/{{company_name}}/g, 'Eismotion');
+    html = html.replace(/{{logo_url}}/g, '');
     
-    // Custom Message
+    // Customer Info
+    html = html.replace(/{{customer_name}}/g, invoice.customer?.name || 'N/A');
+    html = html.replace(/{{customer_address}}/g, invoice.customer?.address || '');
+    html = html.replace(/{{customer_postal_code}}/g, invoice.customer?.postal_code || '');
+    html = html.replace(/{{customer_city}}/g, invoice.customer?.city || '');
+    
+    // Invoice Details
+    html = html.replace(/{{invoice_number}}/g, invoice.invoice_number || '');
+    html = html.replace(/{{invoice_date}}/g, new Date(invoice.invoice_date).toLocaleDateString('de-DE'));
+    html = html.replace(/{{due_date}}/g, new Date(invoice.due_date).toLocaleDateString('de-DE'));
+    
+    // Custom Message - entferne handlebars Syntax
     const customMessage = customizations?.custom_message || invoice.custom_message || 'Vielen Dank für Ihren Einkauf!';
+    html = html.replace(/{{#if custom_message}}[\s\S]*?{{custom_message}}[\s\S]*?{{\/if}}/g, customMessage ? `<div class="custom-message">${customMessage}</div>` : '');
     html = html.replace(/{{custom_message}}/g, customMessage);
     
-    // Rechnung Content generieren
-    const contentHTML = `
-      <div class="invoice-details">
-        <div class="invoice-header">
-          <h2>Rechnung ${invoice.invoice_number}</h2>
-          <p>Datum: ${new Date(invoice.invoice_date).toLocaleDateString('de-DE')}</p>
-        </div>
-        
-        <div class="customer-info">
-          <h3>Kunde</h3>
-          <p>${invoice.customer?.name || 'N/A'}</p>
-          <p>${invoice.customer?.address || ''}</p>
-          <p>${invoice.customer?.postal_code || ''} ${invoice.customer?.city || ''}</p>
-        </div>
-        
-        <div class="items-table">
-          <table>
-            <thead>
-              <tr>
-                <th>Beschreibung</th>
-                <th>Menge</th>
-                <th>Preis</th>
-                <th>Gesamt</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${invoice.items?.map((item: any) => `
-                <tr>
-                  <td>${item.description}</td>
-                  <td>${item.quantity}</td>
-                  <td>€${Number(item.unit_price).toFixed(2)}</td>
-                  <td>€${Number(item.total_price).toFixed(2)}</td>
-                </tr>
-              `).join('') || ''}
-            </tbody>
-          </table>
-        </div>
-        
-        <div class="totals">
-          <p>Zwischensumme: €${Number(invoice.subtotal).toFixed(2)}</p>
-          <p>MwSt (${invoice.tax_rate}%): €${Number(invoice.tax_amount).toFixed(2)}</p>
-          <p><strong>Gesamt: €${Number(invoice.total_amount).toFixed(2)}</strong></p>
-        </div>
-      </div>
-    `;
+    // Items - entferne handlebars each loop
+    const itemsHTML = invoice.items?.map((item: any) => `
+      <tr>
+        <td>${item.description}</td>
+        <td style="text-align: center;">${item.quantity}</td>
+        <td style="text-align: right;">${Number(item.unit_price).toFixed(2)} €</td>
+        <td style="text-align: right;">${Number(item.total_price).toFixed(2)} €</td>
+      </tr>
+    `).join('') || '';
     
-    html = html.replace(/{{content}}/g, contentHTML);
-    html = html.replace(/{{css}}/g, css);
+    html = html.replace(/{{#each items}}[\s\S]*?{{\/each}}/g, itemsHTML);
+    
+    // Totals
+    html = html.replace(/{{subtotal}}/g, Number(invoice.subtotal).toFixed(2));
+    html = html.replace(/{{tax_rate}}/g, invoice.tax_rate.toString());
+    html = html.replace(/{{tax_amount}}/g, Number(invoice.tax_amount).toFixed(2));
+    html = html.replace(/{{total_amount}}/g, Number(invoice.total_amount).toFixed(2));
     
     // Custom Design überschreiben
     if (customizations?.colors) {
@@ -158,28 +140,44 @@ serve(async (req) => {
       if (colors.secondary) css += `.custom-secondary { background: ${colors.secondary}; }`;
     }
     
-    const fullHTML = `
-      <!DOCTYPE html>
-      <html lang="de">
-      <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Rechnung ${invoice.invoice_number}</title>
-        <style>
-          ${css}
-          .invoice-details { padding: 20px; }
-          .items-table { margin: 20px 0; }
-          table { width: 100%; border-collapse: collapse; }
-          th, td { padding: 8px; text-align: left; border-bottom: 1px solid #ddd; }
-          .totals { margin-top: 20px; text-align: right; }
-          .customer-info { margin: 20px 0; }
-        </style>
-      </head>
-      <body>
-        ${html}
-      </body>
-      </html>
-    `;
+    // Wenn das Template bereits ein vollständiges HTML-Dokument ist, nicht erneut wrappen
+    const hasFullDoc = /<!DOCTYPE|<html[\s\S]*<head[\s\S]*<body/i.test(html);
+
+    let fullHTML: string;
+    if (hasFullDoc) {
+      // CSS injizieren
+      if (html.includes('{{css}}')) {
+        html = html.replace(/{{css}}/g, css);
+      } else if (css && html.includes('</head>')) {
+        html = html.replace('</head>', `<style>${css}</style></head>`);
+      }
+      fullHTML = html;
+    } else {
+      fullHTML = `
+        <!DOCTYPE html>
+        <html lang="de">
+        <head>
+          <meta charset="UTF-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <title>Rechnung ${invoice.invoice_number}</title>
+          <style>
+            ${css}
+            html, body { height: 100%; }
+            body { background: #fff; color: #111; }
+            .invoice-details { padding: 20px; }
+            .items-table { margin: 20px 0; }
+            table { width: 100%; border-collapse: collapse; }
+            th, td { padding: 8px; text-align: left; border-bottom: 1px solid #ddd; }
+            .totals { margin-top: 20px; text-align: right; }
+            .customer-info { margin: 20px 0; }
+          </style>
+        </head>
+        <body>
+          ${html}
+        </body>
+        </html>
+      `;
+    }
     
     console.log('Template successfully rendered');
     
