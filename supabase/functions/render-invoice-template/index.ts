@@ -94,6 +94,23 @@ serve(async (req) => {
     // Template-Variablen ersetzen
     let html = template.html_template || '';
     let css = template.css_styles || '';
+
+    // Führendes IMG in Hintergrundbild umwandeln (falls Nutzer ein Bild oben eingefügt hat)
+    try {
+      const leadingImgMatch = html.match(/^\s*<img[^>]*src=["']([^"']+)["'][^>]*>/i);
+      if (leadingImgMatch) {
+        const imgTag = leadingImgMatch[0];
+        const imgUrl = leadingImgMatch[1];
+        // Entferne das IMG aus dem HTML, damit es nicht vor dem Dokument gerendert wird
+        html = html.replace(imgTag, '');
+        // Erzwinge das Bild als Header-Hintergrund und stelle sicher, dass Texte im Vordergrund bleiben
+        css += `
+          .header{background-image:url('${imgUrl}') !important;background-size:cover;background-position:center;}
+          .page{position:relative;}
+          .top-address,.content,.footer,.footer-bar{position:relative;z-index:1;background:#fff;}
+        `;
+      }
+    } catch (_) { /* noop */ }
     
     // Alle Template-Variablen ersetzen
     html = html.replace(/{{company_name}}/g, 'Eismotion');
