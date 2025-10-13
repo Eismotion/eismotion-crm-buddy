@@ -52,6 +52,79 @@ export const InvoiceDesignStudio = () => {
 
   const loadTemplates = async () => {
     try {
+      // Ensure Eismotion template with header image exists
+      const { data: existing } = await supabase
+        .from('invoice_templates')
+        .select('id')
+        .eq('name', 'Eismotion – Headerbild')
+        .maybeSingle();
+
+      if (!existing) {
+        const eismotionHtml = `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: Arial, sans-serif; color: #222; }
+    .page { max-width: 900px; margin: 0 auto; background: #fff; }
+    .header { background-image: url('/templates/eismotion-header.png'); background-size: cover; background-position: center; height: 230px; position: relative; }
+    .header::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 10px; background: #5b2c7d; }
+    .top-address { text-align: center; font-size: 12px; color: #333; padding: 10px 20px; }
+    .content { padding: 32px 48px; }
+    .title { font-size: 26px; color: #5b2c7d; margin-bottom: 16px; }
+    .details { display: flex; justify-content: space-between; gap: 24px; margin: 18px 0 10px; }
+    .details .box { width: 50%; }
+    .label { font-weight: 700; color: #333; }
+    table { width: 100%; border-collapse: collapse; margin-top: 24px; }
+    th { background: #5b2c7d; color: #fff; text-align: left; padding: 10px; font-weight: 500; }
+    td { padding: 10px; border-bottom: 1px solid #e5e7eb; }
+    .totals { margin-top: 18px; text-align: right; }
+    .totals .row { margin: 6px 0; }
+    .totals .final { margin-top: 10px; font-weight: 700; color: #5b2c7d; font-size: 18px; }
+    .footer-bar { height: 10px; background: #5b2c7d; margin-top: 48px; }
+    .footer { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 24px; padding: 18px 48px 36px; font-size: 12px; color: #333; }
+    .footer h4 { font-size: 12px; margin-bottom: 6px; color: #111; }
+    .note { margin-top: 24px; padding: 16px; background: #f5e6fa; border-left: 4px solid #5b2c7d; color: #5b2c7d; font-style: italic; }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <div class="header"></div>
+    <div class="top-address">Eismotion.de – Juan Chabas 4 – 03700 Denia</div>
+    <div class="content">
+      <h1 class="title">Rechnung {{invoice_number}}</h1>
+      <div class="details">
+        <div class="box"><div><span class="label">Kunde:</span> {{customer_name}}</div><div>{{customer_address}}</div><div>{{customer_postal_code}} {{customer_city}}</div></div>
+        <div class="box" style="text-align:right"><div><span class="label">Rechnungsdatum:</span> {{invoice_date}}</div><div><span class="label">Fälligkeitsdatum:</span> {{due_date}}</div></div>
+      </div>
+      <table><thead><tr><th>Beschreibung</th><th style="text-align:right;width:100px;">Menge</th><th style="text-align:right;width:120px;">Einzelpreis</th><th style="text-align:right;width:120px;">Gesamt</th></tr></thead><tbody>{{#each items}}<tr><td>{{description}}</td><td style="text-align:right;">{{quantity}}</td><td style="text-align:right;">{{unit_price}} €</td><td style="text-align:right;">{{total_price}} €</td></tr>{{/each}}</tbody></table>
+      <div class="totals"><div class="row"><span class="label">Zwischensumme:</span> {{subtotal}} €</div><div class="row"><span class="label">MwSt. ({{tax_rate}}%):</span> {{tax_amount}} €</div><div class="row final"><span class="label">Gesamtbetrag:</span> {{total_amount}} €</div></div>
+      {{#if custom_message}}<div class="note">{{custom_message}}</div>{{/if}}
+    </div>
+    <div class="footer-bar"></div>
+    <div class="footer">
+      <div><h4>Eismotion.de</h4><div>Sabrina Caberlotto</div><div>Carrer Georges Bernanos 60</div><div>07015 Palma de Mallorca</div></div>
+      <div><h4>Kontakt</h4><div>Tel. +49 151 6333 1700</div><div>Email: info@eismotion.de</div><div>Web: www.eismotion.de</div></div>
+      <div><h4>Bankverbindung</h4><div>Banco Sabadell</div><div>IBAN: ES9300810159690001802781</div><div>BIC: BSABESBB</div></div>
+    </div>
+  </div>
+</body>
+</html>`;
+
+        await supabase.from('invoice_templates').insert({
+          name: 'Eismotion – Headerbild',
+          category: 'Themen',
+          season: 'Sommer',
+          theme: 'Eiscafe',
+          html_template: eismotionHtml,
+          css_styles: '',
+          colors: { primary: '#5b2c7d', secondary: '#e8d5f2', accent: '#f5e6fa' },
+          active: true,
+          is_public: true
+        });
+      }
+
       const { data, error } = await supabase
         .from('invoice_templates')
         .select('*')
