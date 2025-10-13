@@ -203,7 +203,14 @@ export const InvoiceDesignStudio = () => {
 
       if (error) throw error as any;
       const html = (data as any)?.html || (typeof data === 'string' ? data : template.html_template);
-      setPreviewHtml(html);
+      // Ensure root-relative assets like /templates/... resolve inside srcDoc
+      const ensureBase = (raw: string) => {
+        if (!raw) return raw;
+        if (raw.includes('<base ')) return raw;
+        if (raw.includes('</head>')) return raw.replace('</head>', '<base href="/" />\n</head>');
+        return `<head><base href="/" /></head>${raw}`;
+      };
+      setPreviewHtml(ensureBase(html));
     } catch (err) {
       console.warn('Preview render failed, falling back to raw template:', err);
       setPreviewHtml(template.html_template);
