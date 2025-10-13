@@ -78,7 +78,7 @@ export const InvoiceDesignStudio = () => {
       max-width: 900px; 
       margin: 0 auto; 
       min-height: 100vh;
-      background-image: url('/templates/eismotion-header.png');
+      background-image: url('https://ecijvteddzqczxagfhkm.supabase.co/storage/v1/object/public/design-assets/Templates/1760347136078-df839d7d-5f77-4963-95d7-5944c5a687c9.png');
       background-size: cover;
       background-repeat: no-repeat;
       background-position: top center;
