@@ -112,7 +112,7 @@ serve(async (req) => {
           .header{background-image:url('${imgUrl}') !important;background-size:cover;background-position:center;}
           .page{position:relative;}
           .page::before{content:"";position:absolute;inset:0 0 auto 0;height:230px;background:url('${imgUrl}') center/cover no-repeat;z-index:0;}
-          .top-address,.content,.footer,.footer-bar{position:relative;z-index:1;background:#fff;}
+          .top-address,.content,.footer,.footer-bar{position:relative;z-index:1;background:transparent;}
         `;
         console.log('Applied uploaded image as background:', imgUrl);
       }
