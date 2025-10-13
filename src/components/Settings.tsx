@@ -540,6 +540,18 @@ export const Settings = () => {
     }
   };
 
+  // Versucht eine Bild-URL aus dem HTML-Template zu extrahieren (img src oder CSS url())
+  const getTemplatePreviewUrl = (html: string): string | null => {
+    if (!html) return null;
+    // 1) <img src="...">
+    const imgMatch = html.match(/<img[^>]+src=["']([^"']+)["']/i);
+    if (imgMatch?.[1]) return imgMatch[1];
+    // 2) background(-image): url("...") oder allgemeines url("...")
+    const urlMatch = html.match(/url\((['"]?)([^'"\)]+)\1\)/i);
+    if (urlMatch?.[2]) return urlMatch[2];
+    return null;
+  };
+
   return (
     <div className="space-y-6">
       <div>
@@ -621,50 +633,62 @@ export const Settings = () => {
             <p className="text-muted-foreground text-center py-8">Noch keine Templates vorhanden</p>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {templates.map((template) => (
-                <Card key={template.id} className="overflow-hidden">
-                  <CardContent className="p-4">
-                    <div 
-                      className="aspect-[3/4] rounded-lg mb-3 flex items-center justify-center bg-gradient-to-br from-primary/20 to-primary/5"
-                    >
-                      <Palette className="h-12 w-12 text-primary opacity-50" />
-                    </div>
-                    <div className="space-y-2">
-                      <div className="flex items-center justify-between">
-                        <h3 className="font-semibold">{template.name}</h3>
-                        <Badge variant="secondary" className="text-xs">
-                          {template.category}
-                        </Badge>
-                      </div>
-                      {(template.theme || template.occasion || template.season) && (
-                        <div className="flex gap-1 flex-wrap">
-                          {template.theme && <Badge variant="outline" className="text-xs">{template.theme}</Badge>}
-                          {template.occasion && <Badge variant="outline" className="text-xs">{template.occasion}</Badge>}
-                          {template.season && <Badge variant="outline" className="text-xs">{template.season}</Badge>}
-                        </div>
-                      )}
-                      <div className="flex gap-2">
-                        <Button 
-                          variant="outline" 
-                          size="sm" 
-                          className="flex-1"
-                          onClick={() => handleOpenTemplateDialog(template)}
-                        >
-                          <Edit className="h-3 w-3 mr-1" />
-                          Bearbeiten
-                        </Button>
-                        <Button 
-                          variant="outline" 
-                          size="sm"
-                          onClick={() => handleDeleteTemplate(template.id)}
-                        >
-                          <Trash2 className="h-3 w-3" />
-                        </Button>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
+{templates.map((template) => {
+  const previewUrl = getTemplatePreviewUrl(template.html_template || '');
+  return (
+    <Card key={template.id} className="overflow-hidden">
+      <CardContent className="p-4">
+        <div className="aspect-[3/4] rounded-lg mb-3 overflow-hidden bg-muted/20 border">
+          {previewUrl ? (
+            <img
+              src={previewUrl}
+              alt={`${template.name} Vorschau`}
+              className="w-full h-full object-cover"
+              loading="lazy"
+            />
+          ) : (
+            <div className="flex h-full w-full items-center justify-center">
+              <Palette className="h-12 w-12 text-primary opacity-50" />
+            </div>
+          )}
+        </div>
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <h3 className="font-semibold">{template.name}</h3>
+            <Badge variant="secondary" className="text-xs">
+              {template.category}
+            </Badge>
+          </div>
+          {(template.theme || template.occasion || template.season) && (
+            <div className="flex gap-1 flex-wrap">
+              {template.theme && <Badge variant="outline" className="text-xs">{template.theme}</Badge>}
+              {template.occasion && <Badge variant="outline" className="text-xs">{template.occasion}</Badge>}
+              {template.season && <Badge variant="outline" className="text-xs">{template.season}</Badge>}
+            </div>
+          )}
+          <div className="flex gap-2">
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="flex-1"
+              onClick={() => handleOpenTemplateDialog(template)}
+            >
+              <Edit className="h-3 w-3 mr-1" />
+              Bearbeiten
+            </Button>
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={() => handleDeleteTemplate(template.id)}
+            >
+              <Trash2 className="h-3 w-3" />
+            </Button>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+})}
             </div>
           )}
         </CardContent>
