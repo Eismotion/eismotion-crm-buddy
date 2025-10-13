@@ -14,6 +14,7 @@ import {
 import { mockSprueche } from '@/data/mockData';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { getSeasonInfo, sortTemplatesBySeason } from '@/lib/seasonUtils';
 
 interface InvoiceTemplate {
   id: string;
@@ -38,6 +39,7 @@ export const InvoiceDesignStudio = () => {
   const [previewHtml, setPreviewHtml] = useState<string>('');
   const [previewLoading, setPreviewLoading] = useState<boolean>(false);
   const { toast } = useToast();
+  const seasonInfo = getSeasonInfo();
 
   useEffect(() => {
     loadTemplates();
@@ -219,13 +221,18 @@ export const InvoiceDesignStudio = () => {
           season: template.season,
           theme: template.theme,
           colors,
-          html_template: template.html_template
+          html_template: template.html_template,
+          occasion: template.occasion
         };
       });
 
-      setTemplates(formattedTemplates);
-      if (formattedTemplates.length > 0) {
-        setSelectedTemplate(formattedTemplates[0]);
+      // Sortiere Templates nach aktueller Saison - passende Templates kommen zuerst
+      const sortedTemplates = sortTemplatesBySeason(formattedTemplates);
+      
+      setTemplates(sortedTemplates);
+      if (sortedTemplates.length > 0) {
+        // Wähle automatisch das erste (passendste) Template
+        setSelectedTemplate(sortedTemplates[0]);
       }
     } catch (error) {
       console.error('Error loading templates:', error);
@@ -331,7 +338,9 @@ export const InvoiceDesignStudio = () => {
       <div className="border-b p-4 flex items-center justify-between flex-shrink-0">
         <div>
           <h2 className="text-2xl font-bold">Rechnungsdesign-Studio</h2>
-          <p className="text-sm text-muted-foreground">Erstellen Sie einzigartige Rechnungen</p>
+          <p className="text-sm text-muted-foreground">
+            Erstellen Sie einzigartige Rechnungen • Aktuelle Saison: {seasonInfo.occasion || seasonInfo.season}
+          </p>
         </div>
         <div className="flex gap-2">
           <Button variant="outline">
