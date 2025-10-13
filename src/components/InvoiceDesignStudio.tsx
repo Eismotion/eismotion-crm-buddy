@@ -67,11 +67,50 @@ export const InvoiceDesignStudio = () => {
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body { font-family: Arial, sans-serif; color: #222; }
-    .page { max-width: 900px; margin: 0 auto; background: #fff; }
-    .header { background-image: url('/templates/eismotion-header.png'); background-size: cover; background-position: center; height: 230px; position: relative; }
-    .header::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 10px; background: #5b2c7d; }
-    .top-address { text-align: center; font-size: 12px; color: #333; padding: 10px 20px; }
-    .content { padding: 32px 48px; }
+    .page { 
+      max-width: 900px; 
+      margin: 0 auto; 
+      background: #fff; 
+      position: relative;
+    }
+    .page::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 230px;
+      background-image: url('/templates/eismotion-header.png');
+      background-size: cover;
+      background-position: center;
+      z-index: 0;
+    }
+    .page::after {
+      content: "";
+      position: absolute;
+      top: 230px;
+      left: 0;
+      right: 0;
+      height: 10px;
+      background: #5b2c7d;
+      z-index: 0;
+    }
+    .top-address { 
+      position: relative;
+      z-index: 1;
+      text-align: center; 
+      font-size: 12px; 
+      color: #333; 
+      padding: 10px 20px; 
+      margin-top: 240px;
+      background: #fff;
+    }
+    .content { 
+      position: relative;
+      z-index: 1;
+      padding: 32px 48px; 
+      background: #fff;
+    }
     .title { font-size: 26px; color: #5b2c7d; margin-bottom: 16px; }
     .details { display: flex; justify-content: space-between; gap: 24px; margin: 18px 0 10px; }
     .details .box { width: 50%; }
@@ -82,15 +121,30 @@ export const InvoiceDesignStudio = () => {
     .totals { margin-top: 18px; text-align: right; }
     .totals .row { margin: 6px 0; }
     .totals .final { margin-top: 10px; font-weight: 700; color: #5b2c7d; font-size: 18px; }
-    .footer-bar { height: 10px; background: #5b2c7d; margin-top: 48px; }
-    .footer { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 24px; padding: 18px 48px 36px; font-size: 12px; color: #333; }
+    .footer-bar { 
+      position: relative;
+      z-index: 1;
+      height: 10px; 
+      background: #5b2c7d; 
+      margin-top: 48px; 
+    }
+    .footer { 
+      position: relative;
+      z-index: 1;
+      display: grid; 
+      grid-template-columns: 1fr 1fr 1fr; 
+      gap: 24px; 
+      padding: 18px 48px 36px; 
+      font-size: 12px; 
+      color: #333; 
+      background: #fff;
+    }
     .footer h4 { font-size: 12px; margin-bottom: 6px; color: #111; }
     .note { margin-top: 24px; padding: 16px; background: #f5e6fa; border-left: 4px solid #5b2c7d; color: #5b2c7d; font-style: italic; }
   </style>
 </head>
 <body>
   <div class="page">
-    <div class="header"></div>
     <div class="top-address">Eismotion.de – Juan Chabas 4 – 03700 Denia</div>
     <div class="content">
       <h1 class="title">Rechnung {{invoice_number}}</h1>
