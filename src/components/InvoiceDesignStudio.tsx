@@ -68,101 +68,184 @@ export const InvoiceDesignStudio = () => {
   <meta charset="UTF-8">
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { font-family: Arial, sans-serif; color: #222; }
-    .page { 
+    body { 
+      font-family: Arial, sans-serif; 
+      color: #222; 
+      margin: 0;
+      padding: 0;
+    }
+    .page-container { 
       max-width: 900px; 
       margin: 0 auto; 
-      background: #fff; 
-      position: relative;
-    }
-    .page::before {
-      content: "";
-      position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      height: 230px;
+      min-height: 100vh;
       background-image: url('/templates/eismotion-header.png');
       background-size: cover;
-      background-position: center;
-      z-index: 0;
+      background-repeat: no-repeat;
+      background-position: top center;
+      position: relative;
     }
-    .page::after {
-      content: "";
-      position: absolute;
-      top: 230px;
-      left: 0;
-      right: 0;
-      height: 10px;
-      background: #5b2c7d;
-      z-index: 0;
+    .content-wrapper {
+      padding-top: 250px;
+      padding-bottom: 150px;
+      padding-left: 48px;
+      padding-right: 48px;
     }
     .top-address { 
-      position: relative;
-      z-index: 1;
       text-align: center; 
       font-size: 12px; 
       color: #333; 
       padding: 10px 20px; 
-      margin-top: 240px;
-      background: #fff;
+      margin-bottom: 20px;
+      background: rgba(255, 255, 255, 0.95);
+      border-radius: 4px;
     }
     .content { 
-      position: relative;
-      z-index: 1;
-      padding: 32px 48px; 
-      background: #fff;
+      background: rgba(255, 255, 255, 0.98);
+      padding: 32px;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
     }
-    .title { font-size: 26px; color: #5b2c7d; margin-bottom: 16px; }
-    .details { display: flex; justify-content: space-between; gap: 24px; margin: 18px 0 10px; }
+    .title { 
+      font-size: 26px; 
+      color: #5b2c7d; 
+      margin-bottom: 16px; 
+      font-weight: 700;
+    }
+    .details { 
+      display: flex; 
+      justify-content: space-between; 
+      gap: 24px; 
+      margin: 18px 0 24px; 
+    }
     .details .box { width: 50%; }
     .label { font-weight: 700; color: #333; }
-    table { width: 100%; border-collapse: collapse; margin-top: 24px; }
-    th { background: #5b2c7d; color: #fff; text-align: left; padding: 10px; font-weight: 500; }
-    td { padding: 10px; border-bottom: 1px solid #e5e7eb; }
-    .totals { margin-top: 18px; text-align: right; }
-    .totals .row { margin: 6px 0; }
-    .totals .final { margin-top: 10px; font-weight: 700; color: #5b2c7d; font-size: 18px; }
-    .footer-bar { 
-      position: relative;
-      z-index: 1;
-      height: 10px; 
+    table { 
+      width: 100%; 
+      border-collapse: collapse; 
+      margin-top: 24px; 
+    }
+    th { 
       background: #5b2c7d; 
-      margin-top: 48px; 
+      color: #fff; 
+      text-align: left; 
+      padding: 10px; 
+      font-weight: 500; 
+    }
+    td { 
+      padding: 10px; 
+      border-bottom: 1px solid #e5e7eb; 
+    }
+    .totals { 
+      margin-top: 18px; 
+      text-align: right; 
+    }
+    .totals .row { margin: 6px 0; }
+    .totals .final { 
+      margin-top: 10px; 
+      font-weight: 700; 
+      color: #5b2c7d; 
+      font-size: 18px; 
     }
     .footer { 
-      position: relative;
-      z-index: 1;
       display: grid; 
       grid-template-columns: 1fr 1fr 1fr; 
       gap: 24px; 
-      padding: 18px 48px 36px; 
+      margin-top: 32px;
+      padding: 24px 32px; 
       font-size: 12px; 
       color: #333; 
-      background: #fff;
+      background: rgba(255, 255, 255, 0.95);
+      border-radius: 8px;
     }
-    .footer h4 { font-size: 12px; margin-bottom: 6px; color: #111; }
-    .note { margin-top: 24px; padding: 16px; background: #f5e6fa; border-left: 4px solid #5b2c7d; color: #5b2c7d; font-style: italic; }
+    .footer h4 { 
+      font-size: 12px; 
+      margin-bottom: 8px; 
+      color: #5b2c7d; 
+      font-weight: 700;
+    }
+    .note { 
+      margin-top: 24px; 
+      padding: 16px; 
+      background: #f5e6fa; 
+      border-left: 4px solid #5b2c7d; 
+      color: #5b2c7d; 
+      font-style: italic; 
+      border-radius: 4px;
+    }
   </style>
 </head>
 <body>
-  <div class="page">
-    <div class="top-address">Eismotion.de – Juan Chabas 4 – 03700 Denia</div>
-    <div class="content">
-      <h1 class="title">Rechnung {{invoice_number}}</h1>
-      <div class="details">
-        <div class="box"><div><span class="label">Kunde:</span> {{customer_name}}</div><div>{{customer_address}}</div><div>{{customer_postal_code}} {{customer_city}}</div></div>
-        <div class="box" style="text-align:right"><div><span class="label">Rechnungsdatum:</span> {{invoice_date}}</div><div><span class="label">Fälligkeitsdatum:</span> {{due_date}}</div></div>
+  <div class="page-container">
+    <div class="content-wrapper">
+      <div class="top-address">Eismotion.de – Juan Chabas 4 – 03700 Denia</div>
+      
+      <div class="content">
+        <h1 class="title">Rechnung {{invoice_number}}</h1>
+        
+        <div class="details">
+          <div class="box">
+            <div><span class="label">Kunde:</span> {{customer_name}}</div>
+            <div>{{customer_address}}</div>
+            <div>{{customer_postal_code}} {{customer_city}}</div>
+          </div>
+          <div class="box" style="text-align:right">
+            <div><span class="label">Rechnungsdatum:</span> {{invoice_date}}</div>
+            <div><span class="label">Fälligkeitsdatum:</span> {{due_date}}</div>
+          </div>
+        </div>
+        
+        <table>
+          <thead>
+            <tr>
+              <th>Beschreibung</th>
+              <th style="text-align:right;width:100px;">Menge</th>
+              <th style="text-align:right;width:120px;">Einzelpreis</th>
+              <th style="text-align:right;width:120px;">Gesamt</th>
+            </tr>
+          </thead>
+          <tbody>
+            {{#each items}}
+            <tr>
+              <td>{{description}}</td>
+              <td style="text-align:right;">{{quantity}}</td>
+              <td style="text-align:right;">{{unit_price}} €</td>
+              <td style="text-align:right;">{{total_price}} €</td>
+            </tr>
+            {{/each}}
+          </tbody>
+        </table>
+        
+        <div class="totals">
+          <div class="row"><span class="label">Zwischensumme:</span> {{subtotal}} €</div>
+          <div class="row"><span class="label">MwSt. ({{tax_rate}}%):</span> {{tax_amount}} €</div>
+          <div class="row final"><span class="label">Gesamtbetrag:</span> {{total_amount}} €</div>
+        </div>
+        
+        {{#if custom_message}}
+        <div class="note">{{custom_message}}</div>
+        {{/if}}
       </div>
-      <table><thead><tr><th>Beschreibung</th><th style="text-align:right;width:100px;">Menge</th><th style="text-align:right;width:120px;">Einzelpreis</th><th style="text-align:right;width:120px;">Gesamt</th></tr></thead><tbody>{{#each items}}<tr><td>{{description}}</td><td style="text-align:right;">{{quantity}}</td><td style="text-align:right;">{{unit_price}} €</td><td style="text-align:right;">{{total_price}} €</td></tr>{{/each}}</tbody></table>
-      <div class="totals"><div class="row"><span class="label">Zwischensumme:</span> {{subtotal}} €</div><div class="row"><span class="label">MwSt. ({{tax_rate}}%):</span> {{tax_amount}} €</div><div class="row final"><span class="label">Gesamtbetrag:</span> {{total_amount}} €</div></div>
-      {{#if custom_message}}<div class="note">{{custom_message}}</div>{{/if}}
-    </div>
-    <div class="footer-bar"></div>
-    <div class="footer">
-      <div><h4>Eismotion.de</h4><div>Sabrina Caberlotto</div><div>Carrer Georges Bernanos 60</div><div>07015 Palma de Mallorca</div></div>
-      <div><h4>Kontakt</h4><div>Tel. +49 151 6333 1700</div><div>Email: info@eismotion.de</div><div>Web: www.eismotion.de</div></div>
-      <div><h4>Bankverbindung</h4><div>Banco Sabadell</div><div>IBAN: ES9300810159690001802781</div><div>BIC: BSABESBB</div></div>
+      
+      <div class="footer">
+        <div>
+          <h4>Eismotion.de</h4>
+          <div>Sabrina Caberlotto</div>
+          <div>Carrer Georges Bernanos 60</div>
+          <div>07015 Palma de Mallorca</div>
+        </div>
+        <div>
+          <h4>Kontakt</h4>
+          <div>Tel. +49 151 6333 1700</div>
+          <div>Email: info@eismotion.de</div>
+          <div>Web: www.eismotion.de</div>
+        </div>
+        <div>
+          <h4>Bankverbindung</h4>
+          <div>Banco Sabadell</div>
+          <div>IBAN: ES9300810159690001802781</div>
+          <div>BIC: BSABESBB</div>
+        </div>
+      </div>
     </div>
   </div>
 </body>
