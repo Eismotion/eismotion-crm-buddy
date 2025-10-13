@@ -32,6 +32,9 @@ export const Settings = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const importInputRef = useRef<HTMLInputElement>(null);
   const templateUploadRef = useRef<HTMLInputElement>(null);
+  const templateImageInputRef = useRef<HTMLInputElement>(null);
+  const templateTextareaRef = useRef<HTMLTextAreaElement>(null);
+  const [insertingImage, setInsertingImage] = useState(false);
 
   useEffect(() => {
     loadAssets();
@@ -337,6 +340,76 @@ export const Settings = () => {
       console.error('Upload error:', error);
       toast.error('Fehler beim Hochladen: ' + error.message);
       setUploading(false);
+    }
+  };
+
+  // Fügt einen Snippet an der Cursor-Position im HTML-Editor ein
+  const insertAtCursor = (snippet: string) => {
+    const el = templateTextareaRef.current;
+    if (!el) {
+      setTemplateHtml((prev) => prev + snippet);
+      return;
+    }
+    const start = el.selectionStart ?? templateHtml.length;
+    const end = el.selectionEnd ?? start;
+    const before = templateHtml.slice(0, start);
+    const after = templateHtml.slice(end);
+    const next = before + snippet + after;
+    setTemplateHtml(next);
+    setTimeout(() => {
+      const pos = start + snippet.length;
+      el.focus();
+      el.setSelectionRange(pos, pos);
+    }, 0);
+  };
+
+  // Bild hochladen und direkt in das HTML-Template einfügen
+  const handleTemplateImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.match(/^image\/(png|jpg|jpeg|svg\+xml)$/)) {
+      toast.error('Ungültiges Dateiformat. Erlaubt: PNG, JPG, SVG');
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('Datei ist zu groß. Maximale Größe: 5MB');
+      return;
+    }
+
+    setInsertingImage(true);
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('category', 'Templates');
+      formData.append('name', file.name);
+
+      const { data, error } = await supabase.functions.invoke('upload-design-asset', {
+        body: formData,
+      });
+
+      if (error) throw error;
+
+      const asset: any = (data as any)?.asset || (data as any);
+      const url = asset?.file_url;
+      if (!url) {
+        toast.warning('Bild hochgeladen, aber URL nicht erhalten. Bitte Bild-Bibliothek verwenden.');
+      } else {
+        const snippet = `<img src="${url}" alt="${file.name}" style="max-width:100%;height:auto;" />`;
+        insertAtCursor(snippet);
+        toast.success('Bild eingefügt. Sie können die Position im HTML anpassen.');
+      }
+
+      // Assets-Liste aktualisieren
+      loadAssets();
+    } catch (err: any) {
+      console.error('Template image upload error:', err);
+      toast.error('Fehler beim Hochladen: ' + (err.message || 'Unbekannter Fehler'));
+    } finally {
+      setInsertingImage(false);
+      if (templateImageInputRef.current) {
+        templateImageInputRef.current.value = '';
+      }
     }
   };
 
@@ -663,15 +736,37 @@ export const Settings = () => {
               </div>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="template-html">HTML Template</Label>
+              <div className="flex items-center justify-between">
+                <Label htmlFor="template-html">HTML Template</Label>
+                <div className="flex items-center gap-2">
+                  <input
+                    ref={templateImageInputRef}
+                    type="file"
+                    accept="image/png,image/jpg,image/jpeg,image/svg+xml"
+                    onChange={handleTemplateImageUpload}
+                    className="hidden"
+                  />
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => templateImageInputRef.current?.click()}
+                    disabled={insertingImage}
+                  >
+                    <Upload className="h-4 w-4 mr-2" />
+                    {insertingImage ? 'Lädt…' : 'Design hochladen'}
+                  </Button>
+                </div>
+              </div>
               <Textarea
                 id="template-html"
+                ref={templateTextareaRef}
                 value={templateHtml}
                 onChange={(e) => setTemplateHtml(e.target.value)}
                 placeholder="<div>...</div>"
                 className="font-mono text-sm"
                 rows={12}
               />
+              <p className="text-xs text-muted-foreground">Das Bild wird am Cursor als &lt;img&gt;-Tag eingefügt. Sie können es anschließend im HTML/CSS platzieren.</p>
             </div>
           </div>
           <DialogFooter>
