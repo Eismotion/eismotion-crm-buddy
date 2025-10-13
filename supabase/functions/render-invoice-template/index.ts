@@ -97,20 +97,29 @@ serve(async (req) => {
 
     // Führendes IMG in Hintergrundbild umwandeln (falls Nutzer ein Bild oben eingefügt hat)
     try {
-      const leadingImgMatch = html.match(/^\s*<img[^>]*src=["']([^"']+)["'][^>]*>/i);
-      if (leadingImgMatch) {
-        const imgTag = leadingImgMatch[0];
-        const imgUrl = leadingImgMatch[1];
-        // Entferne das IMG aus dem HTML, damit es nicht vor dem Dokument gerendert wird
-        html = html.replace(imgTag, '');
-        // Erzwinge das Bild als Header-Hintergrund und stelle sicher, dass Texte im Vordergrund bleiben
+      // Suche nach einem IMG vor dem ersten <!DOCTYPE> oder <html>
+      const firstDocIndex = html.search(/<!DOCTYPE|<html/i);
+      const prefix = firstDocIndex > -1 ? html.slice(0, firstDocIndex) : html;
+      const body = firstDocIndex > -1 ? html.slice(firstDocIndex) : '';
+      const imgMatch = prefix.match(/<img[^>]*src=["']([^"']+)["'][^>]*>/i);
+      if (imgMatch) {
+        const imgUrl = imgMatch[1];
+        // Entferne das gefundene Bild aus dem Prefix
+        const cleanedPrefix = prefix.replace(imgMatch[0], '');
+        html = (firstDocIndex > -1 ? cleanedPrefix + body : cleanedPrefix);
+        // Erzwinge Hintergrund im Header und zusätzlich als ::before-Fallback
         css += `
           .header{background-image:url('${imgUrl}') !important;background-size:cover;background-position:center;}
           .page{position:relative;}
+          .page::before{content:"";position:absolute;inset:0 0 auto 0;height:230px;background:url('${imgUrl}') center/cover no-repeat;z-index:0;}
           .top-address,.content,.footer,.footer-bar{position:relative;z-index:1;background:#fff;}
         `;
+        console.log('Applied uploaded image as background:', imgUrl);
       }
-    } catch (_) { /* noop */ }
+    } catch (err) {
+      const msg = (err as any)?.message ?? String(err);
+      console.log('IMG transform skipped:', msg);
+    }
     
     // Alle Template-Variablen ersetzen
     html = html.replace(/{{company_name}}/g, 'Eismotion');
