@@ -257,14 +257,37 @@ export const InvoiceDesignStudio = () => {
 
       if (error) throw error as any;
       const html = (data as any)?.html || (typeof data === 'string' ? data : template.html_template);
-      // Ensure root-relative assets like /templates/... resolve inside srcDoc
+      // Base href für root-relative Assets + führendes IMG als Hintergrund umwandeln
       const ensureBase = (raw: string) => {
         if (!raw) return raw;
-        if (raw.includes('<base ')) return raw;
-        if (raw.includes('</head>')) return raw.replace('</head>', '<base href="/" />\n</head>');
-        return `<head><base href="/" /></head>${raw}`;
+        if (!raw.includes('<base ')) {
+          raw = raw.includes('</head>') ? raw.replace('</head>', '<base href="/" />\n</head>') : `<head><base href="/" /></head>${raw}`;
+        }
+        return raw;
       };
-      setPreviewHtml(ensureBase(html));
+      const transformLeadingImage = (raw: string) => {
+        try {
+          const docIdx = raw.search(/<!DOCTYPE|<html/i);
+          const prefix = docIdx > -1 ? raw.slice(0, docIdx) : raw;
+          const body = docIdx > -1 ? raw.slice(docIdx) : '';
+          const m = prefix.match(/<img[^>]*src=["']([^"']+)["'][^>]*>/i);
+          if (!m) return raw;
+          const url = m[1];
+          const cleaned = (docIdx > -1 ? prefix.replace(m[0], '') + body : raw.replace(m[0], ''));
+          const css = `.header{background-image:url('${url}') !important;background-size:cover;background-position:center;}
+.page{position:relative;}
+.page::before{content:"";position:absolute;inset:0 0 auto 0;height:230px;background:url('${url}') center/cover no-repeat;z-index:0;}
+.top-address,.content,.footer,.footer-bar{position:relative;z-index:1;background:transparent;}`;
+          const inject = (htmlStr: string, cssStr: string) => htmlStr.includes('</head>')
+            ? htmlStr.replace('</head>', `<style>${cssStr}</style></head>`)
+            : `<head><style>${cssStr}</style></head>${htmlStr}`;
+          return inject(cleaned, css);
+        } catch {
+          return raw;
+        }
+      };
+      const processed = transformLeadingImage(ensureBase(html));
+      setPreviewHtml(processed);
     } catch (err) {
       console.warn('Preview render failed, falling back to raw template:', err);
       setPreviewHtml(template.html_template);
