@@ -35,13 +35,13 @@ export default function InvoicePDF({ invoiceData, templateName = "Eismotion – 
   const [loading, setLoading] = useState(false);
   const pdfRef = useRef<HTMLDivElement>(null);
 
-  // Hintergrund laden (aus Supabase)
+  // Hintergrund laden (aus Supabase background_base64 Feld)
   useEffect(() => {
     const loadTemplate = async () => {
       try {
         const { data, error } = await supabase
           .from("invoice_templates")
-          .select("html_template, css_styles")
+          .select("background_base64")
           .eq("name", templateName)
           .single();
 
@@ -50,15 +50,9 @@ export default function InvoicePDF({ invoiceData, templateName = "Eismotion – 
           return;
         }
 
-        // Extrahiere Base64 aus CSS oder HTML
-        const htmlContent = data?.html_template || "";
-        const cssContent = data?.css_styles || "";
-        const combined = htmlContent + cssContent;
-        
-        const base64Match = combined.match(/url\(['"]?(data:image\/[^;]+;base64,[^'")\s]+)['"]?\)/);
-        if (base64Match) {
-          setBackgroundBase64(base64Match[1]);
-          console.log("Background Base64 loaded from template");
+        if (data?.background_base64) {
+          setBackgroundBase64(data.background_base64);
+          console.log("Background Base64 loaded from DB field");
         }
       } catch (err) {
         console.error("Error loading template:", err);

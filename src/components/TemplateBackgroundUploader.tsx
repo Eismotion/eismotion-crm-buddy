@@ -58,30 +58,11 @@ export default function TemplateBackgroundUploader({
 
       if (fetchError) throw fetchError;
 
-      // Update CSS mit Base64-Hintergrundbild
-      let cssStyles = template?.css_styles || "";
-      
-      // Entferne alte background-image Regeln
-      cssStyles = cssStyles.replace(/background-image:\s*url\([^)]+\)\s*;?/gi, "");
-      
-      // Füge neues Base64-Hintergrundbild hinzu
-      const newBgRule = `
-    .page-container,
-    .page,
-    body {
-      background-image: url('${base64}') !important;
-      background-size: cover !important;
-      background-repeat: no-repeat !important;
-      background-position: top center !important;
-    }`;
-      
-      cssStyles += newBgRule;
-
-      // Speichere aktualisiertes Template
+      // Speichere Base64 direkt im neuen Feld background_base64
       const { error: updateError } = await supabase
         .from("invoice_templates")
         .update({ 
-          css_styles: cssStyles,
+          background_base64: base64,
           updated_at: new Date().toISOString()
         })
         .eq("name", templateName);

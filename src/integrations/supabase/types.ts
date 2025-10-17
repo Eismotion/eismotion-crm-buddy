@@ -379,6 +379,7 @@ export type Database = {
       invoice_templates: {
         Row: {
           active: boolean | null
+          background_base64: string | null
           category: string | null
           colors: Json | null
           created_at: string | null
@@ -400,6 +401,7 @@ export type Database = {
         }
         Insert: {
           active?: boolean | null
+          background_base64?: string | null
           category?: string | null
           colors?: Json | null
           created_at?: string | null
@@ -421,6 +423,7 @@ export type Database = {
         }
         Update: {
           active?: boolean | null
+          background_base64?: string | null
           category?: string | null
           colors?: Json | null
           created_at?: string | null
