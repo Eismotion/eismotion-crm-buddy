@@ -314,8 +314,9 @@ export const InvoiceDesignStudio = () => {
       
       setTemplates(sortedTemplates);
       if (sortedTemplates.length > 0) {
-        // Wähle automatisch das erste (passendste) Template
-        setSelectedTemplate(sortedTemplates[0]);
+        // Bevorzugt das Template "Eismotion – Headerbild" vorauswählen
+        const preferred = sortedTemplates.find(t => t.name === 'Eismotion – Headerbild');
+        setSelectedTemplate(preferred || sortedTemplates[0]);
       }
     } catch (error) {
       console.error('Error loading templates:', error);
@@ -372,6 +373,33 @@ export const InvoiceDesignStudio = () => {
         const next = rawHtml.replace(bgRegex, `background-image: url('${dataUrl}')`);
         return { html: next, changed: true } as const;
       };
+
+      // Für das Template "Eismotion – Headerbild" direkt lokal rendern und Bild als Base64 einbetten
+      if (template.name === 'Eismotion – Headerbild') {
+        const ensureBaseLocal = (raw: string) => {
+          if (!raw) return raw;
+          if (!raw.includes('<base ')) {
+            raw = raw.includes('</head>') ? raw.replace('</head>', '<base href="/" />\n</head>') : `<head><base href="/" /></head>${raw}`;
+          }
+          return raw;
+        };
+        const raw = template.html_template;
+        const processedLocal = ensureBaseLocal(raw);
+        const { html: inlinedLocal, changed: changedLocal } = await inlineBackgroundImage(processedLocal);
+        if (changedLocal) {
+          try {
+            await supabase
+              .from('invoice_templates')
+              .update({ html_template: inlinedLocal })
+              .eq('id', template.id);
+          } catch (e) {
+            console.warn('Persisting base64 template failed (non-blocking):', e);
+          }
+        }
+        setPreviewHtml(inlinedLocal);
+        setPreviewLoading(false);
+        return;
+      }
 
       const body = {
         templateId: template.id,
