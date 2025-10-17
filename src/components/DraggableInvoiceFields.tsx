@@ -69,9 +69,9 @@ export default function DraggableInvoiceFields({
     const loadPositions = async () => {
       try {
         const { data, error } = await supabase
-          .from("invoice_field_positions")
+          .from("invoice_fields")
           .select("*")
-          .eq("template_name", templateName);
+          .eq("template_id", templateName);
         
         if (error) {
           console.error("Error loading positions:", error);
@@ -81,7 +81,7 @@ export default function DraggableInvoiceFields({
         if (data && data.length > 0) {
           setFields((prev) =>
             prev.map((f) => {
-              const saved = data.find((d) => d.field_name === f.field_name);
+              const saved = data.find((d) => d.key_name === f.field_name);
               return saved ? { ...f, x: Number(saved.x), y: Number(saved.y) } : f;
             })
           );
@@ -106,14 +106,13 @@ export default function DraggableInvoiceFields({
     (async () => {
       try {
         const { error } = await supabase
-          .from("invoice_field_positions")
+          .from("invoice_fields")
           .upsert({
-            template_name: templateName,
-            field_name: fieldName,
+            template_id: templateName,
+            key_name: fieldName,
+            label: fields.find(f => f.field_name === fieldName)?.label || fieldName,
             x,
             y,
-          }, {
-            onConflict: "template_name,field_name"
           });
 
         if (error) {
@@ -132,9 +131,9 @@ export default function DraggableInvoiceFields({
   const handleReset = async () => {
     try {
       const { error } = await supabase
-        .from("invoice_field_positions")
+        .from("invoice_fields")
         .delete()
-        .eq("template_name", templateName);
+        .eq("template_id", templateName);
 
       if (error) {
         console.error("Error resetting layout:", error);

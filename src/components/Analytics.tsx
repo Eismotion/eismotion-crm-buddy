@@ -27,11 +27,10 @@ export const Analytics = () => {
   const loadAnalytics = async () => {
     setLoading(true);
     try {
-      const [statsRes, revenueRes, productsRes, designsRes, overdueRes] = await Promise.all([
+      const [statsRes, revenueRes, productsRes, overdueRes] = await Promise.all([
         supabase.from('dashboard_stats').select('*').single(),
         supabase.from('monthly_revenue').select('*').order('month', { ascending: true }).limit(12),
         supabase.from('top_products').select('*').order('total_revenue', { ascending: false }).limit(3),
-        supabase.from('template_performance').select('*').order('usage_count', { ascending: false }).limit(3),
         supabase.from('invoices').select('*, customer:customers(name)').eq('status', 'überfällig')
       ]);
 
@@ -78,15 +77,8 @@ export const Analytics = () => {
         );
       }
 
-      if (designsRes.data) {
-        setPopularDesigns(
-          designsRes.data.map(d => ({
-            name: d.name,
-            uses: d.usage_count || 0,
-            feedback: Math.round(Number(d.avg_rating) || 85)
-          }))
-        );
-      }
+      // Design templates data removed - table no longer exists
+      setPopularDesigns([]);
 
       if (overdueRes.data) {
         setOverdueInvoices(overdueRes.data);
