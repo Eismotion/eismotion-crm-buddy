@@ -32,6 +32,7 @@ interface InvoiceTemplate {
   };
   html_template: string;
   thumbnail_base64?: string;
+  has_header_text?: boolean;
 }
 
 export const InvoiceDesignStudio = () => {
@@ -181,7 +182,8 @@ export const InvoiceDesignStudio = () => {
 <body>
   <div class="page-container">
     <div class="content-wrapper">
-      <div class="top-address">Eismotion.de – Juan Chabas 4 – 03700 Denia</div>
+      <!-- Header-Adresse nur anzeigen, wenn nicht im Template-Bild enthalten -->
+      <!-- Für Templates mit Hintergrundbild (has_header_text=true) wird diese Zeile ausgeblendet -->
       
       <div class="content">
         <h1 class="title">Rechnung {{invoice_number}}</h1>

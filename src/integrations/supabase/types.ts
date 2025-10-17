@@ -416,6 +416,7 @@ export type Database = {
           created_by: string | null
           css_styles: string | null
           fonts: Json | null
+          has_header_text: boolean | null
           html_template: string
           id: string
           is_default: boolean | null
@@ -439,6 +440,7 @@ export type Database = {
           created_by?: string | null
           css_styles?: string | null
           fonts?: Json | null
+          has_header_text?: boolean | null
           html_template: string
           id?: string
           is_default?: boolean | null
@@ -462,6 +464,7 @@ export type Database = {
           created_by?: string | null
           css_styles?: string | null
           fonts?: Json | null
+          has_header_text?: boolean | null
           html_template?: string
           id?: string
           is_default?: boolean | null
