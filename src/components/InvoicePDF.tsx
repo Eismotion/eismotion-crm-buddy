@@ -109,6 +109,7 @@ export default function InvoicePDF({ invoiceData, templateName = "Eismotion – 
         width: "210mm",
         minHeight: "297mm",
         position: "relative" as const,
+        backgroundColor: "transparent",
       }
     : {
         width: "210mm",
@@ -123,123 +124,130 @@ export default function InvoicePDF({ invoiceData, templateName = "Eismotion – 
       <div 
         ref={pdfRef} 
         style={bgStyle} 
-        className="shadow-2xl bg-white"
+        className="shadow-2xl"
       >
-        {/* Rechnungsdaten - Absolute Positionierung */}
+        {/* Content Layer - darüber liegend */}
         <div style={{
           position: "absolute",
-          top: "80mm",
-          left: "20mm",
-          right: "20mm",
-          fontSize: "11pt",
-          lineHeight: "1.6",
-          color: "#1a1a1a"
+          inset: 0,
+          zIndex: 10,
         }}>
-          {/* Rechnungskopf */}
-          <div style={{ marginBottom: "8mm" }}>
-            <p style={{ margin: "2mm 0", fontWeight: "bold", fontSize: "13pt" }}>
-              Rechnung Nr. {invoiceData.invoice_number}
-            </p>
-            <p style={{ margin: "1mm 0" }}>
-              Datum: {new Date(invoiceData.invoice_date).toLocaleDateString("de-DE")}
-            </p>
-          </div>
-
-          {/* Kundeninfo */}
-          <div style={{ marginBottom: "10mm" }}>
-            <p style={{ fontWeight: "bold", margin: "1mm 0" }}>{invoiceData.customer_name}</p>
-            {invoiceData.customer_address && (
-              <p style={{ margin: "1mm 0" }}>{invoiceData.customer_address}</p>
-            )}
-            {(invoiceData.customer_postal_code || invoiceData.customer_city) && (
+          {/* Rechnungsdaten */}
+          <div style={{
+            position: "absolute",
+            top: "80mm",
+            left: "20mm",
+            right: "20mm",
+            fontSize: "11pt",
+            lineHeight: "1.6",
+            color: "#1a1a1a"
+          }}>
+            {/* Rechnungskopf */}
+            <div style={{ marginBottom: "8mm" }}>
+              <p style={{ margin: "2mm 0", fontWeight: "bold", fontSize: "13pt" }}>
+                Rechnung Nr. {invoiceData.invoice_number}
+              </p>
               <p style={{ margin: "1mm 0" }}>
-                {invoiceData.customer_postal_code} {invoiceData.customer_city}
+                Datum: {new Date(invoiceData.invoice_date).toLocaleDateString("de-DE")}
               </p>
+            </div>
+
+            {/* Kundeninfo */}
+            <div style={{ marginBottom: "10mm" }}>
+              <p style={{ fontWeight: "bold", margin: "1mm 0" }}>{invoiceData.customer_name}</p>
+              {invoiceData.customer_address && (
+                <p style={{ margin: "1mm 0" }}>{invoiceData.customer_address}</p>
+              )}
+              {(invoiceData.customer_postal_code || invoiceData.customer_city) && (
+                <p style={{ margin: "1mm 0" }}>
+                  {invoiceData.customer_postal_code} {invoiceData.customer_city}
+                </p>
+              )}
+            </div>
+
+            {/* Positionen */}
+            <table style={{ 
+              width: "100%", 
+              borderCollapse: "collapse",
+              marginBottom: "8mm",
+              fontSize: "10pt"
+            }}>
+              <thead>
+                <tr style={{ 
+                  borderBottom: "2px solid #333",
+                  fontWeight: "bold"
+                }}>
+                  <th style={{ textAlign: "left", padding: "3mm 0" }}>Artikel</th>
+                  <th style={{ textAlign: "center", padding: "3mm 0" }}>Menge</th>
+                  <th style={{ textAlign: "right", padding: "3mm 0" }}>Einzelpreis</th>
+                  <th style={{ textAlign: "right", padding: "3mm 0" }}>Gesamt</th>
+                </tr>
+              </thead>
+              <tbody>
+                {invoiceData.items.map((item, i) => (
+                  <tr key={i} style={{ borderBottom: "1px solid #ddd" }}>
+                    <td style={{ padding: "2mm 0" }}>{item.description}</td>
+                    <td style={{ textAlign: "center", padding: "2mm 0" }}>{item.quantity}</td>
+                    <td style={{ textAlign: "right", padding: "2mm 0" }}>
+                      {item.unit_price.toFixed(2)} €
+                    </td>
+                    <td style={{ textAlign: "right", padding: "2mm 0" }}>
+                      {item.total_price.toFixed(2)} €
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+
+            {/* Summen */}
+            <div style={{ 
+              marginLeft: "auto", 
+              width: "60mm",
+              fontSize: "10pt"
+            }}>
+              <div style={{ 
+                display: "flex", 
+                justifyContent: "space-between",
+                padding: "1mm 0"
+              }}>
+                <span>Zwischensumme:</span>
+                <span>{invoiceData.subtotal.toFixed(2)} €</span>
+              </div>
+              <div style={{ 
+                display: "flex", 
+                justifyContent: "space-between",
+                padding: "1mm 0"
+              }}>
+                <span>MwSt. ({invoiceData.tax_rate}%):</span>
+                <span>{invoiceData.tax_amount.toFixed(2)} €</span>
+              </div>
+              <div style={{ 
+                display: "flex", 
+                justifyContent: "space-between",
+                padding: "3mm 0",
+                borderTop: "2px solid #333",
+                fontWeight: "bold",
+                fontSize: "12pt"
+              }}>
+                <span>Gesamtbetrag:</span>
+                <span>{invoiceData.total_amount.toFixed(2)} €</span>
+              </div>
+            </div>
+
+            {/* Custom Message */}
+            {invoiceData.custom_message && (
+              <div style={{ 
+                marginTop: "10mm",
+                padding: "5mm",
+                background: "#f9f9f9",
+                borderLeft: "3px solid #333"
+              }}>
+                <p style={{ margin: 0, fontSize: "10pt" }}>
+                  {invoiceData.custom_message}
+                </p>
+              </div>
             )}
           </div>
-
-          {/* Positionen */}
-          <table style={{ 
-            width: "100%", 
-            borderCollapse: "collapse",
-            marginBottom: "8mm",
-            fontSize: "10pt"
-          }}>
-            <thead>
-              <tr style={{ 
-                borderBottom: "2px solid #333",
-                fontWeight: "bold"
-              }}>
-                <th style={{ textAlign: "left", padding: "3mm 0" }}>Artikel</th>
-                <th style={{ textAlign: "center", padding: "3mm 0" }}>Menge</th>
-                <th style={{ textAlign: "right", padding: "3mm 0" }}>Einzelpreis</th>
-                <th style={{ textAlign: "right", padding: "3mm 0" }}>Gesamt</th>
-              </tr>
-            </thead>
-            <tbody>
-              {invoiceData.items.map((item, i) => (
-                <tr key={i} style={{ borderBottom: "1px solid #ddd" }}>
-                  <td style={{ padding: "2mm 0" }}>{item.description}</td>
-                  <td style={{ textAlign: "center", padding: "2mm 0" }}>{item.quantity}</td>
-                  <td style={{ textAlign: "right", padding: "2mm 0" }}>
-                    {item.unit_price.toFixed(2)} €
-                  </td>
-                  <td style={{ textAlign: "right", padding: "2mm 0" }}>
-                    {item.total_price.toFixed(2)} €
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-
-          {/* Summen */}
-          <div style={{ 
-            marginLeft: "auto", 
-            width: "60mm",
-            fontSize: "10pt"
-          }}>
-            <div style={{ 
-              display: "flex", 
-              justifyContent: "space-between",
-              padding: "1mm 0"
-            }}>
-              <span>Zwischensumme:</span>
-              <span>{invoiceData.subtotal.toFixed(2)} €</span>
-            </div>
-            <div style={{ 
-              display: "flex", 
-              justifyContent: "space-between",
-              padding: "1mm 0"
-            }}>
-              <span>MwSt. ({invoiceData.tax_rate}%):</span>
-              <span>{invoiceData.tax_amount.toFixed(2)} €</span>
-            </div>
-            <div style={{ 
-              display: "flex", 
-              justifyContent: "space-between",
-              padding: "3mm 0",
-              borderTop: "2px solid #333",
-              fontWeight: "bold",
-              fontSize: "12pt"
-            }}>
-              <span>Gesamtbetrag:</span>
-              <span>{invoiceData.total_amount.toFixed(2)} €</span>
-            </div>
-          </div>
-
-          {/* Custom Message */}
-          {invoiceData.custom_message && (
-            <div style={{ 
-              marginTop: "10mm",
-              padding: "5mm",
-              background: "#f9f9f9",
-              borderLeft: "3px solid #333"
-            }}>
-              <p style={{ margin: 0, fontSize: "10pt" }}>
-                {invoiceData.custom_message}
-              </p>
-            </div>
-          )}
         </div>
       </div>
 
