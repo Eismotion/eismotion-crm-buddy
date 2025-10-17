@@ -837,11 +837,13 @@ export const InvoiceDesignStudio = () => {
                   <CardContent>
                     <p className="text-xs text-muted-foreground mb-4">
                       Verschieben Sie die Felder mit der Maus, um das Layout anzupassen. 
-                      Die Positionen werden automatisch gespeichert.
+                      Die Positionen werden automatisch gespeichert. Wechseln Sie in den Vorschau-Modus, 
+                      um das finale Layout zu sehen.
                     </p>
-                    <div className="border rounded-lg overflow-hidden">
-                      <DraggableInvoiceFields templateName={selectedTemplate.name} />
-                    </div>
+                    <DraggableInvoiceFields 
+                      templateName={selectedTemplate.name}
+                      showBackground={true}
+                    />
                   </CardContent>
                 </Card>
               </TabsContent>
