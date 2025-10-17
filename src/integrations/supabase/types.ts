@@ -161,20 +161,6 @@ export type Database = {
             referencedRelation: "invoices"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "design_analytics_template_id_fkey"
-            columns: ["template_id"]
-            isOneToOne: false
-            referencedRelation: "invoice_templates"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "design_analytics_template_id_fkey"
-            columns: ["template_id"]
-            isOneToOne: false
-            referencedRelation: "template_performance"
-            referencedColumns: ["id"]
-          },
         ]
       }
       design_assets: {
@@ -321,35 +307,43 @@ export type Database = {
         }
         Relationships: []
       }
-      invoice_field_positions: {
+      invoice_fields: {
         Row: {
           created_at: string | null
-          field_name: string
           id: string
-          template_name: string
-          updated_at: string | null
-          x: number
-          y: number
+          key_name: string | null
+          label: string | null
+          template_id: string | null
+          x: number | null
+          y: number | null
         }
         Insert: {
           created_at?: string | null
-          field_name: string
           id?: string
-          template_name: string
-          updated_at?: string | null
-          x?: number
-          y?: number
+          key_name?: string | null
+          label?: string | null
+          template_id?: string | null
+          x?: number | null
+          y?: number | null
         }
         Update: {
           created_at?: string | null
-          field_name?: string
           id?: string
-          template_name?: string
-          updated_at?: string | null
-          x?: number
-          y?: number
+          key_name?: string | null
+          label?: string | null
+          template_id?: string | null
+          x?: number | null
+          y?: number | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "invoice_fields_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "invoice_templates"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       invoice_items: {
         Row: {
@@ -408,76 +402,25 @@ export type Database = {
       }
       invoice_templates: {
         Row: {
-          active: boolean | null
           background_base64: string | null
           category: string | null
-          colors: Json | null
           created_at: string | null
-          created_by: string | null
-          css_styles: string | null
-          fonts: Json | null
-          has_header_text: boolean | null
-          html_template: string
           id: string
-          is_default: boolean | null
-          is_public: boolean | null
-          layout_config: Json | null
-          name: string
-          occasion: string | null
-          season: string | null
-          theme: string | null
-          thumbnail_base64: string | null
-          thumbnail_url: string | null
-          updated_at: string | null
-          usage_count: number | null
+          name: string | null
         }
         Insert: {
-          active?: boolean | null
           background_base64?: string | null
           category?: string | null
-          colors?: Json | null
           created_at?: string | null
-          created_by?: string | null
-          css_styles?: string | null
-          fonts?: Json | null
-          has_header_text?: boolean | null
-          html_template: string
           id?: string
-          is_default?: boolean | null
-          is_public?: boolean | null
-          layout_config?: Json | null
-          name: string
-          occasion?: string | null
-          season?: string | null
-          theme?: string | null
-          thumbnail_base64?: string | null
-          thumbnail_url?: string | null
-          updated_at?: string | null
-          usage_count?: number | null
+          name?: string | null
         }
         Update: {
-          active?: boolean | null
           background_base64?: string | null
           category?: string | null
-          colors?: Json | null
           created_at?: string | null
-          created_by?: string | null
-          css_styles?: string | null
-          fonts?: Json | null
-          has_header_text?: boolean | null
-          html_template?: string
           id?: string
-          is_default?: boolean | null
-          is_public?: boolean | null
-          layout_config?: Json | null
-          name?: string
-          occasion?: string | null
-          season?: string | null
-          theme?: string | null
-          thumbnail_base64?: string | null
-          thumbnail_url?: string | null
-          updated_at?: string | null
-          usage_count?: number | null
+          name?: string | null
         }
         Relationships: []
       }
@@ -553,20 +496,6 @@ export type Database = {
             referencedRelation: "customers"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "invoices_template_id_fkey"
-            columns: ["template_id"]
-            isOneToOne: false
-            referencedRelation: "invoice_templates"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "invoices_template_id_fkey"
-            columns: ["template_id"]
-            isOneToOne: false
-            referencedRelation: "template_performance"
-            referencedColumns: ["id"]
-          },
         ]
       }
       products: {
@@ -640,69 +569,6 @@ export type Database = {
           },
         ]
       }
-      template_elements: {
-        Row: {
-          content: string | null
-          created_at: string | null
-          element_type: string
-          height: number | null
-          id: string
-          is_editable: boolean | null
-          is_required: boolean | null
-          position_x: number | null
-          position_y: number | null
-          styles: Json | null
-          template_id: string | null
-          width: number | null
-          z_index: number | null
-        }
-        Insert: {
-          content?: string | null
-          created_at?: string | null
-          element_type: string
-          height?: number | null
-          id?: string
-          is_editable?: boolean | null
-          is_required?: boolean | null
-          position_x?: number | null
-          position_y?: number | null
-          styles?: Json | null
-          template_id?: string | null
-          width?: number | null
-          z_index?: number | null
-        }
-        Update: {
-          content?: string | null
-          created_at?: string | null
-          element_type?: string
-          height?: number | null
-          id?: string
-          is_editable?: boolean | null
-          is_required?: boolean | null
-          position_x?: number | null
-          position_y?: number | null
-          styles?: Json | null
-          template_id?: string | null
-          width?: number | null
-          z_index?: number | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "template_elements_template_id_fkey"
-            columns: ["template_id"]
-            isOneToOne: false
-            referencedRelation: "invoice_templates"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "template_elements_template_id_fkey"
-            columns: ["template_id"]
-            isOneToOne: false
-            referencedRelation: "template_performance"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       user_roles: {
         Row: {
           created_at: string | null
@@ -761,20 +627,6 @@ export type Database = {
           file_url: string | null
           id: string | null
           name: string | null
-          usage_count: number | null
-        }
-        Relationships: []
-      }
-      template_performance: {
-        Row: {
-          avg_rating: number | null
-          category: string | null
-          id: string | null
-          name: string | null
-          season: string | null
-          theme: string | null
-          total_invoices: number | null
-          total_leads: number | null
           usage_count: number | null
         }
         Relationships: []
