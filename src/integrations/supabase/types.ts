@@ -425,6 +425,7 @@ export type Database = {
           occasion: string | null
           season: string | null
           theme: string | null
+          thumbnail_base64: string | null
           thumbnail_url: string | null
           updated_at: string | null
           usage_count: number | null
@@ -447,6 +448,7 @@ export type Database = {
           occasion?: string | null
           season?: string | null
           theme?: string | null
+          thumbnail_base64?: string | null
           thumbnail_url?: string | null
           updated_at?: string | null
           usage_count?: number | null
@@ -469,6 +471,7 @@ export type Database = {
           occasion?: string | null
           season?: string | null
           theme?: string | null
+          thumbnail_base64?: string | null
           thumbnail_url?: string | null
           updated_at?: string | null
           usage_count?: number | null

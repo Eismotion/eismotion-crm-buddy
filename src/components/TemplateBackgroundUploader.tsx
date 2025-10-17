@@ -49,6 +49,10 @@ export default function TemplateBackgroundUploader({
       const base64 = await toBase64(file);
       console.log("Base64 conversion complete, length:", base64.length);
 
+      // Erstelle Thumbnail für Vorschau
+      const thumbnail = await createThumbnail(file);
+      console.log("Thumbnail created");
+
       // Lade aktuelles Template
       const { data: template, error: fetchError } = await supabase
         .from("invoice_templates")
@@ -58,11 +62,12 @@ export default function TemplateBackgroundUploader({
 
       if (fetchError) throw fetchError;
 
-      // Speichere Base64 direkt im neuen Feld background_base64
+      // Speichere Base64 und Thumbnail
       const { error: updateError } = await supabase
         .from("invoice_templates")
         .update({ 
           background_base64: base64,
+          thumbnail_base64: thumbnail,
           updated_at: new Date().toISOString()
         })
         .eq("name", templateName);
@@ -79,6 +84,37 @@ export default function TemplateBackgroundUploader({
       // Reset input
       event.target.value = "";
     }
+  };
+
+  // Erstelle ein verkleinertes Thumbnail für die Vorschau
+  const createThumbnail = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          const ctx = canvas.getContext('2d');
+          if (!ctx) {
+            reject(new Error('Canvas context not available'));
+            return;
+          }
+
+          // Thumbnail-Größe (max 300px Breite, A4-Verhältnis beibehalten)
+          const maxWidth = 300;
+          const scale = maxWidth / img.width;
+          canvas.width = maxWidth;
+          canvas.height = img.height * scale;
+
+          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+          resolve(canvas.toDataURL(file.type));
+        };
+        img.onerror = reject;
+        img.src = e.target?.result as string;
+      };
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
   };
 
   return (

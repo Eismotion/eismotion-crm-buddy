@@ -31,6 +31,7 @@ interface InvoiceTemplate {
     accent: string;
   };
   html_template: string;
+  thumbnail_base64?: string;
 }
 
 export const InvoiceDesignStudio = () => {
@@ -229,26 +230,7 @@ export const InvoiceDesignStudio = () => {
         {{/if}}
       </div>
       
-      <div class="footer">
-        <div>
-          <h4>Eismotion.de</h4>
-          <div>Sabrina Caberlotto</div>
-          <div>Carrer Georges Bernanos 60</div>
-          <div>07015 Palma de Mallorca</div>
-        </div>
-        <div>
-          <h4>Kontakt</h4>
-          <div>Tel. +49 151 6333 1700</div>
-          <div>Email: info@eismotion.de</div>
-          <div>Web: www.eismotion.de</div>
-        </div>
-        <div>
-          <h4>Bankverbindung</h4>
-          <div>Banco Sabadell</div>
-          <div>IBAN: ES9300810159690001802781</div>
-          <div>BIC: BSABESBB</div>
-        </div>
-      </div>
+      <!-- Footer mit Kontaktdaten ist bereits im Template-Hintergrundbild enthalten -->
     </div>
   </div>
 </body>
@@ -548,8 +530,16 @@ export const InvoiceDesignStudio = () => {
                       onClick={() => setSelectedTemplate(template)}
                     >
                       <CardContent className="p-4">
-                        <div className="aspect-[3/4] bg-gradient-to-br from-muted to-background rounded mb-2 flex items-center justify-center">
-                          {getCategoryIcon(template.season || '')}
+                        <div className="aspect-[3/4] bg-gradient-to-br from-muted to-background rounded mb-2 flex items-center justify-center overflow-hidden">
+                          {template.thumbnail_base64 ? (
+                            <img 
+                              src={template.thumbnail_base64} 
+                              alt={template.name}
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            getCategoryIcon(template.season || '')
+                          )}
                         </div>
                         <div className="flex items-center justify-between">
                           <span className="font-medium text-sm">{template.name}</span>
@@ -572,8 +562,16 @@ export const InvoiceDesignStudio = () => {
                       onClick={() => setSelectedTemplate(template)}
                     >
                       <CardContent className="p-4">
-                        <div className="aspect-[3/4] bg-gradient-to-br from-muted to-background rounded mb-2 flex items-center justify-center">
-                          <Layout className="h-6 w-6" />
+                        <div className="aspect-[3/4] bg-gradient-to-br from-muted to-background rounded mb-2 flex items-center justify-center overflow-hidden">
+                          {template.thumbnail_base64 ? (
+                            <img 
+                              src={template.thumbnail_base64} 
+                              alt={template.name}
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            <Layout className="h-6 w-6" />
+                          )}
                         </div>
                         <div className="flex items-center justify-between">
                           <span className="font-medium text-sm">{template.name}</span>
@@ -596,8 +594,16 @@ export const InvoiceDesignStudio = () => {
                       onClick={() => setSelectedTemplate(template)}
                     >
                       <CardContent className="p-4">
-                        <div className="aspect-[3/4] bg-gradient-to-br from-muted to-background rounded mb-2 flex items-center justify-center">
-                          <Gift className="h-6 w-6" />
+                        <div className="aspect-[3/4] bg-gradient-to-br from-muted to-background rounded mb-2 flex items-center justify-center overflow-hidden">
+                          {template.thumbnail_base64 ? (
+                            <img 
+                              src={template.thumbnail_base64} 
+                              alt={template.name}
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            <Gift className="h-6 w-6" />
+                          )}
                         </div>
                         <span className="font-medium text-sm">{template.name}</span>
                       </CardContent>
