@@ -9,12 +9,14 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { 
   Palette, Image as ImageIcon, Type, Layout, Save, Eye, 
   ZoomIn, ZoomOut, Maximize2, Upload, Heart, Gift, Sun, 
-  Snowflake, Leaf, Flower
+  Snowflake, Leaf, Flower, FileDown
 } from 'lucide-react';
 import { mockSprueche } from '@/data/mockData';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { getSeasonInfo, sortTemplatesBySeason } from '@/lib/seasonUtils';
+import TemplateBackgroundUploader from './TemplateBackgroundUploader';
+import InvoicePDF from './InvoicePDF';
 
 interface InvoiceTemplate {
   id: string;
@@ -673,7 +675,7 @@ export const InvoiceDesignStudio = () => {
 
           <ScrollArea className="flex-1 overflow-auto">
             <Tabs defaultValue="farben" className="p-4">
-              <TabsList className="grid w-full grid-cols-2">
+              <TabsList className="grid w-full grid-cols-3">
                 <TabsTrigger value="farben">
                   <Palette className="h-4 w-4 mr-2" />
                   Farben
@@ -681,6 +683,10 @@ export const InvoiceDesignStudio = () => {
                 <TabsTrigger value="bilder">
                   <ImageIcon className="h-4 w-4 mr-2" />
                   Bilder
+                </TabsTrigger>
+                <TabsTrigger value="pdf">
+                  <FileDown className="h-4 w-4 mr-2" />
+                  PDF
                 </TabsTrigger>
               </TabsList>
 
@@ -814,6 +820,61 @@ export const InvoiceDesignStudio = () => {
                         <Heart className="h-5 w-5" />
                       </Button>
                     </div>
+                  </CardContent>
+                </Card>
+              </TabsContent>
+
+              <TabsContent value="pdf" className="space-y-6 mt-4">
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-sm">Template-Hintergrund</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <TemplateBackgroundUploader
+                      templateName={selectedTemplate.name}
+                      onUploadComplete={loadTemplates}
+                    />
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-sm">PDF-Export Vorschau</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-xs text-muted-foreground mb-4">
+                      Demo-Rechnung mit aktuellem Template exportieren
+                    </p>
+                    <InvoicePDF 
+                      invoiceData={{
+                        invoice_number: "DEMO-001",
+                        invoice_date: new Date().toISOString(),
+                        customer_name: "Max Mustermann",
+                        customer_address: "Musterstraße 123",
+                        customer_postal_code: "12345",
+                        customer_city: "Musterstadt",
+                        items: [
+                          {
+                            description: "Eismotion Classic 500ml",
+                            quantity: 2,
+                            unit_price: 45.00,
+                            total_price: 90.00
+                          },
+                          {
+                            description: "Eismotion Deluxe 750ml",
+                            quantity: 1,
+                            unit_price: 35.00,
+                            total_price: 35.00
+                          }
+                        ],
+                        subtotal: 125.00,
+                        tax_rate: 19,
+                        tax_amount: 23.75,
+                        total_amount: 148.75,
+                        custom_message: customText || "Vielen Dank für Ihren Einkauf!"
+                      }}
+                      templateName={selectedTemplate.name}
+                    />
                   </CardContent>
                 </Card>
               </TabsContent>
