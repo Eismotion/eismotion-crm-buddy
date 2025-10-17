@@ -332,6 +332,47 @@ export const InvoiceDesignStudio = () => {
   const renderPreview = async (template: InvoiceTemplate) => {
     setPreviewLoading(true);
     try {
+      // Helper: fetch any URL and return as data URL
+      const toDataUrl = async (url: string): Promise<string | null> => {
+        try {
+          // Ensure absolute path for root-relative URLs
+          const absoluteUrl = url.startsWith('http') || url.startsWith('data:')
+            ? url
+            : url.startsWith('/')
+              ? url
+              : `/${url}`;
+          const res = await fetch(absoluteUrl, { cache: 'force-cache' });
+          if (!res.ok) return null;
+          const blob = await res.blob();
+          return await new Promise<string>((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(reader.result as string);
+            reader.onerror = () => reject(reader.error);
+            reader.readAsDataURL(blob);
+          });
+        } catch (e) {
+          console.warn('toDataUrl failed for', url, e);
+          return null;
+        }
+      };
+
+      // Helper: inline first background-image URL as data URL
+      const inlineBackgroundImage = async (rawHtml: string) => {
+        const bgRegex = /background-image:\s*url\(['"]([^'\"]+)['"]\)/i;
+        const m = rawHtml.match(bgRegex);
+        if (!m) return { html: rawHtml, changed: false } as const;
+        const url = m[1];
+        if (url.startsWith('data:image')) return { html: rawHtml, changed: false } as const;
+        let dataUrl = await toDataUrl(url);
+        if (!dataUrl) {
+          // Fallback to bundled template asset if external URL fails
+          dataUrl = await toDataUrl('/templates/eismotion-header-background.png');
+        }
+        if (!dataUrl) return { html: rawHtml, changed: false } as const;
+        const next = rawHtml.replace(bgRegex, `background-image: url('${dataUrl}')`);
+        return { html: next, changed: true } as const;
+      };
+
       const body = {
         templateId: template.id,
         invoiceId: null,
@@ -347,7 +388,7 @@ export const InvoiceDesignStudio = () => {
 
       if (error) throw error as any;
       const html = (data as any)?.html || (typeof data === 'string' ? data : template.html_template);
-      // Base href für root-relative Assets + führendes IMG als Hintergrund umwandeln
+      // Base href for root-relative assets + convert a leading <img> into CSS background if present
       const ensureBase = (raw: string) => {
         if (!raw) return raw;
         if (!raw.includes('<base ')) {
@@ -365,9 +406,9 @@ export const InvoiceDesignStudio = () => {
           const url = m[1];
           const cleaned = (docIdx > -1 ? prefix.replace(m[0], '') + body : raw.replace(m[0], ''));
           const css = `.header{background-image:url('${url}') !important;background-size:cover;background-position:center;}
-.page{position:relative;}
-.page::before{content:"";position:absolute;inset:0 0 auto 0;height:230px;background:url('${url}') center/cover no-repeat;z-index:0;}
-.top-address,.content,.footer,.footer-bar{position:relative;z-index:1;background:transparent;}`;
+ .page{position:relative;}
+ .page::before{content:"";position:absolute;inset:0 0 auto 0;height:230px;background:url('${url}') center/cover no-repeat;z-index:0;}
+ .top-address,.content,.footer,.footer-bar{position:relative;z-index:1;background:transparent;}`;
           const inject = (htmlStr: string, cssStr: string) => htmlStr.includes('</head>')
             ? htmlStr.replace('</head>', `<style>${cssStr}</style></head>`)
             : `<head><style>${cssStr}</style></head>${htmlStr}`;
@@ -376,8 +417,23 @@ export const InvoiceDesignStudio = () => {
           return raw;
         }
       };
+
       const processed = transformLeadingImage(ensureBase(html));
-      setPreviewHtml(processed);
+      const { html: inlinedHtml, changed } = await inlineBackgroundImage(processed);
+
+      // Persist base64-inlined template so it also works outside the studio
+      if (changed && template.name === 'Eismotion – Headerbild') {
+        try {
+          await supabase
+            .from('invoice_templates')
+            .update({ html_template: inlinedHtml })
+            .eq('id', template.id);
+        } catch (e) {
+          console.warn('Persisting base64 template failed (non-blocking):', e);
+        }
+      }
+
+      setPreviewHtml(inlinedHtml);
     } catch (err) {
       console.warn('Preview render failed, falling back to raw template:', err);
       setPreviewHtml(template.html_template);
