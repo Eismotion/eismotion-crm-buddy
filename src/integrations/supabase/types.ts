@@ -321,6 +321,36 @@ export type Database = {
         }
         Relationships: []
       }
+      invoice_field_positions: {
+        Row: {
+          created_at: string | null
+          field_name: string
+          id: string
+          template_name: string
+          updated_at: string | null
+          x: number
+          y: number
+        }
+        Insert: {
+          created_at?: string | null
+          field_name: string
+          id?: string
+          template_name: string
+          updated_at?: string | null
+          x?: number
+          y?: number
+        }
+        Update: {
+          created_at?: string | null
+          field_name?: string
+          id?: string
+          template_name?: string
+          updated_at?: string | null
+          x?: number
+          y?: number
+        }
+        Relationships: []
+      }
       invoice_items: {
         Row: {
           created_at: string | null

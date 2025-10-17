@@ -9,7 +9,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { 
   Palette, Image as ImageIcon, Type, Layout, Save, Eye, 
   ZoomIn, ZoomOut, Maximize2, Upload, Heart, Gift, Sun, 
-  Snowflake, Leaf, Flower, FileDown
+  Snowflake, Leaf, Flower, FileDown, Move
 } from 'lucide-react';
 import { mockSprueche } from '@/data/mockData';
 import { supabase } from '@/integrations/supabase/client';
@@ -17,6 +17,7 @@ import { useToast } from '@/hooks/use-toast';
 import { getSeasonInfo, sortTemplatesBySeason } from '@/lib/seasonUtils';
 import TemplateBackgroundUploader from './TemplateBackgroundUploader';
 import InvoicePDF from './InvoicePDF';
+import DraggableInvoiceFields from './DraggableInvoiceFields';
 
 interface InvoiceTemplate {
   id: string;
@@ -675,7 +676,7 @@ export const InvoiceDesignStudio = () => {
 
           <ScrollArea className="flex-1 overflow-auto">
             <Tabs defaultValue="farben" className="p-4">
-              <TabsList className="grid w-full grid-cols-3">
+              <TabsList className="grid w-full grid-cols-4">
                 <TabsTrigger value="farben">
                   <Palette className="h-4 w-4 mr-2" />
                   Farben
@@ -683,6 +684,10 @@ export const InvoiceDesignStudio = () => {
                 <TabsTrigger value="bilder">
                   <ImageIcon className="h-4 w-4 mr-2" />
                   Bilder
+                </TabsTrigger>
+                <TabsTrigger value="layout">
+                  <Move className="h-4 w-4 mr-2" />
+                  Layout
                 </TabsTrigger>
                 <TabsTrigger value="pdf">
                   <FileDown className="h-4 w-4 mr-2" />
@@ -819,6 +824,23 @@ export const InvoiceDesignStudio = () => {
                       <Button variant="outline" size="icon">
                         <Heart className="h-5 w-5" />
                       </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              </TabsContent>
+
+              <TabsContent value="layout" className="space-y-6 mt-4">
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-sm">Feld-Positionen anpassen</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-xs text-muted-foreground mb-4">
+                      Verschieben Sie die Felder mit der Maus, um das Layout anzupassen. 
+                      Die Positionen werden automatisch gespeichert.
+                    </p>
+                    <div className="border rounded-lg overflow-hidden">
+                      <DraggableInvoiceFields templateName={selectedTemplate.name} />
                     </div>
                   </CardContent>
                 </Card>
