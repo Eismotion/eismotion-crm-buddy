@@ -7,8 +7,10 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';
-import { Upload, FileText, Trash2, Download } from 'lucide-react';
+import { Upload, FileText, Trash2, Download, Wallet } from 'lucide-react';
 import { format } from 'date-fns';
 
 type InvoiceType = 'supplier' | 'other';
@@ -23,6 +25,15 @@ export default function IncomingInvoices() {
   const [amount, setAmount] = useState('');
   const [notes, setNotes] = useState('');
   const [isUploading, setIsUploading] = useState(false);
+  
+  // Private Ausgaben State
+  const [showExpenseDialog, setShowExpenseDialog] = useState(false);
+  const [expenseDate, setExpenseDate] = useState('');
+  const [expenseCategory, setExpenseCategory] = useState('');
+  const [expenseDescription, setExpenseDescription] = useState('');
+  const [expenseAmount, setExpenseAmount] = useState('');
+  const [expensePaymentMethod, setExpensePaymentMethod] = useState('');
+  const [expenseNotes, setExpenseNotes] = useState('');
 
   // Fetch incoming invoices
   const { data: invoices, isLoading } = useQuery({
@@ -32,6 +43,20 @@ export default function IncomingInvoices() {
         .from('incoming_invoices')
         .select('*')
         .order('created_at', { ascending: false });
+      
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  // Fetch private expenses
+  const { data: expenses, isLoading: expensesLoading } = useQuery({
+    queryKey: ['private-expenses'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('private_expenses')
+        .select('*')
+        .order('expense_date', { ascending: false });
       
       if (error) throw error;
       return data;
@@ -114,6 +139,56 @@ export default function IncomingInvoices() {
     },
   });
 
+  // Add expense mutation
+  const addExpenseMutation = useMutation({
+    mutationFn: async () => {
+      if (!expenseDate || !expenseCategory || !expenseAmount) {
+        throw new Error('Datum, Kategorie und Betrag sind erforderlich');
+      }
+
+      const { error } = await supabase
+        .from('private_expenses')
+        .insert({
+          expense_date: expenseDate,
+          category: expenseCategory,
+          description: expenseDescription || null,
+          amount: parseFloat(expenseAmount),
+          payment_method: expensePaymentMethod || null,
+          notes: expenseNotes || null,
+        });
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success('Private Ausgabe erfolgreich erfasst');
+      queryClient.invalidateQueries({ queryKey: ['private-expenses'] });
+      resetExpenseForm();
+      setShowExpenseDialog(false);
+    },
+    onError: (error: any) => {
+      toast.error(`Fehler: ${error.message}`);
+    },
+  });
+
+  // Delete expense mutation
+  const deleteExpenseMutation = useMutation({
+    mutationFn: async (expenseId: string) => {
+      const { error } = await supabase
+        .from('private_expenses')
+        .delete()
+        .eq('id', expenseId);
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success('Ausgabe gelöscht');
+      queryClient.invalidateQueries({ queryKey: ['private-expenses'] });
+    },
+    onError: (error: any) => {
+      toast.error(`Löschen fehlgeschlagen: ${error.message}`);
+    },
+  });
+
   const resetForm = () => {
     setSelectedFile(null);
     setSupplierName('');
@@ -121,6 +196,15 @@ export default function IncomingInvoices() {
     setInvoiceDate('');
     setAmount('');
     setNotes('');
+  };
+
+  const resetExpenseForm = () => {
+    setExpenseDate('');
+    setExpenseCategory('');
+    setExpenseDescription('');
+    setExpenseAmount('');
+    setExpensePaymentMethod('');
+    setExpenseNotes('');
   };
 
   const handleDownload = async (invoice: any) => {
@@ -157,7 +241,7 @@ export default function IncomingInvoices() {
         </p>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2">
+      <div className="grid gap-4 md:grid-cols-3">
         <Card>
           <CardHeader>
             <CardTitle>Lieferantenrechnungen</CardTitle>
@@ -349,6 +433,120 @@ export default function IncomingInvoices() {
             </Dialog>
           </CardContent>
         </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Private Ausgaben</CardTitle>
+            <CardDescription>
+              Erfassen Sie private Ausgaben für die Buchhaltung
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Dialog open={showExpenseDialog} onOpenChange={setShowExpenseDialog}>
+              <DialogTrigger asChild>
+                <Button className="w-full" onClick={() => setShowExpenseDialog(true)}>
+                  <Wallet className="mr-2 h-4 w-4" />
+                  Private Ausgabe erfassen
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-md">
+                <DialogHeader>
+                  <DialogTitle>Private Ausgabe erfassen</DialogTitle>
+                  <DialogDescription>
+                    Erfassen Sie eine private Ausgabe
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="space-y-4">
+                  <div>
+                    <Label htmlFor="expense-date">Datum *</Label>
+                    <Input
+                      id="expense-date"
+                      type="date"
+                      value={expenseDate}
+                      onChange={(e) => setExpenseDate(e.target.value)}
+                      required
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="expense-category">Kategorie *</Label>
+                    <Select value={expenseCategory} onValueChange={setExpenseCategory}>
+                      <SelectTrigger id="expense-category">
+                        <SelectValue placeholder="Kategorie wählen" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Lebensmittel">Lebensmittel</SelectItem>
+                        <SelectItem value="Transport">Transport</SelectItem>
+                        <SelectItem value="Wohnung">Wohnung</SelectItem>
+                        <SelectItem value="Gesundheit">Gesundheit</SelectItem>
+                        <SelectItem value="Freizeit">Freizeit</SelectItem>
+                        <SelectItem value="Kleidung">Kleidung</SelectItem>
+                        <SelectItem value="Bildung">Bildung</SelectItem>
+                        <SelectItem value="Versicherungen">Versicherungen</SelectItem>
+                        <SelectItem value="Sonstiges">Sonstiges</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label htmlFor="expense-description">Beschreibung</Label>
+                    <Input
+                      id="expense-description"
+                      placeholder="z.B. Einkauf Supermarkt"
+                      value={expenseDescription}
+                      onChange={(e) => setExpenseDescription(e.target.value)}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="expense-amount">Betrag (EUR) *</Label>
+                    <Input
+                      id="expense-amount"
+                      type="number"
+                      step="0.01"
+                      placeholder="0.00"
+                      value={expenseAmount}
+                      onChange={(e) => setExpenseAmount(e.target.value)}
+                      required
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="expense-payment">Zahlungsmethode</Label>
+                    <Select value={expensePaymentMethod} onValueChange={setExpensePaymentMethod}>
+                      <SelectTrigger id="expense-payment">
+                        <SelectValue placeholder="Optional" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Bar">Bar</SelectItem>
+                        <SelectItem value="EC-Karte">EC-Karte</SelectItem>
+                        <SelectItem value="Kreditkarte">Kreditkarte</SelectItem>
+                        <SelectItem value="Überweisung">Überweisung</SelectItem>
+                        <SelectItem value="PayPal">PayPal</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label htmlFor="expense-notes">Notizen</Label>
+                    <Textarea
+                      id="expense-notes"
+                      placeholder="Optional"
+                      value={expenseNotes}
+                      onChange={(e) => setExpenseNotes(e.target.value)}
+                    />
+                  </div>
+                </div>
+                <DialogFooter>
+                  <Button variant="outline" onClick={() => setShowExpenseDialog(false)}>
+                    Abbrechen
+                  </Button>
+                  <Button 
+                    onClick={() => addExpenseMutation.mutate()} 
+                    disabled={!expenseDate || !expenseCategory || !expenseAmount}
+                  >
+                    Speichern
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+          </CardContent>
+        </Card>
       </div>
 
       <Card>
@@ -432,6 +630,71 @@ export default function IncomingInvoices() {
                 ))}
               </TableBody>
             </Table>
+          )}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Private Ausgaben Übersicht</CardTitle>
+          <CardDescription>
+            Übersicht aller erfassten privaten Ausgaben
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {expensesLoading ? (
+            <p className="text-muted-foreground">Lädt...</p>
+          ) : !expenses || expenses.length === 0 ? (
+            <p className="text-muted-foreground">Noch keine privaten Ausgaben erfasst</p>
+          ) : (
+            <div className="space-y-4">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Datum</TableHead>
+                    <TableHead>Kategorie</TableHead>
+                    <TableHead>Beschreibung</TableHead>
+                    <TableHead>Betrag</TableHead>
+                    <TableHead>Zahlungsmethode</TableHead>
+                    <TableHead className="text-right">Aktionen</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {expenses.map((expense: any) => (
+                    <TableRow key={expense.id}>
+                      <TableCell>
+                        {format(new Date(expense.expense_date), 'dd.MM.yyyy')}
+                      </TableCell>
+                      <TableCell>
+                        <span className="inline-flex items-center rounded-md px-2 py-1 text-xs font-medium bg-purple-50 text-purple-700">
+                          {expense.category}
+                        </span>
+                      </TableCell>
+                      <TableCell>{expense.description || '-'}</TableCell>
+                      <TableCell className="font-medium">
+                        {expense.amount.toFixed(2)} €
+                      </TableCell>
+                      <TableCell>{expense.payment_method || '-'}</TableCell>
+                      <TableCell className="text-right">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => deleteExpenseMutation.mutate(expense.id)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+              <div className="flex justify-between items-center p-4 bg-muted/50 rounded-lg">
+                <span className="font-semibold">Summe private Ausgaben:</span>
+                <span className="text-xl font-bold">
+                  {expenses.reduce((sum: number, exp: any) => sum + parseFloat(exp.amount), 0).toFixed(2)} €
+                </span>
+              </div>
+            </div>
           )}
         </CardContent>
       </Card>
