@@ -17,6 +17,7 @@ interface DraggableInvoiceFieldsProps {
   templateId: string;
   templateName?: string;
   showBackground?: boolean;
+  invoiceId?: string | null;
 }
 
 const DEFAULT_FIELDS: Field[] = [
@@ -33,11 +34,13 @@ const DEFAULT_FIELDS: Field[] = [
 export default function DraggableInvoiceFields({ 
   templateId,
   templateName = "Template",
-  showBackground = true
+  showBackground = true,
+  invoiceId = null
 }: DraggableInvoiceFieldsProps) {
   const [fields, setFields] = useState<Field[]>(DEFAULT_FIELDS);
   const [editMode, setEditMode] = useState(true);
   const [backgroundBase64, setBackgroundBase64] = useState<string | null>(null);
+  const [invoiceData, setInvoiceData] = useState<any>(null);
 
   // Template-Hintergrund laden
   useEffect(() => {
@@ -96,6 +99,75 @@ export default function DraggableInvoiceFields({
     };
     loadPositions();
   }, [templateId]);
+
+  // Rechnungsdaten laden wenn invoiceId vorhanden
+  useEffect(() => {
+    if (!invoiceId) {
+      setInvoiceData(null);
+      return;
+    }
+
+    const loadInvoice = async () => {
+      try {
+        const { data: invoice, error: invError } = await supabase
+          .from("invoices")
+          .select(`
+            *,
+            customer:customers(name, address, city, postal_code),
+            items:invoice_items(*)
+          `)
+          .eq("id", invoiceId)
+          .single();
+
+        if (invError) {
+          console.error("Error loading invoice:", invError);
+          return;
+        }
+
+        setInvoiceData(invoice);
+        
+        // Update field values with real data
+        setFields((prev) =>
+          prev.map((f) => {
+            let value = f.value;
+            
+            switch (f.field_name) {
+              case "customer_name":
+                value = invoice.customer?.name || "N/A";
+                break;
+              case "customer_address":
+                value = invoice.customer?.address || "N/A";
+                break;
+              case "customer_city":
+                value = `${invoice.customer?.postal_code || ""} ${invoice.customer?.city || ""}`.trim() || "N/A";
+                break;
+              case "invoice_number":
+                value = invoice.invoice_number || "N/A";
+                break;
+              case "invoice_date":
+                value = new Date(invoice.invoice_date).toLocaleDateString("de-DE");
+                break;
+              case "due_date":
+                value = invoice.due_date ? new Date(invoice.due_date).toLocaleDateString("de-DE") : "N/A";
+                break;
+              case "total_amount":
+                value = `${Number(invoice.total_amount).toFixed(2)} €`;
+                break;
+              case "items_table":
+                value = `${invoice.items?.length || 0} Position(en)`;
+                break;
+            }
+            
+            return { ...f, value };
+          })
+        );
+      } catch (err) {
+        console.error("Error loading invoice:", err);
+      }
+    };
+
+    loadInvoice();
+  }, [invoiceId]);
 
   // Speichern bei Loslassen
   const handleStop = (fieldName: string, x: number, y: number) => {

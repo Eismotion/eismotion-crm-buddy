@@ -28,9 +28,12 @@ export default function InvoiceTemplateStudio() {
   const [category, setCategory] = useState("");
   const [uploading, setUploading] = useState(false);
   const [editingFields, setEditingFields] = useState(false);
+  const [invoices, setInvoices] = useState<any[]>([]);
+  const [selectedInvoice, setSelectedInvoice] = useState<string | null>(null);
 
   useEffect(() => {
     loadTemplates();
+    loadInvoices();
   }, []);
 
   const loadTemplates = async () => {
@@ -46,6 +49,24 @@ export default function InvoiceTemplateStudio() {
     }
     
     setTemplates(data || []);
+  };
+
+  const loadInvoices = async () => {
+    const { data, error } = await supabase
+      .from("invoices")
+      .select(`
+        *,
+        customer:customers(name, address, city, postal_code)
+      `)
+      .order("invoice_date", { ascending: false })
+      .limit(50);
+    
+    if (error) {
+      console.error("Load invoices error:", error);
+      return;
+    }
+    
+    setInvoices(data || []);
   };
 
   const toBase64 = (file: File): Promise<string> =>
@@ -169,10 +190,10 @@ export default function InvoiceTemplateStudio() {
           </div>
 
           {/* Hauptbereich: Vorschau */}
-          <div className="flex-1 flex flex-col items-center justify-center bg-muted/30 p-6">
+          <div className="flex-1 flex flex-col bg-muted/30 p-6">
             {selected ? (
-              <>
-                <div className="mb-4">
+              <div className="space-y-4">
+                <div className="flex gap-4 items-center">
                   <Button
                     onClick={() => setEditingFields(true)}
                     className="gap-2"
@@ -180,26 +201,39 @@ export default function InvoiceTemplateStudio() {
                     <Pencil className="h-4 w-4" />
                     Felder platzieren
                   </Button>
+                  
+                  <div className="flex items-center gap-2">
+                    <label className="text-sm font-medium">Rechnung für Vorschau:</label>
+                    <select
+                      value={selectedInvoice || ""}
+                      onChange={(e) => setSelectedInvoice(e.target.value || null)}
+                      className="border border-input rounded-md px-3 py-2 text-sm bg-background"
+                    >
+                      <option value="">-- Demo-Daten --</option>
+                      {invoices.map((inv) => (
+                        <option key={inv.id} value={inv.id}>
+                          {inv.invoice_number} - {inv.customer?.name || 'Unbekannt'}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
                 </div>
-                <div className="shadow-lg border border-border bg-card p-4 rounded-lg">
-                  <h3 className="font-bold mb-3 text-center text-foreground">{selected.name}</h3>
-                  {selected.background_base64 ? (
-                    <img
-                      src={selected.background_base64}
-                      alt={selected.name}
-                      className="w-[210mm] h-[297mm] object-contain"
-                    />
-                  ) : (
-                    <div className="w-[210mm] h-[297mm] flex items-center justify-center bg-muted text-muted-foreground">
-                      Kein Hintergrundbild
-                    </div>
-                  )}
+
+                <div className="flex justify-center overflow-auto">
+                  <DraggableInvoiceFields 
+                    templateId={selected?.id || ""} 
+                    templateName={selected?.name || ""}
+                    showBackground={true}
+                    invoiceId={selectedInvoice}
+                  />
                 </div>
-              </>
+              </div>
             ) : (
-              <p className="text-muted-foreground italic">
-                Wählen Sie ein Template aus oder laden Sie eines hoch.
-              </p>
+              <div className="flex-1 flex items-center justify-center">
+                <p className="text-muted-foreground italic">
+                  Wählen Sie ein Template aus oder laden Sie eines hoch.
+                </p>
+              </div>
             )}
           </div>
         </>
