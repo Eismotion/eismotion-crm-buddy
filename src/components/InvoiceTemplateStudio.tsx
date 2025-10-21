@@ -4,6 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { z } from "zod";
+import { Pencil, ArrowLeft } from "lucide-react";
+import DraggableInvoiceFields from "./DraggableInvoiceFields";
 
 const uploadSchema = z.object({
   name: z.string().trim().min(1, "Name ist erforderlich").max(100, "Name zu lang"),
@@ -25,6 +27,7 @@ export default function InvoiceTemplateStudio() {
   const [name, setName] = useState("");
   const [category, setCategory] = useState("");
   const [uploading, setUploading] = useState(false);
+  const [editingFields, setEditingFields] = useState(false);
 
   useEffect(() => {
     loadTemplates();
@@ -101,91 +104,127 @@ export default function InvoiceTemplateStudio() {
 
   return (
     <div className="flex h-screen bg-background">
-      {/* Sidebar */}
-      <div className="w-1/4 border-r bg-card p-4 overflow-y-auto">
-        <h2 className="font-bold text-lg mb-4 text-foreground">Rechnungsvorlagen</h2>
+      {!editingFields ? (
+        <>
+          {/* Sidebar */}
+          <div className="w-1/4 border-r bg-card p-4 overflow-y-auto">
+            <h2 className="font-bold text-lg mb-4 text-foreground">Rechnungsvorlagen</h2>
 
-        {/* Upload-Bereich */}
-        <div className="border rounded-lg p-3 mb-6 bg-muted/50">
-          <Input
-            type="text"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            placeholder="Name des Templates"
-            className="mb-2"
-            maxLength={100}
-          />
-          <Input
-            type="text"
-            value={category}
-            onChange={(e) => setCategory(e.target.value)}
-            placeholder="Kategorie (optional)"
-            className="mb-2"
-            maxLength={50}
-          />
-          <input
-            type="file"
-            accept="image/png,image/jpeg,image/webp"
-            onChange={(e) => setFile(e.target.files?.[0] || null)}
-            className="mb-2 w-full text-sm text-muted-foreground"
-          />
-          <Button
-            onClick={handleUpload}
-            disabled={uploading}
-            className="w-full"
-          >
-            {uploading ? "Wird hochgeladen..." : "Template speichern"}
-          </Button>
-        </div>
-
-        {/* Template-Liste */}
-        <div className="space-y-3">
-          {templates.map((t) => (
-            <button
-              key={t.id}
-              onClick={() => setSelected(t)}
-              className={`w-full text-left border rounded-lg p-2 transition-colors ${
-                selected?.id === t.id
-                  ? "border-primary bg-primary/10"
-                  : "border-border hover:bg-accent"
-              }`}
-            >
-              <div className="text-sm font-semibold mb-1 text-foreground">{t.name}</div>
-              {t.background_base64 && (
-                <img
-                  src={t.background_base64}
-                  alt={t.name}
-                  className="w-full h-24 object-contain rounded"
-                />
-              )}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* Hauptbereich: Vorschau */}
-      <div className="flex-1 flex items-center justify-center bg-muted/30 p-6">
-        {selected ? (
-          <div className="shadow-lg border border-border bg-card p-4 rounded-lg">
-            <h3 className="font-bold mb-3 text-center text-foreground">{selected.name}</h3>
-            {selected.background_base64 ? (
-              <img
-                src={selected.background_base64}
-                alt={selected.name}
-                className="w-[210mm] h-[297mm] object-contain"
+            {/* Upload-Bereich */}
+            <div className="border rounded-lg p-3 mb-6 bg-muted/50">
+              <Input
+                type="text"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="Name des Templates"
+                className="mb-2"
+                maxLength={100}
               />
+              <Input
+                type="text"
+                value={category}
+                onChange={(e) => setCategory(e.target.value)}
+                placeholder="Kategorie (optional)"
+                className="mb-2"
+                maxLength={50}
+              />
+              <input
+                type="file"
+                accept="image/png,image/jpeg,image/webp"
+                onChange={(e) => setFile(e.target.files?.[0] || null)}
+                className="mb-2 w-full text-sm text-muted-foreground"
+              />
+              <Button
+                onClick={handleUpload}
+                disabled={uploading}
+                className="w-full"
+              >
+                {uploading ? "Wird hochgeladen..." : "Template speichern"}
+              </Button>
+            </div>
+
+            {/* Template-Liste */}
+            <div className="space-y-3">
+              {templates.map((t) => (
+                <button
+                  key={t.id}
+                  onClick={() => setSelected(t)}
+                  className={`w-full text-left border rounded-lg p-2 transition-colors ${
+                    selected?.id === t.id
+                      ? "border-primary bg-primary/10"
+                      : "border-border hover:bg-accent"
+                  }`}
+                >
+                  <div className="text-sm font-semibold mb-1 text-foreground">{t.name}</div>
+                  {t.background_base64 && (
+                    <img
+                      src={t.background_base64}
+                      alt={t.name}
+                      className="w-full h-24 object-contain rounded"
+                    />
+                  )}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Hauptbereich: Vorschau */}
+          <div className="flex-1 flex flex-col items-center justify-center bg-muted/30 p-6">
+            {selected ? (
+              <>
+                <div className="mb-4">
+                  <Button
+                    onClick={() => setEditingFields(true)}
+                    className="gap-2"
+                  >
+                    <Pencil className="h-4 w-4" />
+                    Felder platzieren
+                  </Button>
+                </div>
+                <div className="shadow-lg border border-border bg-card p-4 rounded-lg">
+                  <h3 className="font-bold mb-3 text-center text-foreground">{selected.name}</h3>
+                  {selected.background_base64 ? (
+                    <img
+                      src={selected.background_base64}
+                      alt={selected.name}
+                      className="w-[210mm] h-[297mm] object-contain"
+                    />
+                  ) : (
+                    <div className="w-[210mm] h-[297mm] flex items-center justify-center bg-muted text-muted-foreground">
+                      Kein Hintergrundbild
+                    </div>
+                  )}
+                </div>
+              </>
             ) : (
-              <div className="w-[210mm] h-[297mm] flex items-center justify-center bg-muted text-muted-foreground">
-                Kein Hintergrundbild
-              </div>
+              <p className="text-muted-foreground italic">
+                Wählen Sie ein Template aus oder laden Sie eines hoch.
+              </p>
             )}
           </div>
-        ) : (
-          <p className="text-muted-foreground italic">
-            Wählen Sie ein Template aus oder laden Sie eines hoch.
-          </p>
-        )}
-      </div>
+        </>
+      ) : (
+        /* Felder-Editor */
+        <div className="flex-1 p-6 overflow-y-auto">
+          <div className="mb-4">
+            <Button
+              onClick={() => setEditingFields(false)}
+              variant="outline"
+              className="gap-2"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              Zurück zur Übersicht
+            </Button>
+          </div>
+          <div className="flex justify-center">
+            <DraggableInvoiceFields 
+              templateId={selected?.id || ""} 
+              templateName={selected?.name || ""}
+              showBackground={true}
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 }

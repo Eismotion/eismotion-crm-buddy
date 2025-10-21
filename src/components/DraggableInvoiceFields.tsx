@@ -14,6 +14,7 @@ type Field = {
 };
 
 interface DraggableInvoiceFieldsProps {
+  templateId: string;
   templateName?: string;
   showBackground?: boolean;
 }
@@ -30,7 +31,8 @@ const DEFAULT_FIELDS: Field[] = [
 ];
 
 export default function DraggableInvoiceFields({ 
-  templateName = "Eismotion – Headerbild",
+  templateId,
+  templateName = "Template",
   showBackground = true
 }: DraggableInvoiceFieldsProps) {
   const [fields, setFields] = useState<Field[]>(DEFAULT_FIELDS);
@@ -39,14 +41,14 @@ export default function DraggableInvoiceFields({
 
   // Template-Hintergrund laden
   useEffect(() => {
-    if (!showBackground) return;
+    if (!showBackground || !templateId) return;
     
     const loadBackground = async () => {
       try {
         const { data, error } = await supabase
           .from("invoice_templates")
           .select("background_base64")
-          .eq("name", templateName)
+          .eq("id", templateId)
           .maybeSingle();
         
         if (error) {
@@ -62,16 +64,18 @@ export default function DraggableInvoiceFields({
       }
     };
     loadBackground();
-  }, [templateName, showBackground]);
+  }, [templateId, showBackground]);
 
   // Feldpositionen laden
   useEffect(() => {
+    if (!templateId) return;
+    
     const loadPositions = async () => {
       try {
         const { data, error } = await supabase
           .from("invoice_fields")
           .select("*")
-          .eq("template_id", templateName);
+          .eq("template_id", templateId);
         
         if (error) {
           console.error("Error loading positions:", error);
@@ -91,7 +95,7 @@ export default function DraggableInvoiceFields({
       }
     };
     loadPositions();
-  }, [templateName]);
+  }, [templateId]);
 
   // Speichern bei Loslassen
   const handleStop = (fieldName: string, x: number, y: number) => {
@@ -108,7 +112,7 @@ export default function DraggableInvoiceFields({
         const { error } = await supabase
           .from("invoice_fields")
           .upsert({
-            template_id: templateName,
+            template_id: templateId,
             key_name: fieldName,
             label: fields.find(f => f.field_name === fieldName)?.label || fieldName,
             x,
@@ -133,7 +137,7 @@ export default function DraggableInvoiceFields({
       const { error } = await supabase
         .from("invoice_fields")
         .delete()
-        .eq("template_id", templateName);
+        .eq("template_id", templateId);
 
       if (error) {
         console.error("Error resetting layout:", error);
