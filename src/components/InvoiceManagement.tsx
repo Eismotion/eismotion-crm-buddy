@@ -1,4 +1,4 @@
-import { Settings, Plus, Edit, Download, Palette, RefreshCw } from 'lucide-react';
+import { Settings, Plus, Edit, Download, Palette, RefreshCw, Search } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -14,6 +14,7 @@ export const InvoiceManagement = () => {
   const [invoices, setInvoices] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedYear, setSelectedYear] = useState('2025');
+  const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
     loadInvoices();
@@ -46,11 +47,22 @@ export const InvoiceManagement = () => {
     });
   };
 
+  const filterBySearch = (invoicesList: any[]) => {
+    if (!searchQuery.trim()) return invoicesList;
+    
+    const query = searchQuery.toLowerCase();
+    return invoicesList.filter(inv => {
+      const invoiceNumber = inv.invoice_number?.toLowerCase() || '';
+      const customerName = inv.customer?.name?.toLowerCase() || '';
+      return invoiceNumber.includes(query) || customerName.includes(query);
+    });
+  };
+
   const years = ['2023', '2024', '2025'];
   const invoicesByYear = {
-    '2023': filterByYear('2023'),
-    '2024': filterByYear('2024'),
-    '2025': filterByYear('2025'),
+    '2023': filterBySearch(filterByYear('2023')),
+    '2024': filterBySearch(filterByYear('2024')),
+    '2025': filterBySearch(filterByYear('2025')),
   };
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -89,7 +101,19 @@ export const InvoiceManagement = () => {
       ) : (
         <Card>
           <CardHeader>
-            <CardTitle>Rechnungen nach Jahr</CardTitle>
+            <div className="flex items-center justify-between">
+              <CardTitle>Rechnungen nach Jahr</CardTitle>
+              <div className="relative w-80">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <input
+                  type="text"
+                  placeholder="Nach Rechnungsnummer oder Kunde suchen..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full pl-10 pr-4 py-2 border border-input bg-background rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                />
+              </div>
+            </div>
           </CardHeader>
           <CardContent>
             <Tabs value={selectedYear} onValueChange={setSelectedYear}>
