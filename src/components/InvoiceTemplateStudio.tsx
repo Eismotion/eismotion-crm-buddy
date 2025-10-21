@@ -36,6 +36,13 @@ export default function InvoiceTemplateStudio() {
     loadInvoices();
   }, []);
 
+  // Auto-select first template if none selected
+  useEffect(() => {
+    if (templates.length > 0 && !selected) {
+      setSelected(templates[0]);
+    }
+  }, [templates, selected]);
+
   const loadTemplates = async () => {
     const { data, error } = await supabase
       .from("invoice_templates")
@@ -166,22 +173,32 @@ export default function InvoiceTemplateStudio() {
 
             {/* Template-Liste */}
             <div className="space-y-3">
+              <div className="text-xs text-muted-foreground mb-2 px-1">
+                {templates.length} Template(s) verfügbar
+              </div>
               {templates.map((t) => (
                 <button
                   key={t.id}
                   onClick={() => setSelected(t)}
-                  className={`w-full text-left border rounded-lg p-2 transition-colors ${
+                  className={`w-full text-left border-2 rounded-lg p-3 transition-all ${
                     selected?.id === t.id
-                      ? "border-primary bg-primary/10"
-                      : "border-border hover:bg-accent"
+                      ? "border-primary bg-primary/10 shadow-md"
+                      : "border-border hover:bg-accent hover:border-primary/50"
                   }`}
                 >
-                  <div className="text-sm font-semibold mb-1 text-foreground">{t.name}</div>
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="text-sm font-semibold text-foreground">{t.name}</div>
+                    {selected?.id === t.id && (
+                      <div className="text-xs bg-primary text-primary-foreground px-2 py-0.5 rounded">
+                        Ausgewählt
+                      </div>
+                    )}
+                  </div>
                   {t.background_base64 && (
                     <img
                       src={t.background_base64}
                       alt={t.name}
-                      className="w-full h-24 object-contain rounded"
+                      className="w-full h-24 object-contain rounded border border-border/50"
                     />
                   )}
                 </button>
