@@ -26,8 +26,7 @@ export const InvoiceManagement = () => {
         .from('invoices')
         .select(`
           *,
-          customer:customers(name),
-          template:invoice_templates(name)
+          customer:customers(name)
         `)
         .order('invoice_date', { ascending: false });
 
@@ -154,10 +153,10 @@ export const InvoiceManagement = () => {
                                 </Badge>
                               </TableCell>
                               <TableCell>
-                                {invoice.template ? (
+                                {invoice.template_id ? (
                                   <div className="flex items-center gap-1 text-xs">
                                     <Palette className="h-3 w-3 text-primary" />
-                                    {invoice.template.name}
+                                    Template
                                   </div>
                                 ) : (
                                   <span className="text-xs text-muted-foreground">Standard</span>

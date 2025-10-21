@@ -28,7 +28,7 @@ export const CustomerDetails = () => {
         supabase.from('customers').select('*').eq('id', customerId).single(),
         supabase
           .from('invoices')
-          .select('*, template:invoice_templates(name)')
+          .select('*')
           .eq('customer_id', customerId)
           .order('invoice_date', { ascending: false })
       ]);
