@@ -38,7 +38,7 @@ export default function DraggableInvoiceFields({
   invoiceId = null
 }: DraggableInvoiceFieldsProps) {
   const [fields, setFields] = useState<Field[]>(DEFAULT_FIELDS);
-  const [editMode, setEditMode] = useState(true);
+  const [editMode, setEditMode] = useState(false);
   const [backgroundBase64, setBackgroundBase64] = useState<string | null>(null);
   const [invoiceData, setInvoiceData] = useState<any>(null);
 

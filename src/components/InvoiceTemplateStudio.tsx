@@ -219,20 +219,23 @@ export default function InvoiceTemplateStudio() {
                     Felder platzieren
                   </Button>
                   
-                  <div className="flex items-center gap-2">
-                    <label className="text-sm font-medium">Rechnung für Vorschau:</label>
+                  <div className="flex items-center gap-2 flex-1">
+                    <label className="text-sm font-medium whitespace-nowrap">Rechnung wählen:</label>
                     <select
                       value={selectedInvoice || ""}
                       onChange={(e) => setSelectedInvoice(e.target.value || null)}
-                      className="border border-input rounded-md px-3 py-2 text-sm bg-background"
+                      className="flex-1 border-2 border-primary/20 rounded-md px-3 py-2 text-sm bg-background hover:border-primary transition-colors"
                     >
-                      <option value="">-- Demo-Daten --</option>
+                      <option value="">📋 Demo-Daten verwenden</option>
                       {invoices.map((inv) => (
                         <option key={inv.id} value={inv.id}>
-                          {inv.invoice_number} - {inv.customer?.name || 'Unbekannt'}
+                          {inv.invoice_number} - {inv.customer?.name || 'Unbekannt'} - {new Date(inv.invoice_date).toLocaleDateString('de-DE')}
                         </option>
                       ))}
                     </select>
+                    <div className="text-xs text-muted-foreground">
+                      {invoices.length} Rechnungen verfügbar
+                    </div>
                   </div>
                 </div>
 
