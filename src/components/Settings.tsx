@@ -24,17 +24,11 @@ export const Settings = () => {
   const [templateDialogOpen, setTemplateDialogOpen] = useState(false);
   const [editingTemplate, setEditingTemplate] = useState<any>(null);
   const [templateName, setTemplateName] = useState('');
-  const [templateCategory, setTemplateCategory] = useState('Themen');
-  const [templateTheme, setTemplateTheme] = useState('');
-  const [templateOccasion, setTemplateOccasion] = useState('');
-  const [templateSeason, setTemplateSeason] = useState('');
-  const [templateHtml, setTemplateHtml] = useState('');
+  const [templateCategory, setTemplateCategory] = useState('');
+  const [templateBackgroundFile, setTemplateBackgroundFile] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const importInputRef = useRef<HTMLInputElement>(null);
   const templateUploadRef = useRef<HTMLInputElement>(null);
-  const templateImageInputRef = useRef<HTMLInputElement>(null);
-  const templateTextareaRef = useRef<HTMLTextAreaElement>(null);
-  const [insertingImage, setInsertingImage] = useState(false);
 
   useEffect(() => {
     loadAssets();
@@ -71,20 +65,13 @@ export const Settings = () => {
     if (template) {
       setEditingTemplate(template);
       setTemplateName(template.name);
-      setTemplateCategory(template.category || 'Themen');
-      setTemplateTheme(template.theme || '');
-      setTemplateOccasion(template.occasion || '');
-      setTemplateSeason(template.season || '');
-      setTemplateHtml(template.html_template || '');
+      setTemplateCategory(template.category || '');
     } else {
       setEditingTemplate(null);
       setTemplateName('');
-      setTemplateCategory('Themen');
-      setTemplateTheme('');
-      setTemplateOccasion('');
-      setTemplateSeason('');
-      setTemplateHtml('<div style="padding: 20px;">Rechnungsvorlage</div>');
+      setTemplateCategory('');
     }
+    setTemplateBackgroundFile(null);
     setTemplateDialogOpen(true);
   };
 
@@ -94,15 +81,28 @@ export const Settings = () => {
       return;
     }
 
+    if (!editingTemplate && !templateBackgroundFile) {
+      toast.error('Bitte Hintergrundbild hochladen');
+      return;
+    }
+
     try {
+      let base64Image = editingTemplate?.background_base64 || '';
+
+      // Wenn neues Bild hochgeladen wurde
+      if (templateBackgroundFile) {
+        const reader = new FileReader();
+        base64Image = await new Promise<string>((resolve, reject) => {
+          reader.onload = (e) => resolve(e.target?.result as string);
+          reader.onerror = reject;
+          reader.readAsDataURL(templateBackgroundFile);
+        });
+      }
+
       const templateData = {
         name: templateName,
-        category: templateCategory,
-        theme: templateTheme || null,
-        occasion: templateOccasion || null,
-        season: templateSeason || null,
-        html_template: templateHtml,
-        active: true,
+        category: templateCategory || null,
+        background_base64: base64Image,
       };
 
       if (editingTemplate) {
@@ -256,11 +256,8 @@ export const Settings = () => {
     }
 
     // Validate file type
-    const isImage = file.type.match(/^image\/(png|jpg|jpeg)$/);
-    const isHtml = file.name.match(/\.html?$/i);
-    
-    if (!isImage && !isHtml) {
-      toast.error('Ungültiges Dateiformat. Erlaubt: HTML, JPG, PNG');
+    if (!file.type.match(/^image\/(png|jpg|jpeg)$/)) {
+      toast.error('Ungültiges Dateiformat. Erlaubt: JPG, PNG');
       return;
     }
 
@@ -271,49 +268,15 @@ export const Settings = () => {
       
       reader.onload = async (e) => {
         try {
-          const content = e.target?.result as string;
-          let htmlTemplate = '';
-          
-          if (isImage) {
-            // Convert image to base64 and create HTML template
-            htmlTemplate = `<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="UTF-8">
-  <style>
-    body { margin: 0; padding: 0; font-family: Arial, sans-serif; }
-    .invoice-wrapper { 
-      width: 210mm; 
-      min-height: 297mm; 
-      margin: 0 auto; 
-      background-image: url('${content}');
-      background-size: cover;
-      background-position: center;
-      padding: 40px;
-      box-sizing: border-box;
-    }
-  </style>
-</head>
-<body>
-  <div class="invoice-wrapper">
-    <!-- Content wird dynamisch eingefügt -->
-  </div>
-</body>
-</html>`;
-          } else {
-            // Use HTML file directly
-            htmlTemplate = content;
-          }
-
-          const templateName = file.name.replace(/\.(html?|jpe?g|png)$/i, '');
+          const base64Image = e.target?.result as string;
+          const templateName = file.name.replace(/\.(jpe?g|png)$/i, '');
           
           const { error } = await supabase
             .from('invoice_templates')
             .insert({
               name: templateName,
-              category: 'Themen',
-              html_template: htmlTemplate,
-              active: true,
+              category: null,
+              background_base64: base64Image,
             });
 
           if (error) throw error;
@@ -331,11 +294,7 @@ export const Settings = () => {
         }
       };
 
-      if (isImage) {
-        reader.readAsDataURL(file);
-      } else {
-        reader.readAsText(file);
-      }
+      reader.readAsDataURL(file);
     } catch (error: any) {
       console.error('Upload error:', error);
       toast.error('Fehler beim Hochladen: ' + error.message);
@@ -343,75 +302,6 @@ export const Settings = () => {
     }
   };
 
-  // Fügt einen Snippet an der Cursor-Position im HTML-Editor ein
-  const insertAtCursor = (snippet: string) => {
-    const el = templateTextareaRef.current;
-    if (!el) {
-      setTemplateHtml((prev) => prev + snippet);
-      return;
-    }
-    const start = el.selectionStart ?? templateHtml.length;
-    const end = el.selectionEnd ?? start;
-    const before = templateHtml.slice(0, start);
-    const after = templateHtml.slice(end);
-    const next = before + snippet + after;
-    setTemplateHtml(next);
-    setTimeout(() => {
-      const pos = start + snippet.length;
-      el.focus();
-      el.setSelectionRange(pos, pos);
-    }, 0);
-  };
-
-  // Bild hochladen und direkt in das HTML-Template einfügen
-  const handleTemplateImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-
-    if (!file.type.match(/^image\/(png|jpg|jpeg|svg\+xml)$/)) {
-      toast.error('Ungültiges Dateiformat. Erlaubt: PNG, JPG, SVG');
-      return;
-    }
-    if (file.size > 5 * 1024 * 1024) {
-      toast.error('Datei ist zu groß. Maximale Größe: 5MB');
-      return;
-    }
-
-    setInsertingImage(true);
-    try {
-      const formData = new FormData();
-      formData.append('file', file);
-      formData.append('category', 'Templates');
-      formData.append('name', file.name);
-
-      const { data, error } = await supabase.functions.invoke('upload-design-asset', {
-        body: formData,
-      });
-
-      if (error) throw error;
-
-      const asset: any = (data as any)?.asset || (data as any);
-      const url = asset?.file_url;
-      if (!url) {
-        toast.warning('Bild hochgeladen, aber URL nicht erhalten. Bitte Bild-Bibliothek verwenden.');
-      } else {
-        const snippet = `<img src="${url}" alt="${file.name}" style="max-width:100%;height:auto;" />`;
-        insertAtCursor(snippet);
-        toast.success('Bild eingefügt. Sie können die Position im HTML anpassen.');
-      }
-
-      // Assets-Liste aktualisieren
-      loadAssets();
-    } catch (err: any) {
-      console.error('Template image upload error:', err);
-      toast.error('Fehler beim Hochladen: ' + (err.message || 'Unbekannter Fehler'));
-    } finally {
-      setInsertingImage(false);
-      if (templateImageInputRef.current) {
-        templateImageInputRef.current.value = '';
-      }
-    }
-  };
 
   const handleImportFile = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -540,17 +430,6 @@ export const Settings = () => {
     }
   };
 
-  // Versucht eine Bild-URL aus dem HTML-Template zu extrahieren (img src oder CSS url())
-  const getTemplatePreviewUrl = (html: string): string | null => {
-    if (!html) return null;
-    // 1) <img src="...">
-    const imgMatch = html.match(/<img[^>]+src=["']([^"']+)["']/i);
-    if (imgMatch?.[1]) return imgMatch[1];
-    // 2) background(-image): url("...") oder allgemeines url("...")
-    const urlMatch = html.match(/url\((['"]?)([^'"\)]+)\1\)/i);
-    if (urlMatch?.[2]) return urlMatch[2];
-    return null;
-  };
 
   return (
     <div className="space-y-6">
@@ -610,7 +489,7 @@ export const Settings = () => {
             <input
               ref={templateUploadRef}
               type="file"
-              accept=".html,.htm,.jpg,.jpeg,.png"
+              accept=".jpg,.jpeg,.png"
               onChange={handleTemplateUpload}
               className="hidden"
             />
@@ -620,7 +499,7 @@ export const Settings = () => {
               disabled={uploading}
             >
               <Upload className="h-4 w-4 mr-2" />
-              {uploading ? 'Lädt...' : 'Template hochladen'}
+              {uploading ? 'Lädt...' : 'Bild hochladen'}
             </Button>
             <Button onClick={() => handleOpenTemplateDialog()}>
               <Plus className="h-4 w-4 mr-2" />
@@ -633,62 +512,54 @@ export const Settings = () => {
             <p className="text-muted-foreground text-center py-8">Noch keine Templates vorhanden</p>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-{templates.map((template) => {
-  const previewUrl = getTemplatePreviewUrl(template.html_template || '');
-  return (
-    <Card key={template.id} className="overflow-hidden">
-      <CardContent className="p-4">
-        <div className="aspect-[3/4] rounded-lg mb-3 overflow-hidden bg-muted/20 border">
-          {previewUrl ? (
-            <img
-              src={previewUrl}
-              alt={`${template.name} Vorschau`}
-              className="w-full h-full object-cover"
-              loading="lazy"
-            />
-          ) : (
-            <div className="flex h-full w-full items-center justify-center">
-              <Palette className="h-12 w-12 text-primary opacity-50" />
-            </div>
-          )}
-        </div>
-        <div className="space-y-2">
-          <div className="flex items-center justify-between">
-            <h3 className="font-semibold">{template.name}</h3>
-            <Badge variant="secondary" className="text-xs">
-              {template.category}
-            </Badge>
-          </div>
-          {(template.theme || template.occasion || template.season) && (
-            <div className="flex gap-1 flex-wrap">
-              {template.theme && <Badge variant="outline" className="text-xs">{template.theme}</Badge>}
-              {template.occasion && <Badge variant="outline" className="text-xs">{template.occasion}</Badge>}
-              {template.season && <Badge variant="outline" className="text-xs">{template.season}</Badge>}
-            </div>
-          )}
-          <div className="flex gap-2">
-            <Button 
-              variant="outline" 
-              size="sm" 
-              className="flex-1"
-              onClick={() => handleOpenTemplateDialog(template)}
-            >
-              <Edit className="h-3 w-3 mr-1" />
-              Bearbeiten
-            </Button>
-            <Button 
-              variant="outline" 
-              size="sm"
-              onClick={() => handleDeleteTemplate(template.id)}
-            >
-              <Trash2 className="h-3 w-3" />
-            </Button>
-          </div>
-        </div>
-      </CardContent>
-    </Card>
-  );
-})}
+              {templates.map((template) => (
+                <Card key={template.id} className="overflow-hidden">
+                  <CardContent className="p-4">
+                    <div className="aspect-[3/4] rounded-lg mb-3 overflow-hidden bg-muted/20 border">
+                      {template.background_base64 ? (
+                        <img
+                          src={template.background_base64}
+                          alt={`${template.name} Vorschau`}
+                          className="w-full h-full object-cover"
+                          loading="lazy"
+                        />
+                      ) : (
+                        <div className="flex h-full w-full items-center justify-center">
+                          <Palette className="h-12 w-12 text-primary opacity-50" />
+                        </div>
+                      )}
+                    </div>
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <h3 className="font-semibold">{template.name}</h3>
+                        {template.category && (
+                          <Badge variant="secondary" className="text-xs">
+                            {template.category}
+                          </Badge>
+                        )}
+                      </div>
+                      <div className="flex gap-2">
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          className="flex-1"
+                          onClick={() => handleOpenTemplateDialog(template)}
+                        >
+                          <Edit className="h-3 w-3 mr-1" />
+                          Bearbeiten
+                        </Button>
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => handleDeleteTemplate(template.id)}
+                        >
+                          <Trash2 className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
             </div>
           )}
         </CardContent>
@@ -696,102 +567,58 @@ export const Settings = () => {
 
       {/* Template Editor Dialog */}
       <Dialog open={templateDialogOpen} onOpenChange={setTemplateDialogOpen}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>
               {editingTemplate ? 'Template bearbeiten' : 'Neues Template erstellen'}
             </DialogTitle>
             <DialogDescription>
-              Erstellen Sie eine Rechnungsvorlage mit HTML/CSS
+              Erstellen Sie eine Rechnungsvorlage mit Hintergrundbild
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="template-name">Name *</Label>
-                <Input
-                  id="template-name"
-                  value={templateName}
-                  onChange={(e) => setTemplateName(e.target.value)}
-                  placeholder="z.B. Weihnachts-Rechnung"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="template-category">Kategorie</Label>
-                <Select value={templateCategory} onValueChange={setTemplateCategory}>
-                  <SelectTrigger id="template-category">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Themen">Themen</SelectItem>
-                    <SelectItem value="Jahreszeiten">Jahreszeiten</SelectItem>
-                    <SelectItem value="Anlässe">Anlässe</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-            <div className="grid grid-cols-3 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="template-theme">Thema</Label>
-                <Input
-                  id="template-theme"
-                  value={templateTheme}
-                  onChange={(e) => setTemplateTheme(e.target.value)}
-                  placeholder="z.B. Weihnachten"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="template-occasion">Anlass</Label>
-                <Input
-                  id="template-occasion"
-                  value={templateOccasion}
-                  onChange={(e) => setTemplateOccasion(e.target.value)}
-                  placeholder="z.B. Feiertag"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="template-season">Saison</Label>
-                <Input
-                  id="template-season"
-                  value={templateSeason}
-                  onChange={(e) => setTemplateSeason(e.target.value)}
-                  placeholder="z.B. Winter"
-                />
-              </div>
+            <div className="space-y-2">
+              <Label htmlFor="template-name">Name *</Label>
+              <Input
+                id="template-name"
+                value={templateName}
+                onChange={(e) => setTemplateName(e.target.value)}
+                placeholder="z.B. Weihnachts-Rechnung"
+              />
             </div>
             <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <Label htmlFor="template-html">HTML Template</Label>
-                <div className="flex items-center gap-2">
-                  <input
-                    ref={templateImageInputRef}
-                    type="file"
-                    accept="image/png,image/jpg,image/jpeg,image/svg+xml"
-                    onChange={handleTemplateImageUpload}
-                    className="hidden"
+              <Label htmlFor="template-category">Kategorie</Label>
+              <Input
+                id="template-category"
+                value={templateCategory}
+                onChange={(e) => setTemplateCategory(e.target.value)}
+                placeholder="z.B. Feiertage (optional)"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="template-background">Hintergrundbild {!editingTemplate && '*'}</Label>
+              <Input
+                id="template-background"
+                type="file"
+                accept="image/png,image/jpg,image/jpeg"
+                onChange={(e) => setTemplateBackgroundFile(e.target.files?.[0] || null)}
+              />
+              <p className="text-xs text-muted-foreground">
+                PNG oder JPG, max. 10MB
+              </p>
+            </div>
+            {editingTemplate?.background_base64 && !templateBackgroundFile && (
+              <div className="space-y-2">
+                <Label>Aktuelles Bild</Label>
+                <div className="border rounded-lg overflow-hidden">
+                  <img 
+                    src={editingTemplate.background_base64} 
+                    alt="Vorschau"
+                    className="w-full h-48 object-cover"
                   />
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => templateImageInputRef.current?.click()}
-                    disabled={insertingImage}
-                  >
-                    <Upload className="h-4 w-4 mr-2" />
-                    {insertingImage ? 'Lädt…' : 'Design hochladen'}
-                  </Button>
                 </div>
               </div>
-              <Textarea
-                id="template-html"
-                ref={templateTextareaRef}
-                value={templateHtml}
-                onChange={(e) => setTemplateHtml(e.target.value)}
-                placeholder="<div>...</div>"
-                className="font-mono text-sm"
-                rows={12}
-              />
-              <p className="text-xs text-muted-foreground">Das Bild wird am Cursor als &lt;img&gt;-Tag eingefügt. Sie können es anschließend im HTML/CSS platzieren.</p>
-            </div>
+            )}
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setTemplateDialogOpen(false)}>
