@@ -4,6 +4,7 @@ import { CustomerManagement } from '@/components/CustomerManagement';
 import { CustomerDetails } from '@/components/CustomerDetails';
 import { InvoiceManagement } from '@/components/InvoiceManagement';
 import IncomingInvoices from '@/components/IncomingInvoices';
+import Accounting from '@/components/Accounting';
 import { InvoiceDesignStudio } from '@/components/InvoiceDesignStudio';
 import { ProductManagement } from '@/components/ProductManagement';
 import { Analytics } from '@/components/Analytics';
@@ -21,6 +22,7 @@ const Index = () => {
     if (path === '/customers') return 'customers';
     if (path === '/invoices') return 'invoices';
     if (path === '/incoming-invoices') return 'incoming-invoices';
+    if (path === '/accounting') return 'accounting';
     if (path === '/design-studio') return 'design-studio';
     if (path === '/products') return 'products';
     if (path === '/analytics') return 'analytics';
@@ -36,6 +38,7 @@ const Index = () => {
       'customers': '/customers',
       'invoices': '/invoices',
       'incoming-invoices': '/incoming-invoices',
+      'accounting': '/accounting',
       'design-studio': '/design-studio',
       'products': '/products',
       'analytics': '/analytics',
@@ -58,6 +61,8 @@ const Index = () => {
         return <InvoiceManagement />;
       case 'incoming-invoices':
         return <IncomingInvoices />;
+      case 'accounting':
+        return <Accounting />;
       case 'design-studio':
         return <InvoiceDesignStudio />;
       case 'products':
