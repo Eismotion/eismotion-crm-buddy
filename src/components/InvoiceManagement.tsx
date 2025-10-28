@@ -17,8 +17,16 @@ export const InvoiceManagement = () => {
   const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
-    loadInvoices();
-  }, []);
+    supabase.auth.getSession().then(({ data }) => {
+      const session = data.session;
+      if (!session) {
+        setLoading(false);
+        navigate('/auth');
+        return;
+      }
+      loadInvoices();
+    });
+  }, [navigate]);
 
   const loadInvoices = async () => {
     setLoading(true);
