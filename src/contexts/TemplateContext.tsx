@@ -4,13 +4,13 @@ import { toast } from 'sonner';
 
 export interface Template {
   id: string;
-  name: string;
+  name: string | null;
   category: string | null;
   background_base64: string | null;
-  thumbnail_base64: string | null;
-  has_header_text: boolean | null;
+  thumbnail_base64?: string | null;
+  has_header_text?: boolean | null;
   created_at: string;
-  updated_at: string | null;
+  updated_at?: string | null;
 }
 
 interface TemplateContextType {

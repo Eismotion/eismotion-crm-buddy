@@ -405,22 +405,31 @@ export type Database = {
           background_base64: string | null
           category: string | null
           created_at: string | null
+          has_header_text: boolean | null
           id: string
           name: string | null
+          thumbnail_base64: string | null
+          updated_at: string | null
         }
         Insert: {
           background_base64?: string | null
           category?: string | null
           created_at?: string | null
+          has_header_text?: boolean | null
           id?: string
           name?: string | null
+          thumbnail_base64?: string | null
+          updated_at?: string | null
         }
         Update: {
           background_base64?: string | null
           category?: string | null
           created_at?: string | null
+          has_header_text?: boolean | null
           id?: string
           name?: string | null
+          thumbnail_base64?: string | null
+          updated_at?: string | null
         }
         Relationships: []
       }
