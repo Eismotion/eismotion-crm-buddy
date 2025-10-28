@@ -75,23 +75,23 @@ export const InvoiceManagement = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h2 className="text-3xl font-bold text-foreground">Rechnungsverwaltung</h2>
           <p className="text-muted-foreground">Erstellen und verwalten Sie Rechnungen</p>
         </div>
-        <div className="flex gap-2">
-          <Button variant="outline" onClick={loadInvoices}>
-            <RefreshCw className="h-4 w-4 mr-2" />
-            Aktualisieren
+        <div className="flex flex-wrap gap-2">
+          <Button variant="outline" onClick={loadInvoices} className="flex-1 sm:flex-none">
+            <RefreshCw className="h-4 w-4 sm:mr-2" />
+            <span className="hidden sm:inline">Aktualisieren</span>
           </Button>
-          <Button variant="outline">
-            <Palette className="h-4 w-4 mr-2" />
-            Design-Studio
+          <Button variant="outline" onClick={() => navigate('/design-studio')} className="flex-1 sm:flex-none">
+            <Palette className="h-4 w-4 sm:mr-2" />
+            <span className="hidden sm:inline">Design-Studio</span>
           </Button>
-          <Button>
-            <Plus className="h-4 w-4 mr-2" />
-            Neue Rechnung
+          <Button className="flex-1 sm:flex-none">
+            <Plus className="h-4 w-4 sm:mr-2" />
+            <span className="sm:inline">Neue Rechnung</span>
           </Button>
         </div>
       </div>
@@ -101,9 +101,9 @@ export const InvoiceManagement = () => {
       ) : (
         <Card>
           <CardHeader>
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <CardTitle>Rechnungen nach Jahr</CardTitle>
-              <div className="relative w-80">
+              <div className="relative w-full sm:w-80">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <input
                   type="text"
@@ -132,78 +132,149 @@ export const InvoiceManagement = () => {
                       Keine Rechnungen für {year} gefunden
                     </div>
                   ) : (
-                    <div className="rounded-md border">
-                      <Table>
-                        <TableHeader>
-                          <TableRow>
-                            <TableHead>Rechnungsnr.</TableHead>
-                            <TableHead>Kunde</TableHead>
-                            <TableHead>Datum</TableHead>
-                            <TableHead>Fällig</TableHead>
-                            <TableHead>Status</TableHead>
-                            <TableHead>Design</TableHead>
-                            <TableHead className="text-right">Betrag</TableHead>
-                            <TableHead className="text-right">Aktionen</TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {invoicesByYear[year as keyof typeof invoicesByYear].map((invoice) => (
-                            <TableRow key={invoice.id}>
-                              <TableCell className="font-medium">{invoice.invoice_number}</TableCell>
-                              <TableCell>
-                                {invoice.customer_id ? (
-                                  <button
-                                    onClick={() => navigate(`/customers/${invoice.customer_id}`)}
-                                    className="text-primary hover:underline"
-                                  >
-                                    {invoice.customer?.name || 'N/A'}
-                                  </button>
-                                ) : (
-                                  <span>{invoice.customer?.name || 'N/A'}</span>
-                                )}
-                              </TableCell>
-                              <TableCell>
-                                {new Date(invoice.invoice_date).toLocaleDateString('de-DE')}
-                              </TableCell>
-                              <TableCell>
-                                {invoice.due_date 
-                                  ? new Date(invoice.due_date).toLocaleDateString('de-DE')
-                                  : '-'
-                                }
-                              </TableCell>
-                              <TableCell>
+                    <>
+                      {/* Desktop Table View */}
+                      <div className="hidden md:block rounded-md border">
+                        <Table>
+                          <TableHeader>
+                            <TableRow>
+                              <TableHead>Rechnungsnr.</TableHead>
+                              <TableHead>Kunde</TableHead>
+                              <TableHead>Datum</TableHead>
+                              <TableHead>Fällig</TableHead>
+                              <TableHead>Status</TableHead>
+                              <TableHead>Design</TableHead>
+                              <TableHead className="text-right">Betrag</TableHead>
+                              <TableHead className="text-right">Aktionen</TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {invoicesByYear[year as keyof typeof invoicesByYear].map((invoice) => (
+                              <TableRow key={invoice.id}>
+                                <TableCell className="font-medium">{invoice.invoice_number}</TableCell>
+                                <TableCell>
+                                  {invoice.customer_id ? (
+                                    <button
+                                      onClick={() => navigate(`/customers/${invoice.customer_id}`)}
+                                      className="text-primary hover:underline"
+                                    >
+                                      {invoice.customer?.name || 'N/A'}
+                                    </button>
+                                  ) : (
+                                    <span>{invoice.customer?.name || 'N/A'}</span>
+                                  )}
+                                </TableCell>
+                                <TableCell>
+                                  {new Date(invoice.invoice_date).toLocaleDateString('de-DE')}
+                                </TableCell>
+                                <TableCell>
+                                  {invoice.due_date 
+                                    ? new Date(invoice.due_date).toLocaleDateString('de-DE')
+                                    : '-'
+                                  }
+                                </TableCell>
+                                <TableCell>
+                                  <Badge className={getStatusColor(invoice.status)}>
+                                    {invoice.status}
+                                  </Badge>
+                                </TableCell>
+                                <TableCell>
+                                  {invoice.template_id ? (
+                                    <div className="flex items-center gap-1 text-xs">
+                                      <Palette className="h-3 w-3 text-primary" />
+                                      Template
+                                    </div>
+                                  ) : (
+                                    <span className="text-xs text-muted-foreground">Standard</span>
+                                  )}
+                                </TableCell>
+                                <TableCell className="text-right font-bold">
+                                  {formatCurrency(invoice.total_amount)}
+                                </TableCell>
+                                <TableCell className="text-right">
+                                  <div className="flex gap-1 justify-end">
+                                    <Button variant="ghost" size="sm">
+                                      <Edit className="h-4 w-4" />
+                                    </Button>
+                                    <Button variant="ghost" size="sm">
+                                      <Download className="h-4 w-4" />
+                                    </Button>
+                                  </div>
+                                </TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+                      </div>
+
+                      {/* Mobile Card View */}
+                      <div className="md:hidden space-y-4">
+                        {invoicesByYear[year as keyof typeof invoicesByYear].map((invoice) => (
+                          <Card key={invoice.id}>
+                            <CardHeader className="pb-3">
+                              <div className="flex items-start justify-between">
+                                <div className="space-y-1">
+                                  <CardTitle className="text-lg">{invoice.invoice_number}</CardTitle>
+                                  {invoice.customer_id ? (
+                                    <button
+                                      onClick={() => navigate(`/customers/${invoice.customer_id}`)}
+                                      className="text-sm text-primary hover:underline"
+                                    >
+                                      {invoice.customer?.name || 'N/A'}
+                                    </button>
+                                  ) : (
+                                    <p className="text-sm text-muted-foreground">{invoice.customer?.name || 'N/A'}</p>
+                                  )}
+                                </div>
                                 <Badge className={getStatusColor(invoice.status)}>
                                   {invoice.status}
                                 </Badge>
-                              </TableCell>
-                              <TableCell>
-                                {invoice.template_id ? (
-                                  <div className="flex items-center gap-1 text-xs">
-                                    <Palette className="h-3 w-3 text-primary" />
-                                    Template
-                                  </div>
-                                ) : (
-                                  <span className="text-xs text-muted-foreground">Standard</span>
-                                )}
-                              </TableCell>
-                              <TableCell className="text-right font-bold">
-                                {formatCurrency(invoice.total_amount)}
-                              </TableCell>
-                              <TableCell className="text-right">
-                                <div className="flex gap-1 justify-end">
-                                  <Button variant="ghost" size="sm">
-                                    <Edit className="h-4 w-4" />
-                                  </Button>
-                                  <Button variant="ghost" size="sm">
-                                    <Download className="h-4 w-4" />
-                                  </Button>
+                              </div>
+                            </CardHeader>
+                            <CardContent className="space-y-3">
+                              <div className="grid grid-cols-2 gap-2 text-sm">
+                                <div>
+                                  <p className="text-muted-foreground">Datum</p>
+                                  <p className="font-medium">{new Date(invoice.invoice_date).toLocaleDateString('de-DE')}</p>
                                 </div>
-                              </TableCell>
-                            </TableRow>
-                          ))}
-                        </TableBody>
-                      </Table>
-                    </div>
+                                <div>
+                                  <p className="text-muted-foreground">Fällig</p>
+                                  <p className="font-medium">
+                                    {invoice.due_date 
+                                      ? new Date(invoice.due_date).toLocaleDateString('de-DE')
+                                      : '-'
+                                    }
+                                  </p>
+                                </div>
+                              </div>
+                              <div className="flex items-center justify-between pt-2 border-t">
+                                <div>
+                                  {invoice.template_id ? (
+                                    <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                                      <Palette className="h-3 w-3" />
+                                      Template
+                                    </div>
+                                  ) : (
+                                    <span className="text-xs text-muted-foreground">Standard</span>
+                                  )}
+                                </div>
+                                <p className="text-lg font-bold">{formatCurrency(invoice.total_amount)}</p>
+                              </div>
+                              <div className="flex gap-2 pt-2">
+                                <Button variant="outline" size="sm" className="flex-1">
+                                  <Edit className="h-4 w-4 mr-2" />
+                                  Bearbeiten
+                                </Button>
+                                <Button variant="outline" size="sm" className="flex-1">
+                                  <Download className="h-4 w-4 mr-2" />
+                                  Download
+                                </Button>
+                              </div>
+                            </CardContent>
+                          </Card>
+                        ))}
+                      </div>
+                    </>
                   )}
                 </TabsContent>
               ))}
