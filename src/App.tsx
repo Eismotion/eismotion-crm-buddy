@@ -8,33 +8,36 @@ import NotFound from "./pages/NotFound";
 import Auth from "./pages/Auth";
 import CustomerPortal from "./pages/CustomerPortal";
 import { CustomerDetails } from "./components/CustomerDetails";
+import { TemplateProvider } from "./contexts/TemplateContext";
 
 const queryClient = new QueryClient();
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Index />} />
-          <Route path="/auth" element={<Auth />} />
-          <Route path="/customer-portal" element={<CustomerPortal />} />
-          <Route path="/customers" element={<Index />} />
-          <Route path="/customers/:customerId" element={<Index />} />
-          <Route path="/invoices" element={<Index />} />
-          <Route path="/incoming-invoices" element={<Index />} />
-          <Route path="/accounting" element={<Index />} />
-          <Route path="/design-studio" element={<Index />} />
-          <Route path="/products" element={<Index />} />
-          <Route path="/analytics" element={<Index />} />
-          <Route path="/settings" element={<Index />} />
-          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </BrowserRouter>
-    </TooltipProvider>
+    <TemplateProvider>
+      <TooltipProvider>
+        <Toaster />
+        <Sonner />
+        <BrowserRouter>
+          <Routes>
+            <Route path="/" element={<Index />} />
+            <Route path="/auth" element={<Auth />} />
+            <Route path="/customer-portal" element={<CustomerPortal />} />
+            <Route path="/customers" element={<Index />} />
+            <Route path="/customers/:customerId" element={<Index />} />
+            <Route path="/invoices" element={<Index />} />
+            <Route path="/incoming-invoices" element={<Index />} />
+            <Route path="/accounting" element={<Index />} />
+            <Route path="/design-studio" element={<Index />} />
+            <Route path="/products" element={<Index />} />
+            <Route path="/analytics" element={<Index />} />
+            <Route path="/settings" element={<Index />} />
+            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </BrowserRouter>
+      </TooltipProvider>
+    </TemplateProvider>
   </QueryClientProvider>
 );
 
