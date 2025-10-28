@@ -403,32 +403,38 @@ export type Database = {
       invoice_templates: {
         Row: {
           background_base64: string | null
+          background_url: string | null
           category: string | null
           created_at: string | null
           has_header_text: boolean | null
           id: string
           name: string | null
           thumbnail_base64: string | null
+          thumbnail_url: string | null
           updated_at: string | null
         }
         Insert: {
           background_base64?: string | null
+          background_url?: string | null
           category?: string | null
           created_at?: string | null
           has_header_text?: boolean | null
           id?: string
           name?: string | null
           thumbnail_base64?: string | null
+          thumbnail_url?: string | null
           updated_at?: string | null
         }
         Update: {
           background_base64?: string | null
+          background_url?: string | null
           category?: string | null
           created_at?: string | null
           has_header_text?: boolean | null
           id?: string
           name?: string | null
           thumbnail_base64?: string | null
+          thumbnail_url?: string | null
           updated_at?: string | null
         }
         Relationships: []

@@ -4,13 +4,31 @@ import { toast } from 'sonner';
 
 export interface Template {
   id: string;
-  name: string | null;
+  name: string;
   category: string | null;
   background_base64: string | null;
-  thumbnail_base64?: string | null;
-  has_header_text?: boolean | null;
+  thumbnail_base64: string | null;
+  background_url: string | null;
+  thumbnail_url: string | null;
+  has_header_text: boolean | null;
   created_at: string;
-  updated_at?: string | null;
+  updated_at: string | null;
+}
+
+/**
+ * Get the background image URL (prioritize Storage URL over Base64)
+ */
+export function getBackgroundImageUrl(template: Template | null): string | null {
+  if (!template) return null;
+  return template.background_url || template.background_base64;
+}
+
+/**
+ * Get the thumbnail image URL (prioritize Storage URL over Base64)
+ */
+export function getThumbnailImageUrl(template: Template | null): string | null {
+  if (!template) return null;
+  return template.thumbnail_url || template.thumbnail_base64;
 }
 
 interface TemplateContextType {
