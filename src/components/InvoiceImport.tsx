@@ -3,7 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Upload, FileSpreadsheet, CheckCircle2, AlertCircle } from 'lucide-react';
+import { Upload, FileSpreadsheet, CheckCircle2, AlertCircle, Download } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import * as XLSX from 'xlsx';
@@ -122,6 +122,50 @@ export const InvoiceImport = () => {
     });
   };
 
+  const downloadTemplate = () => {
+    // Create template data
+    const templateData = [
+      {
+        'Name': 'Musterfirma GmbH',
+        'Adresse': 'Musterfirma GmbH, Musterstraße 123, 12345 Musterstadt',
+        'Produkte': '1 Eismaschine Modell XY\n2 Kühlschrank Pro',
+        'Rechnungsnummer': '01/2024/001',
+        'Rechnungsdatum': '2024-01-15',
+        'Nettosumme': '1000,00',
+        'Bruttosumme': '1190,00'
+      },
+      {
+        'Name': 'Beispiel Eiscafe',
+        'Adresse': 'Beispiel Eiscafe, Hauptstraße 45, 54321 Beispielstadt',
+        'Produkte': '1 Vitrine Standard',
+        'Rechnungsnummer': '01/2024/002',
+        'Rechnungsdatum': '2024-01-16',
+        'Nettosumme': '500,00',
+        'Bruttosumme': '595,00'
+      }
+    ];
+
+    // Create workbook
+    const worksheet = XLSX.utils.json_to_sheet(templateData);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Rechnungen');
+
+    // Set column widths
+    worksheet['!cols'] = [
+      { wch: 25 }, // Name
+      { wch: 50 }, // Adresse
+      { wch: 40 }, // Produkte
+      { wch: 20 }, // Rechnungsnummer
+      { wch: 15 }, // Rechnungsdatum
+      { wch: 15 }, // Nettosumme
+      { wch: 15 }  // Bruttosumme
+    ];
+
+    // Generate file
+    XLSX.writeFile(workbook, 'Rechnungen_Import_Vorlage.xlsx');
+    toast.success('Vorlage wurde heruntergeladen');
+  };
+
   const handleImport = async () => {
     if (!file) {
       toast.error('Bitte wählen Sie eine Datei aus');
@@ -193,6 +237,17 @@ export const InvoiceImport = () => {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
+            <div className="flex justify-end mb-4">
+              <Button
+                variant="outline"
+                onClick={downloadTemplate}
+                className="gap-2"
+              >
+                <Download className="h-4 w-4" />
+                Vorlage herunterladen
+              </Button>
+            </div>
+            
             <div className="space-y-2">
               <Label htmlFor="file-upload">Excel-Datei auswählen</Label>
               <div className="flex items-center gap-4">
