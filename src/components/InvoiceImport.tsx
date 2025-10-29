@@ -287,13 +287,16 @@ export const InvoiceImport = () => {
               <h4 className="font-semibold text-sm">Anforderungen an die Excel-Datei:</h4>
               <ul className="text-sm text-muted-foreground space-y-1">
                 <li>• Spalte "Name" - Kundenname</li>
-                <li>• Spalte "Adresse" - Vollständige Adresse</li>
-                <li>• Spalte "Produkte" - Produktbeschreibungen</li>
+                <li>• Spalte "Adresse" - Vollständige Adresse (Format: Name, Straße, PLZ Ort)</li>
+                <li>• Spalte "Produkte" - Produktbeschreibungen (eine pro Zeile)</li>
                 <li>• Spalte "Rechnungsnummer" - Eindeutige Rechnungsnummer</li>
-                <li>• Spalte "Rechnungsdatum" - Datum der Rechnung</li>
-                <li>• Spalte "Nettosumme" - Nettobetrag</li>
-                <li>• Spalte "Bruttosumme" - Bruttobetrag</li>
+                <li>• Spalte "Rechnungsdatum" - Datum der Rechnung (Format: YYYY-MM-DD)</li>
+                <li>• Spalte "Nettosumme" - Nettobetrag (Format: 1000,00)</li>
+                <li>• Spalte "Bruttosumme" - Bruttobetrag inkl. MwSt. (Format: 1190,00)</li>
               </ul>
+              <p className="text-xs text-muted-foreground mt-2">
+                Hinweis: E-Mail-Adressen und Telefonnummern können später manuell in der Kundenverwaltung ergänzt werden.
+              </p>
             </div>
 
             {importResult && (
