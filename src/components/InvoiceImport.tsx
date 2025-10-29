@@ -103,11 +103,35 @@ export const InvoiceImport = () => {
       const totalAmount = parseFloat(bruttoStr) || 0;
       const taxAmount = totalAmount - subtotal;
 
-      // Parse and validate invoice date
-      let invoiceDate = row.Rechnungsdatum?.toString().trim() || '';
+      // Parse invoice date - handle both string and Excel serial date formats
+      let invoiceDate = '';
+      const rawDate = row.Rechnungsdatum;
       
-      // If empty or invalid, use current date
-      if (!invoiceDate || invoiceDate === '') {
+      if (rawDate) {
+        // If it's a number, it's an Excel serial date
+        if (typeof rawDate === 'number') {
+          // Excel dates are days since 1900-01-01
+          const excelEpoch = new Date(1900, 0, 1);
+          const date = new Date(excelEpoch.getTime() + (rawDate - 2) * 86400000);
+          invoiceDate = date.toISOString().split('T')[0];
+        } else {
+          // Try to parse as string
+          const dateStr = rawDate.toString().trim();
+          // Check if it's already in YYYY-MM-DD format
+          if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
+            invoiceDate = dateStr;
+          } else {
+            // Try to parse other date formats
+            const parsed = new Date(dateStr);
+            if (!isNaN(parsed.getTime())) {
+              invoiceDate = parsed.toISOString().split('T')[0];
+            }
+          }
+        }
+      }
+      
+      // If still empty or invalid, use current date as fallback
+      if (!invoiceDate || invoiceDate === '' || invoiceDate === 'NaN-NaN-NaN') {
         invoiceDate = new Date().toISOString().split('T')[0];
       }
 
