@@ -270,9 +270,20 @@ serve(async (req) => {
         console.log(`Successfully imported invoice: ${row.invoiceNumber}`);
       } catch (error) {
         failCount++;
-        const errorMsg = `Failed to import ${row.invoiceNumber}: ${error instanceof Error ? error.message : String(error)}`;
+        let errorMsg = `Failed to import ${row.invoiceNumber}: `;
+        
+        if (error instanceof Error) {
+          errorMsg += error.message;
+        } else if (typeof error === 'object' && error !== null) {
+          // Handle Supabase errors which are objects with message, details, etc.
+          const err = error as any;
+          errorMsg += err.message || err.details || err.hint || JSON.stringify(error);
+        } else {
+          errorMsg += String(error);
+        }
+        
         errors.push(errorMsg);
-        console.error(errorMsg);
+        console.error(errorMsg, error);
       }
     }
 
