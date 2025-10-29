@@ -195,6 +195,27 @@ export const InvoiceManagement = () => {
             <RefreshCw className="h-4 w-4 sm:mr-2" />
             <span className="hidden sm:inline">Aktualisieren</span>
           </Button>
+          {/* Conditional fix button for 2022 misdated invoices */}
+          {(() => {
+            const count2022 = invoices.filter(inv => new Date(inv.invoice_date).getFullYear() === 2022).length;
+            const count2025 = invoices.filter(inv => new Date(inv.invoice_date).getFullYear() === 2025).length;
+            return count2022 === 0 && count2025 > 259 ? (
+              <Button variant="outline" onClick={async () => {
+                try {
+                  const { data, error } = await supabase.functions.invoke('fix-invoice-years', { body: {} });
+                  if (error) throw error;
+                  toast.success(`Korrektur ausgeführt: ${data.updated} aktualisiert`);
+                  await loadInvoices();
+                } catch (e) {
+                  console.error(e);
+                  toast.error('Korrektur fehlgeschlagen');
+                }
+              }} className="flex-1 sm:flex-none">
+                <RefreshCw className="h-4 w-4 sm:mr-2" />
+                <span className="hidden sm:inline">2022-Fix anwenden</span>
+              </Button>
+            ) : null;
+          })()}
           <Button variant="outline" onClick={() => navigate('/design-studio')} className="flex-1 sm:flex-none">
             <Palette className="h-4 w-4 sm:mr-2" />
             <span className="hidden sm:inline">Design-Studio</span>

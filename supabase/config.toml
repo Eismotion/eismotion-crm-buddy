@@ -19,3 +19,7 @@ verify_jwt = false
 # Existing function for creating customer accounts (auth required)
 [functions.create-customer-account]
 verify_jwt = true
+
+# Data maintenance: fix invoices misdated to 2025 but numbered as 2022
+[functions.fix-invoice-years]
+verify_jwt = false
