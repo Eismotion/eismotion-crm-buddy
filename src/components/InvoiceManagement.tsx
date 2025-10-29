@@ -40,6 +40,64 @@ export const InvoiceManagement = () => {
     }
   };
 
+  const generateInvoiceNumber = async () => {
+    const year = new Date().getFullYear();
+    
+    // Get the latest invoice number for current year
+    const { data, error } = await supabase
+      .from('invoices')
+      .select('invoice_number')
+      .like('invoice_number', `RE-${year}-%`)
+      .order('invoice_number', { ascending: false })
+      .limit(1);
+
+    if (error) {
+      console.error('Error fetching invoice numbers:', error);
+      return `RE-${year}-0001`;
+    }
+
+    if (!data || data.length === 0) {
+      return `RE-${year}-0001`;
+    }
+
+    // Extract number from last invoice (e.g., "RE-2025-0042" -> 42)
+    const lastNumber = data[0].invoice_number;
+    const match = lastNumber.match(/RE-\d{4}-(\d+)/);
+    const nextNumber = match ? parseInt(match[1]) + 1 : 1;
+    
+    // Format with leading zeros (4 digits)
+    return `RE-${year}-${nextNumber.toString().padStart(4, '0')}`;
+  };
+
+  const handleCreateInvoice = async () => {
+    try {
+      const invoiceNumber = await generateInvoiceNumber();
+      const today = new Date().toISOString().split('T')[0];
+      
+      const { data, error } = await supabase
+        .from('invoices')
+        .insert({
+          invoice_number: invoiceNumber,
+          invoice_date: today,
+          status: 'draft',
+          subtotal: 0,
+          tax_rate: 19.00,
+          tax_amount: 0,
+          total_amount: 0
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+      
+      await loadInvoices();
+      // TODO: Navigate to edit view when implemented
+      console.log('Created invoice:', data);
+    } catch (error) {
+      console.error('Error creating invoice:', error);
+    }
+  };
+
   const filterByYear = (year: string) => {
     return invoices.filter(inv => {
       const invoiceYear = new Date(inv.invoice_date).getFullYear().toString();
@@ -89,7 +147,7 @@ export const InvoiceManagement = () => {
             <Palette className="h-4 w-4 sm:mr-2" />
             <span className="hidden sm:inline">Design-Studio</span>
           </Button>
-          <Button className="flex-1 sm:flex-none">
+          <Button className="flex-1 sm:flex-none" onClick={handleCreateInvoice}>
             <Plus className="h-4 w-4 sm:mr-2" />
             <span className="sm:inline">Neue Rechnung</span>
           </Button>
