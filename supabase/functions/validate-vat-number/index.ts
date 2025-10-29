@@ -8,142 +8,128 @@ const corsHeaders = {
 interface VatValidationRequest {
   customerId: string;
   vatNumber: string;
-  countryCode: string;
+  country: string;
 }
 
 Deno.serve(async (req) => {
-  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const supabase = createClient(
+    const { customerId, vatNumber, country }: VatValidationRequest = await req.json();
+
+    console.log('Validating VAT number:', { customerId, vatNumber, country });
+
+    if (!customerId || !vatNumber || !country) {
+      return new Response(
+        JSON.stringify({ error: 'Missing required fields' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const cleanedVatNumber = vatNumber.replace(/[\s-]/g, '').toUpperCase();
+    let countryCode = country.toUpperCase();
+    let vatNumberOnly = cleanedVatNumber;
+    
+    if (cleanedVatNumber.startsWith(countryCode)) {
+      vatNumberOnly = cleanedVatNumber.substring(countryCode.length);
+    }
+
+    const euCountries = ['AT', 'BE', 'BG', 'HR', 'CY', 'CZ', 'DK', 'EE', 'FI', 'FR', 'DE', 
+                        'GR', 'HU', 'IE', 'IT', 'LV', 'LT', 'LU', 'MT', 'NL', 'PL', 
+                        'PT', 'RO', 'SK', 'SI', 'ES', 'SE'];
+
+    let isValid = false;
+    let validationMessage = '';
+
+    if (euCountries.includes(countryCode)) {
+      try {
+        const soapRequest = `<?xml version="1.0" encoding="UTF-8"?>
+<soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/" xmlns:tns1="urn:ec.europa.eu:taxud:vies:services:checkVat:types">
+  <soap:Body>
+    <tns1:checkVat>
+      <tns1:countryCode>${countryCode}</tns1:countryCode>
+      <tns1:vatNumber>${vatNumberOnly}</tns1:vatNumber>
+    </tns1:checkVat>
+  </soap:Body>
+</soap:Envelope>`;
+
+        const viesResponse = await fetch('https://ec.europa.eu/taxation_customs/vies/services/checkVatService', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'text/xml;charset=UTF-8',
+            'SOAPAction': '',
+          },
+          body: soapRequest,
+        });
+
+        const responseText = await viesResponse.text();
+
+        if (responseText.includes('<valid>true</valid>')) {
+          isValid = true;
+          validationMessage = 'USt-ID erfolgreich validiert';
+          
+          const nameMatch = responseText.match(/<name>(.*?)<\/name>/);
+          if (nameMatch) {
+            validationMessage += ` - ${nameMatch[1]}`;
+          }
+        } else if (responseText.includes('<valid>false</valid>')) {
+          validationMessage = 'USt-ID ist nicht gültig';
+        } else if (responseText.includes('SERVICE_UNAVAILABLE')) {
+          isValid = true;
+          validationMessage = 'VIES Service nicht verfügbar - vorläufig akzeptiert';
+        } else {
+          validationMessage = 'Validierung fehlgeschlagen';
+        }
+      } catch (viesError) {
+        console.error('VIES Error:', viesError);
+        isValid = true;
+        validationMessage = 'VIES nicht erreichbar - vorläufig akzeptiert';
+      }
+    } else {
+      isValid = true;
+      validationMessage = 'Nicht-EU Land - keine Validierung';
+    }
+
+    const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    const { customerId, vatNumber, countryCode }: VatValidationRequest = await req.json();
-
-    if (!customerId || !vatNumber || !countryCode) {
-      throw new Error('customerId, vatNumber und countryCode sind erforderlich');
-    }
-
-    // Bereinige die USt-ID (entferne Leerzeichen, Bindestriche)
-    const cleanVatNumber = vatNumber.replace(/[\s\-]/g, '').toUpperCase();
-    
-    // Basis-Validierung: Format prüfen
-    const vatPattern = /^[A-Z]{2}[A-Z0-9]{2,12}$/;
-    if (!vatPattern.test(cleanVatNumber)) {
-      return new Response(
-        JSON.stringify({
-          valid: false,
-          message: 'Ungültiges USt-ID Format. Format sollte sein: DE123456789'
-        }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    // Prüfe ob Ländercode mit USt-ID übereinstimmt
-    const vatCountryCode = cleanVatNumber.substring(0, 2);
-    if (vatCountryCode !== countryCode) {
-      return new Response(
-        JSON.stringify({
-          valid: false,
-          message: `USt-ID Ländercode (${vatCountryCode}) stimmt nicht mit Kundenland (${countryCode}) überein`
-        }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    // EU VIES API Validierung (optional - kann fehlschlagen wenn offline)
-    let viesValid = false;
-    let companyName = null;
-    let companyAddress = null;
-
-    try {
-      // VIES SOAP API Request
-      const soapRequest = `<?xml version="1.0" encoding="UTF-8"?>
-<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:urn="urn:ec.europa.eu:taxud:vies:services:checkVat:types">
-  <soapenv:Header/>
-  <soapenv:Body>
-    <urn:checkVat>
-      <urn:countryCode>${vatCountryCode}</urn:countryCode>
-      <urn:vatNumber>${cleanVatNumber.substring(2)}</urn:vatNumber>
-    </urn:checkVat>
-  </soapenv:Body>
-</soapenv:Envelope>`;
-
-      const viesResponse = await fetch('https://ec.europa.eu/taxation_customs/vies/services/checkVatService', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'text/xml; charset=utf-8',
-          'SOAPAction': ''
-        },
-        body: soapRequest
-      });
-
-      const viesText = await viesResponse.text();
-      
-      // Parse SOAP Response
-      viesValid = viesText.includes('<valid>true</valid>');
-      
-      if (viesValid) {
-        // Extrahiere Firmenname und Adresse wenn verfügbar
-        const nameMatch = viesText.match(/<name>(.*?)<\/name>/);
-        const addressMatch = viesText.match(/<address>(.*?)<\/address>/);
-        
-        if (nameMatch) companyName = nameMatch[1].trim();
-        if (addressMatch) companyAddress = addressMatch[1].replace(/\n/g, ', ').trim();
-      }
-
-      console.log('VIES Validierung:', { viesValid, companyName, companyAddress });
-    } catch (viesError) {
-      console.warn('VIES API nicht erreichbar, nutze Fallback-Validierung:', viesError);
-      // Fallback: Wenn VIES nicht erreichbar, akzeptiere Format-Validierung
-      viesValid = true;
-    }
-
-    // Update Kunde mit Validierungsergebnis
-    const { error: updateError } = await supabase
+    const { error: updateError } = await supabaseClient
       .from('customers')
       .update({
-        vat_number: cleanVatNumber,
-        vat_validated: viesValid,
-        vat_validated_at: viesValid ? new Date().toISOString() : null,
-        is_business: viesValid
+        vat_number: `${countryCode}${vatNumberOnly}`,
+        vat_validated: isValid,
+        vat_validated_at: isValid ? new Date().toISOString() : null,
+        is_business: isValid,
       })
       .eq('id', customerId);
 
     if (updateError) {
-      throw updateError;
+      return new Response(
+        JSON.stringify({ error: 'Update failed', details: updateError }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
 
     return new Response(
       JSON.stringify({
-        valid: viesValid,
-        vatNumber: cleanVatNumber,
-        companyName,
-        companyAddress,
-        message: viesValid 
-          ? 'USt-ID erfolgreich validiert' 
-          : 'USt-ID konnte nicht validiert werden - bitte überprüfen'
+        success: true,
+        isValid,
+        message: validationMessage,
+        vatNumber: `${countryCode}${vatNumberOnly}`,
       }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
 
   } catch (error) {
-    console.error('Fehler bei USt-ID Validierung:', error);
-    const errorMessage = error instanceof Error ? error.message : 'Unbekannter Fehler';
+    console.error('Error:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     return new Response(
-      JSON.stringify({ 
-        valid: false,
-        error: errorMessage 
-      }),
-      { 
-        status: 400, 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-      }
+      JSON.stringify({ error: errorMessage }),
+      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
 });
