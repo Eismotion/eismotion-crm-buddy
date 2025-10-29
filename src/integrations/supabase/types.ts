@@ -78,6 +78,8 @@ export type Database = {
           total_spent: number | null
           updated_at: string | null
           vat_number: string | null
+          vat_validated: boolean | null
+          vat_validated_at: string | null
         }
         Insert: {
           address?: string | null
@@ -97,6 +99,8 @@ export type Database = {
           total_spent?: number | null
           updated_at?: string | null
           vat_number?: string | null
+          vat_validated?: boolean | null
+          vat_validated_at?: string | null
         }
         Update: {
           address?: string | null
@@ -116,6 +120,8 @@ export type Database = {
           total_spent?: number | null
           updated_at?: string | null
           vat_number?: string | null
+          vat_validated?: boolean | null
+          vat_validated_at?: string | null
         }
         Relationships: [
           {
@@ -729,6 +735,7 @@ export type Database = {
         }
         Returns: Json
       }
+      get_country_vat_rate: { Args: { p_country: string }; Returns: number }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
