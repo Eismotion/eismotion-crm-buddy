@@ -123,8 +123,62 @@ export const InvoiceImport = () => {
   };
 
   const downloadTemplate = () => {
-    // Create template data
+    // Create template data with examples from 2020-2024
     const templateData = [
+      {
+        'Name': 'Eisdiele Sommer',
+        'Adresse': 'Eisdiele Sommer, Sonnenallee 10, 10999 Berlin',
+        'Produkte': '1 Eismaschine Compact',
+        'Rechnungsnummer': '01/2020/001',
+        'Rechnungsdatum': '2020-03-15',
+        'Nettosumme': '850,00',
+        'Bruttosumme': '1011,50'
+      },
+      {
+        'Name': 'Gelateria Milano',
+        'Adresse': 'Gelateria Milano, Bahnhofstraße 34, 80335 München',
+        'Produkte': '1 Kühlvitrine Groß\n2 Eisportionierer Set',
+        'Rechnungsnummer': '06/2020/045',
+        'Rechnungsdatum': '2020-06-22',
+        'Nettosumme': '1200,00',
+        'Bruttosumme': '1428,00'
+      },
+      {
+        'Name': 'Eis & Café Zentral',
+        'Adresse': 'Eis & Café Zentral, Marktplatz 5, 50667 Köln',
+        'Produkte': '1 Eismaschine Professional',
+        'Rechnungsnummer': '02/2021/023',
+        'Rechnungsdatum': '2021-02-10',
+        'Nettosumme': '1500,00',
+        'Bruttosumme': '1785,00'
+      },
+      {
+        'Name': 'La Dolce Vita',
+        'Adresse': 'La Dolce Vita, Hafenstraße 78, 20459 Hamburg',
+        'Produkte': '1 Vitrine Standard\n1 Waffelhalter',
+        'Rechnungsnummer': '08/2021/112',
+        'Rechnungsdatum': '2021-08-05',
+        'Nettosumme': '650,00',
+        'Bruttosumme': '773,50'
+      },
+      {
+        'Name': 'Eiscafé Venezia',
+        'Adresse': 'Eiscafé Venezia, Kirchstraße 23, 60311 Frankfurt',
+        'Produkte': '1 Eismaschine Modell XY',
+        'Rechnungsnummer': '04/2022/067',
+        'Rechnungsdatum': '2022-04-18',
+        'Nettosumme': '950,00',
+        'Bruttosumme': '1130,50'
+      },
+      {
+        'Name': 'Gelato Paradise',
+        'Adresse': 'Gelato Paradise, Altstadt 12, 70173 Stuttgart',
+        'Produkte': '1 Kühlschrank Pro\n2 Eisbehälter Set',
+        'Rechnungsnummer': '11/2022/189',
+        'Rechnungsdatum': '2022-11-30',
+        'Nettosumme': '1100,00',
+        'Bruttosumme': '1309,00'
+      },
       {
         'Name': 'Musterfirma GmbH',
         'Adresse': 'Musterfirma GmbH, Musterstraße 123, 12345 Musterstadt',
