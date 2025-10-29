@@ -76,23 +76,62 @@ serve(async (req) => {
       try {
         console.log(`Processing invoice: ${row.invoiceNumber}`);
         
-        // Find or create customer
+        // Find or create customer - intelligent multi-level matching
         let customerId: string;
-        const { data: existingCustomer } = await supabaseClient
+        
+        // Step 1: Search by name
+        const { data: customersByName } = await supabaseClient
           .from('customers')
-          .select('id, address, postal_code, city, country')
-          .eq('email', row.customerEmail)
-          .maybeSingle();
+          .select('id, name, email, phone, address, postal_code, city, country')
+          .ilike('name', row.customerName.trim());
+        
+        let existingCustomer = null;
+        
+        if (customersByName && customersByName.length > 0) {
+          if (customersByName.length === 1) {
+            // Only one customer with this name - perfect match
+            existingCustomer = customersByName[0];
+          } else {
+            // Multiple customers with same name - check city
+            if (row.customerCity) {
+              const matchesByCity = customersByName.filter(c => 
+                c.city && c.city.toLowerCase() === row.customerCity!.toLowerCase()
+              );
+              
+              if (matchesByCity.length === 1) {
+                // Found unique match by name + city
+                existingCustomer = matchesByCity[0];
+              } else if (matchesByCity.length > 1 && row.customerAddress) {
+                // Still multiple - check address
+                const matchesByAddress = matchesByCity.filter(c =>
+                  c.address && c.address.toLowerCase().includes(row.customerAddress!.toLowerCase())
+                );
+                
+                if (matchesByAddress.length > 0) {
+                  // Found match by name + city + address
+                  existingCustomer = matchesByAddress[0];
+                }
+              }
+            }
+            
+            // If still no unique match found, take the first one
+            if (!existingCustomer) {
+              existingCustomer = customersByName[0];
+            }
+          }
+        }
 
         if (existingCustomer) {
           customerId = existingCustomer.id;
           
-          // Update customer with any new address information
+          // Update customer with any new/missing information
           const updateData: any = {};
           if (row.customerAddress && !existingCustomer.address) updateData.address = row.customerAddress;
           if (row.customerPostalCode && !existingCustomer.postal_code) updateData.postal_code = row.customerPostalCode;
           if (row.customerCity && !existingCustomer.city) updateData.city = row.customerCity;
           if (row.customerCountry && !existingCustomer.country) updateData.country = row.customerCountry;
+          if (row.customerEmail && !existingCustomer.email) updateData.email = row.customerEmail;
+          if (row.customerPhone && !existingCustomer.phone) updateData.phone = row.customerPhone;
           
           if (Object.keys(updateData).length > 0) {
             await supabaseClient
