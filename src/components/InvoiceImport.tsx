@@ -103,6 +103,14 @@ export const InvoiceImport = () => {
       const totalAmount = parseFloat(bruttoStr) || 0;
       const taxAmount = totalAmount - subtotal;
 
+      // Parse and validate invoice date
+      let invoiceDate = row.Rechnungsdatum?.toString().trim() || '';
+      
+      // If empty or invalid, use current date
+      if (!invoiceDate || invoiceDate === '') {
+        invoiceDate = new Date().toISOString().split('T')[0];
+      }
+
       return {
         customerName: row.Name || '',
         customerEmail: '',
@@ -112,7 +120,7 @@ export const InvoiceImport = () => {
         customerPostalCode: postalCode,
         customerCountry: 'DE',
         invoiceNumber: row.Rechnungsnummer || '',
-        invoiceDate: row.Rechnungsdatum || '',
+        invoiceDate: invoiceDate,
         subtotal: subtotal,
         taxAmount: taxAmount,
         totalAmount: totalAmount,
