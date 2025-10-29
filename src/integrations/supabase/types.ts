@@ -63,10 +63,12 @@ export type Database = {
         Row: {
           address: string | null
           city: string | null
+          country: string | null
           created_at: string | null
           customer_number: string | null
           email: string | null
           id: string
+          is_business: boolean | null
           name: string
           notes: string | null
           parent_customer_id: string | null
@@ -75,14 +77,17 @@ export type Database = {
           total_orders: number | null
           total_spent: number | null
           updated_at: string | null
+          vat_number: string | null
         }
         Insert: {
           address?: string | null
           city?: string | null
+          country?: string | null
           created_at?: string | null
           customer_number?: string | null
           email?: string | null
           id?: string
+          is_business?: boolean | null
           name: string
           notes?: string | null
           parent_customer_id?: string | null
@@ -91,14 +96,17 @@ export type Database = {
           total_orders?: number | null
           total_spent?: number | null
           updated_at?: string | null
+          vat_number?: string | null
         }
         Update: {
           address?: string | null
           city?: string | null
+          country?: string | null
           created_at?: string | null
           customer_number?: string | null
           email?: string | null
           id?: string
+          is_business?: boolean | null
           name?: string
           notes?: string | null
           parent_customer_id?: string | null
@@ -107,6 +115,7 @@ export type Database = {
           total_orders?: number | null
           total_spent?: number | null
           updated_at?: string | null
+          vat_number?: string | null
         }
         Relationships: [
           {
@@ -559,9 +568,12 @@ export type Database = {
           created_at: string | null
           description: string | null
           id: string
+          is_tax_exempt: boolean | null
           name: string
           price: number
+          production_country: string | null
           season: string | null
+          sku: string | null
           updated_at: string | null
         }
         Insert: {
@@ -570,9 +582,12 @@ export type Database = {
           created_at?: string | null
           description?: string | null
           id?: string
+          is_tax_exempt?: boolean | null
           name: string
           price: number
+          production_country?: string | null
           season?: string | null
+          sku?: string | null
           updated_at?: string | null
         }
         Update: {
@@ -581,9 +596,12 @@ export type Database = {
           created_at?: string | null
           description?: string | null
           id?: string
+          is_tax_exempt?: boolean | null
           name?: string
           price?: number
+          production_country?: string | null
           season?: string | null
+          sku?: string | null
           updated_at?: string | null
         }
         Relationships: []
@@ -698,6 +716,10 @@ export type Database = {
       }
     }
     Functions: {
+      calculate_invoice_tax_rate: {
+        Args: { p_customer_id: string; p_invoice_items: Json }
+        Returns: number
+      }
       create_customer_login: {
         Args: {
           customer_email: string
