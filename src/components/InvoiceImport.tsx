@@ -103,28 +103,51 @@ export const InvoiceImport = () => {
       const totalAmount = parseFloat(bruttoStr) || 0;
       const taxAmount = totalAmount - subtotal;
 
-      // Parse invoice date - handle both string and Excel serial date formats
+      // Parse invoice date - handle both string and Excel serial date formats (incl. de-DE)
       let invoiceDate = '';
       const rawDate = row.Rechnungsdatum;
       
-      if (rawDate) {
-        // If it's a number, it's an Excel serial date
+      if (rawDate !== undefined && rawDate !== null) {
         if (typeof rawDate === 'number') {
-          // Excel dates are days since 1900-01-01
+          // Excel serial date (1900-based, Excel leap-year bug accounted for)
           const excelEpoch = new Date(1900, 0, 1);
           const date = new Date(excelEpoch.getTime() + (rawDate - 2) * 86400000);
           invoiceDate = date.toISOString().split('T')[0];
         } else {
-          // Try to parse as string
-          const dateStr = rawDate.toString().trim();
-          // Check if it's already in YYYY-MM-DD format
+          const dateStr = rawDate.toString().trim().replace(/\s+/g, ' ');
+          // 1) Already ISO (YYYY-MM-DD)
           if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
             invoiceDate = dateStr;
           } else {
-            // Try to parse other date formats
-            const parsed = new Date(dateStr);
-            if (!isNaN(parsed.getTime())) {
-              invoiceDate = parsed.toISOString().split('T')[0];
+            // 2) de-DE or DMY variants: DD.MM.YYYY | DD/MM/YYYY | DD-MM-YYYY (also allows 1/1/2022)
+            const dmy = dateStr.match(/^(\d{1,2})[.\/\-](\d{1,2})[.\/\-](\d{2}|\d{4})$/);
+            if (dmy) {
+              let d = parseInt(dmy[1], 10);
+              let m = parseInt(dmy[2], 10);
+              let y = parseInt(dmy[3], 10);
+              if (y < 100) y += 2000; // assume 20xx for 2-digit years
+              if (m >= 1 && m <= 12 && d >= 1 && d <= 31) {
+                invoiceDate = `${y.toString().padStart(4, '0')}-${m.toString().padStart(2, '0')}-${d.toString().padStart(2, '0')}`;
+              }
+            }
+            // 3) YMD with different separators: YYYY/MM/DD | YYYY.MM.DD
+            if (!invoiceDate) {
+              const ymd = dateStr.match(/^(\d{4})[.\/\-](\d{1,2})[.\/\-](\d{1,2})$/);
+              if (ymd) {
+                const y = parseInt(ymd[1], 10);
+                const m = parseInt(ymd[2], 10);
+                const d = parseInt(ymd[3], 10);
+                if (m >= 1 && m <= 12 && d >= 1 && d <= 31) {
+                  invoiceDate = `${y.toString().padStart(4, '0')}-${m.toString().padStart(2, '0')}-${d.toString().padStart(2, '0')}`;
+                }
+              }
+            }
+            // 4) Fallback to Date parser as last resort
+            if (!invoiceDate) {
+              const parsed = new Date(dateStr);
+              if (!isNaN(parsed.getTime())) {
+                invoiceDate = parsed.toISOString().split('T')[0];
+              }
             }
           }
         }
