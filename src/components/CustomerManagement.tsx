@@ -208,19 +208,19 @@ export const CustomerManagement = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h2 className="text-3xl font-bold text-foreground">Kundenverwaltung</h2>
           <p className="text-muted-foreground">Verwalten Sie Ihre Kundendaten</p>
         </div>
-        <div className="flex gap-2">
-          <Button variant="outline" onClick={loadCustomers}>
-            <RefreshCw className="h-4 w-4 mr-2" />
-            Aktualisieren
+        <div className="flex flex-wrap gap-2">
+          <Button variant="outline" onClick={loadCustomers} className="flex-1 sm:flex-none">
+            <RefreshCw className="h-4 w-4 sm:mr-2" />
+            <span className="hidden sm:inline">Aktualisieren</span>
           </Button>
-          <Button>
-            <Plus className="h-4 w-4 mr-2" />
-            Neuer Kunde
+          <Button className="flex-1 sm:flex-none">
+            <Plus className="h-4 w-4 sm:mr-2" />
+            <span className="sm:inline">Neuer Kunde</span>
           </Button>
         </div>
       </div>
@@ -238,7 +238,8 @@ export const CustomerManagement = () => {
             </p>
           </CardHeader>
           <CardContent>
-            <div className="rounded-md border">
+            {/* Desktop Table View */}
+            <div className="hidden md:block rounded-md border">
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -352,6 +353,95 @@ export const CustomerManagement = () => {
                   ))}
                 </TableBody>
               </Table>
+            </div>
+
+            {/* Mobile Card View */}
+            <div className="md:hidden space-y-4">
+              {sortedCustomers.map((customer) => (
+                <Card 
+                  key={customer.id}
+                  className="cursor-pointer hover:bg-muted/50"
+                  onClick={() => navigate(`/customers/${customer.id}`)}
+                >
+                  <CardHeader className="pb-3">
+                    <div className="flex items-start justify-between">
+                      <div className="space-y-1">
+                        <CardTitle className="text-lg text-primary">{customer.name}</CardTitle>
+                        <p className="text-sm text-muted-foreground">{customer.email || 'Keine E-Mail'}</p>
+                      </div>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    <div className="grid grid-cols-2 gap-2 text-sm">
+                      <div>
+                        <p className="text-muted-foreground">Telefon</p>
+                        <p className="font-medium">{customer.phone || '-'}</p>
+                      </div>
+                      <div>
+                        <p className="text-muted-foreground">Bestellungen</p>
+                        <p className="font-medium">{customer.total_orders || 0}</p>
+                      </div>
+                    </div>
+                    <div className="text-sm">
+                      <p className="text-muted-foreground">Adresse</p>
+                      {customer.address || customer.postal_code || customer.city ? (
+                        <div>
+                          {customer.address && <p className="font-medium">{customer.address}</p>}
+                          <p className="font-medium">
+                            {[customer.postal_code, customer.city].filter(Boolean).join(' ') || '-'}
+                          </p>
+                        </div>
+                      ) : (
+                        <p className="font-medium">-</p>
+                      )}
+                    </div>
+                    {customer.parent && (
+                      <div className="text-sm">
+                        <p className="text-muted-foreground">Gehört zu</p>
+                        <div className="flex items-center gap-2">
+                          <span className="font-medium text-primary">{customer.parent.name}</span>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleUnlinkCustomer(customer.id);
+                            }}
+                            className="h-6 w-6 p-0"
+                          >
+                            <Trash2 className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+                    <div className="flex items-center justify-between pt-2 border-t">
+                      <div className="text-sm">
+                        <p className="text-muted-foreground">Beigetreten</p>
+                        <p className="font-medium">{new Date(customer.created_at).toLocaleDateString('de-DE')}</p>
+                      </div>
+                      <p className="text-lg font-bold text-primary">{formatCurrency(customer.total_spent || 0)}</p>
+                    </div>
+                    <div className="flex gap-2 pt-2" onClick={(e) => e.stopPropagation()}>
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        className="flex-1"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          openLinkDialog(customer);
+                        }}
+                      >
+                        <Link2 className="h-4 w-4 mr-2" />
+                        Verknüpfen
+                      </Button>
+                      <Button variant="outline" size="sm" className="flex-1">
+                        <Edit className="h-4 w-4 mr-2" />
+                        Bearbeiten
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
             </div>
           </CardContent>
         </Card>
