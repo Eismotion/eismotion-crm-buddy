@@ -11,6 +11,9 @@ import { supabase } from '@/integrations/supabase/client';
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
+import { useForm } from 'react-hook-form';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Textarea } from '@/components/ui/textarea';
 
 type SortField = 'name' | 'created_at' | 'total_spent' | 'total_orders' | 'email';
 type SortDirection = 'asc' | 'desc';
@@ -29,6 +32,24 @@ export const CustomerManagement = () => {
   const [loginEmail, setLoginEmail] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
   const [creatingLogin, setCreatingLogin] = useState(false);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [editingCustomer, setEditingCustomer] = useState<any>(null);
+
+  const form = useForm({
+    defaultValues: {
+      name: '',
+      email: '',
+      phone: '',
+      address: '',
+      city: '',
+      postal_code: '',
+      country: 'DE',
+      customer_number: '',
+      vat_number: '',
+      is_business: false,
+      notes: '',
+    },
+  });
 
   useEffect(() => {
     loadCustomers();
@@ -145,6 +166,45 @@ export const CustomerManagement = () => {
       toast.error(error.message || 'Fehler beim Erstellen des Logins');
     } finally {
       setCreatingLogin(false);
+    }
+  };
+
+  const openEditDialog = (customer: any) => {
+    setEditingCustomer(customer);
+    form.reset({
+      name: customer.name || '',
+      email: customer.email || '',
+      phone: customer.phone || '',
+      address: customer.address || '',
+      city: customer.city || '',
+      postal_code: customer.postal_code || '',
+      country: customer.country || 'DE',
+      customer_number: customer.customer_number || '',
+      vat_number: customer.vat_number || '',
+      is_business: customer.is_business || false,
+      notes: customer.notes || '',
+    });
+    setEditDialogOpen(true);
+  };
+
+  const handleUpdateCustomer = async (values: any) => {
+    if (!editingCustomer) return;
+
+    try {
+      const { error } = await supabase
+        .from('customers')
+        .update(values)
+        .eq('id', editingCustomer.id);
+
+      if (error) throw error;
+
+      toast.success('Kunde erfolgreich aktualisiert');
+      setEditDialogOpen(false);
+      setEditingCustomer(null);
+      loadCustomers();
+    } catch (error) {
+      console.error('Error updating customer:', error);
+      toast.error('Fehler beim Aktualisieren des Kunden');
     }
   };
 
@@ -372,7 +432,15 @@ export const CustomerManagement = () => {
                           >
                             <Link2 className="h-4 w-4" />
                           </Button>
-                          <Button variant="ghost" size="sm">
+                          <Button 
+                            variant="ghost" 
+                            size="sm"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              openEditDialog(customer);
+                            }}
+                            title="Kunde bearbeiten"
+                          >
                             <Edit className="h-4 w-4" />
                           </Button>
                           <Button variant="ghost" size="sm">
@@ -465,7 +533,15 @@ export const CustomerManagement = () => {
                         <Link2 className="h-4 w-4 mr-2" />
                         Verknüpfen
                       </Button>
-                      <Button variant="outline" size="sm" className="flex-1">
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        className="flex-1"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          openEditDialog(customer);
+                        }}
+                      >
                         <Edit className="h-4 w-4 mr-2" />
                         Bearbeiten
                       </Button>
@@ -557,6 +633,176 @@ export const CustomerManagement = () => {
               {creatingLogin ? 'Wird erstellt...' : 'Login erstellen'}
             </Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Kunde bearbeiten</DialogTitle>
+            <DialogDescription>
+              Bearbeiten Sie die Kundendaten für "{editingCustomer?.name}".
+            </DialogDescription>
+          </DialogHeader>
+          
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(handleUpdateCustomer)} className="space-y-4">
+              <FormField
+                control={form.control}
+                name="name"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Name *</FormLabel>
+                    <FormControl>
+                      <Input {...field} placeholder="Firmenname oder Name" />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="email"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>E-Mail</FormLabel>
+                      <FormControl>
+                        <Input {...field} type="email" placeholder="kunde@beispiel.de" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="phone"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Telefon</FormLabel>
+                      <FormControl>
+                        <Input {...field} placeholder="+49 123 456789" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              <FormField
+                control={form.control}
+                name="address"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Adresse</FormLabel>
+                    <FormControl>
+                      <Input {...field} placeholder="Straße und Hausnummer" />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <FormField
+                  control={form.control}
+                  name="postal_code"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>PLZ</FormLabel>
+                      <FormControl>
+                        <Input {...field} placeholder="12345" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="city"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Stadt</FormLabel>
+                      <FormControl>
+                        <Input {...field} placeholder="Berlin" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="country"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Land</FormLabel>
+                      <FormControl>
+                        <Input {...field} placeholder="DE" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="customer_number"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Kundennummer</FormLabel>
+                      <FormControl>
+                        <Input {...field} placeholder="K-12345" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="vat_number"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>USt-IdNr.</FormLabel>
+                      <FormControl>
+                        <Input {...field} placeholder="DE123456789" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              <FormField
+                control={form.control}
+                name="notes"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Notizen</FormLabel>
+                    <FormControl>
+                      <Textarea {...field} placeholder="Zusätzliche Informationen..." rows={3} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <DialogFooter>
+                <Button type="button" variant="outline" onClick={() => setEditDialogOpen(false)}>
+                  Abbrechen
+                </Button>
+                <Button type="submit">
+                  Speichern
+                </Button>
+              </DialogFooter>
+            </form>
+          </Form>
         </DialogContent>
       </Dialog>
     </div>
