@@ -15,6 +15,7 @@ const navItems = [
   { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { id: 'customers', label: 'Kunden', icon: Users },
   { id: 'invoices', label: 'Rechnungen', icon: FileText },
+  { id: 'import', label: 'Rechnungen importieren', icon: Package },
   { id: 'incoming-invoices', label: 'Eingangsrechnungen', icon: Receipt },
   { id: 'accounting', label: 'Buchhaltung', icon: Calculator },
   { id: 'design-studio', label: 'Design-Studio', icon: Palette },
