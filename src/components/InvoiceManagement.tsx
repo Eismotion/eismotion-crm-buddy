@@ -227,13 +227,19 @@ export const InvoiceManagement = () => {
           </CardHeader>
           <CardContent>
             <Tabs value={selectedYear} onValueChange={setSelectedYear}>
-              <TabsList className="grid w-full grid-cols-3 lg:grid-cols-6 mb-4">
-                {years.map(year => (
-                  <TabsTrigger key={year} value={year}>
-                    {year} ({invoicesByYear[year as keyof typeof invoicesByYear].length})
-                  </TabsTrigger>
-                ))}
-              </TabsList>
+              <div className="relative mb-4">
+                <TabsList className="inline-flex w-auto gap-1 overflow-x-auto scrollbar-hide">
+                  {years.map(year => (
+                    <TabsTrigger 
+                      key={year} 
+                      value={year}
+                      className="whitespace-nowrap flex-shrink-0"
+                    >
+                      {year} <span className="ml-1 text-muted-foreground">({invoicesByYear[year as keyof typeof invoicesByYear].length})</span>
+                    </TabsTrigger>
+                  ))}
+                </TabsList>
+              </div>
 
               {years.map(year => (
                 <TabsContent key={year} value={year}>
