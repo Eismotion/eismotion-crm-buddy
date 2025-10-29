@@ -166,8 +166,12 @@ serve(async (req) => {
           if (row.customerPostalCode && !existingCustomer.postal_code) updateData.postal_code = row.customerPostalCode;
           if (row.customerCity && !existingCustomer.city) updateData.city = row.customerCity;
           if (row.customerCountry && !existingCustomer.country) updateData.country = row.customerCountry;
-          if (row.customerEmail && !existingCustomer.email) updateData.email = row.customerEmail;
-          if (row.customerPhone && !existingCustomer.phone) updateData.phone = row.customerPhone;
+          if (row.customerEmail && row.customerEmail.trim() !== '' && !existingCustomer.email) {
+            updateData.email = row.customerEmail.trim();
+          }
+          if (row.customerPhone && row.customerPhone.trim() !== '' && !existingCustomer.phone) {
+            updateData.phone = row.customerPhone.trim();
+          }
           
           if (Object.keys(updateData).length > 0) {
             await supabaseClient
@@ -194,8 +198,8 @@ serve(async (req) => {
             .from('customers')
             .insert({
               name: row.customerName,
-              email: row.customerEmail,
-              phone: row.customerPhone,
+              email: row.customerEmail && row.customerEmail.trim() !== '' ? row.customerEmail.trim() : null,
+              phone: row.customerPhone && row.customerPhone.trim() !== '' ? row.customerPhone.trim() : null,
               address: row.customerAddress,
               postal_code: row.customerPostalCode,
               city: row.customerCity,
