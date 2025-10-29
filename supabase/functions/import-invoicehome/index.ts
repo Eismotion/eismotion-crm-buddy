@@ -10,7 +10,10 @@ interface ImportRow {
   customerName: string;
   customerEmail?: string;
   customerPhone?: string;
+  customerAddress?: string;
+  customerPostalCode?: string;
   customerCity?: string;
+  customerCountry?: string;
   invoiceNumber: string;
   invoiceDate: string;
   paidDate?: string | null;
@@ -77,12 +80,26 @@ serve(async (req) => {
         let customerId: string;
         const { data: existingCustomer } = await supabaseClient
           .from('customers')
-          .select('id')
+          .select('id, address, postal_code, city, country')
           .eq('email', row.customerEmail)
           .maybeSingle();
 
         if (existingCustomer) {
           customerId = existingCustomer.id;
+          
+          // Update customer with any new address information
+          const updateData: any = {};
+          if (row.customerAddress && !existingCustomer.address) updateData.address = row.customerAddress;
+          if (row.customerPostalCode && !existingCustomer.postal_code) updateData.postal_code = row.customerPostalCode;
+          if (row.customerCity && !existingCustomer.city) updateData.city = row.customerCity;
+          if (row.customerCountry && !existingCustomer.country) updateData.country = row.customerCountry;
+          
+          if (Object.keys(updateData).length > 0) {
+            await supabaseClient
+              .from('customers')
+              .update(updateData)
+              .eq('id', customerId);
+          }
         } else {
           // Create new customer
           const customerNumber = `CUST-${String(Math.floor(Math.random() * 9999)).padStart(4, '0')}`;
@@ -92,7 +109,10 @@ serve(async (req) => {
               name: row.customerName,
               email: row.customerEmail,
               phone: row.customerPhone,
+              address: row.customerAddress,
+              postal_code: row.customerPostalCode,
               city: row.customerCity,
+              country: row.customerCountry || 'DE',
               customer_number: customerNumber
             })
             .select()
