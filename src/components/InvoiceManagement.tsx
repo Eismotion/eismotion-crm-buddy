@@ -195,24 +195,24 @@ export const InvoiceManagement = () => {
             <RefreshCw className="h-4 w-4 sm:mr-2" />
             <span className="hidden sm:inline">Aktualisieren</span>
           </Button>
-          {/* Conditional fix button for 2022 misdated invoices */}
+          {/* Conditional cleanup button for empty invoices */}
           {(() => {
-            const count2022 = invoices.filter(inv => new Date(inv.invoice_date).getFullYear() === 2022).length;
-            const count2025 = invoices.filter(inv => new Date(inv.invoice_date).getFullYear() === 2025).length;
-            return count2022 === 0 && count2025 > 259 ? (
-              <Button variant="outline" onClick={async () => {
+            const emptyCount = invoices.filter(inv => !inv.invoice_number || inv.invoice_number === '').length;
+            return emptyCount > 0 ? (
+              <Button variant="destructive" onClick={async () => {
+                if (!confirm(`${emptyCount} leere Rechnungen löschen?`)) return;
                 try {
-                  const { data, error } = await supabase.functions.invoke('fix-invoice-years', { body: {} });
+                  const { data, error } = await supabase.functions.invoke('delete-empty-invoices', { body: {} });
                   if (error) throw error;
-                  toast.success(`Korrektur ausgeführt: ${data.updated} aktualisiert`);
+                  toast.success(`${data.deleted} leere Rechnungen gelöscht`);
                   await loadInvoices();
                 } catch (e) {
                   console.error(e);
-                  toast.error('Korrektur fehlgeschlagen');
+                  toast.error('Löschen fehlgeschlagen');
                 }
               }} className="flex-1 sm:flex-none">
                 <RefreshCw className="h-4 w-4 sm:mr-2" />
-                <span className="hidden sm:inline">2022-Fix anwenden</span>
+                <span className="hidden sm:inline">Leere Rechnungen löschen ({emptyCount})</span>
               </Button>
             ) : null;
           })()}
