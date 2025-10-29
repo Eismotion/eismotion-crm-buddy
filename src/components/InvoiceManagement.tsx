@@ -5,8 +5,8 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
+import { Input } from '@/components/ui/input';
 import { formatCurrency } from '@/data/mockData';
 import { supabase } from '@/integrations/supabase/client';
 import { useState, useEffect } from 'react';
@@ -22,6 +22,8 @@ export const InvoiceManagement = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [selectedCustomerId, setSelectedCustomerId] = useState<string>('');
+  const [customerSearch, setCustomerSearch] = useState('');
+  const [filteredCustomers, setFilteredCustomers] = useState<any[]>([]);
 
   useEffect(() => {
     loadInvoices();
@@ -37,10 +39,26 @@ export const InvoiceManagement = () => {
 
       if (error) throw error;
       setCustomers(data || []);
+      setFilteredCustomers(data || []);
     } catch (error) {
       console.error('Error loading customers:', error);
     }
   };
+
+  useEffect(() => {
+    if (customerSearch.trim() === '') {
+      setFilteredCustomers(customers);
+    } else {
+      const query = customerSearch.toLowerCase();
+      const filtered = customers.filter(customer => 
+        customer.name.toLowerCase().includes(query) ||
+        customer.customer_number?.toLowerCase().includes(query) ||
+        customer.address?.toLowerCase().includes(query) ||
+        customer.city?.toLowerCase().includes(query)
+      );
+      setFilteredCustomers(filtered);
+    }
+  }, [customerSearch, customers]);
 
   const loadInvoices = async () => {
     setLoading(true);
@@ -121,6 +139,7 @@ export const InvoiceManagement = () => {
       await loadInvoices();
       setShowCreateDialog(false);
       setSelectedCustomerId('');
+      setCustomerSearch('');
       toast.success('Rechnung erfolgreich erstellt');
     } catch (error) {
       console.error('Error creating invoice:', error);
@@ -371,36 +390,69 @@ export const InvoiceManagement = () => {
         </Card>
       )}
 
-      <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
-        <DialogContent>
+      <Dialog open={showCreateDialog} onOpenChange={(open) => {
+        setShowCreateDialog(open);
+        if (!open) {
+          setCustomerSearch('');
+          setSelectedCustomerId('');
+        }
+      }}>
+        <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle>Neue Rechnung erstellen</DialogTitle>
             <DialogDescription>
-              Wählen Sie einen Kunden aus. Die vollständige Adresse wird automatisch übernommen.
+              Suchen Sie nach einem Kunden. Die vollständige Adresse wird automatisch übernommen.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label htmlFor="customer">Kunde auswählen</Label>
-              <Select value={selectedCustomerId} onValueChange={setSelectedCustomerId}>
-                <SelectTrigger id="customer">
-                  <SelectValue placeholder="Kunde wählen..." />
-                </SelectTrigger>
-                <SelectContent>
-                  {customers.map((customer) => (
-                    <SelectItem key={customer.id} value={customer.id}>
-                      <div className="flex flex-col">
-                        <span className="font-medium">{customer.name}</span>
-                        {customer.address && (
-                          <span className="text-xs text-muted-foreground">
-                            {customer.address}, {customer.postal_code} {customer.city}
-                          </span>
+              <Label htmlFor="customerSearch">Kunde suchen</Label>
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  id="customerSearch"
+                  placeholder="Name, Kundennummer, Stadt eingeben..."
+                  value={customerSearch}
+                  onChange={(e) => setCustomerSearch(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
+            </div>
+
+            {/* Customer List */}
+            <div className="space-y-2">
+              <Label>Ergebnisse ({filteredCustomers.length})</Label>
+              <div className="border rounded-md max-h-[300px] overflow-y-auto">
+                {filteredCustomers.length === 0 ? (
+                  <div className="p-8 text-center text-sm text-muted-foreground">
+                    Keine Kunden gefunden
+                  </div>
+                ) : (
+                  <div className="divide-y">
+                    {filteredCustomers.map((customer) => (
+                      <button
+                        key={customer.id}
+                        onClick={() => setSelectedCustomerId(customer.id)}
+                        className={`w-full text-left p-3 hover:bg-muted/50 transition-colors ${
+                          selectedCustomerId === customer.id ? 'bg-primary/10 border-l-2 border-primary' : ''
+                        }`}
+                      >
+                        <div className="font-medium">{customer.name}</div>
+                        {customer.customer_number && (
+                          <div className="text-xs text-muted-foreground">
+                            Kundennr: {customer.customer_number}
+                          </div>
                         )}
-                      </div>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                        {customer.address && (
+                          <div className="text-xs text-muted-foreground mt-1">
+                            {customer.address}, {customer.postal_code} {customer.city}
+                          </div>
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
             {selectedCustomerId && customers.find(c => c.id === selectedCustomerId) && (
               <div className="p-3 bg-muted rounded-md text-sm space-y-1">
@@ -424,6 +476,7 @@ export const InvoiceManagement = () => {
               <Button variant="outline" onClick={() => {
                 setShowCreateDialog(false);
                 setSelectedCustomerId('');
+                setCustomerSearch('');
               }}>
                 Abbrechen
               </Button>
