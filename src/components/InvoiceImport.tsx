@@ -91,7 +91,7 @@ export const InvoiceImport = () => {
         return {
           description: match ? match[1] : line,
           quantity: 1,
-          unit_price: 0
+          unitPrice: 0
         };
       });
 
@@ -99,8 +99,9 @@ export const InvoiceImport = () => {
       const nettoStr = (row.Nettosumme || '').toString().replace('€', '').replace(',', '.').trim();
       const bruttoStr = (row.Bruttosumme || '').toString().replace('€', '').replace(',', '.').trim();
       
-      const netAmount = parseFloat(nettoStr) || 0;
+      const subtotal = parseFloat(nettoStr) || 0;
       const totalAmount = parseFloat(bruttoStr) || 0;
+      const taxAmount = totalAmount - subtotal;
 
       return {
         customerName: row.Name || '',
@@ -112,8 +113,10 @@ export const InvoiceImport = () => {
         customerCountry: 'DE',
         invoiceNumber: row.Rechnungsnummer || '',
         invoiceDate: row.Rechnungsdatum || '',
-        subtotal: netAmount,
-        total: totalAmount,
+        subtotal: subtotal,
+        taxAmount: taxAmount,
+        totalAmount: totalAmount,
+        status: 'bezahlt',
         items: items
       };
     });
@@ -138,7 +141,7 @@ export const InvoiceImport = () => {
       // Call edge function
       const { data, error } = await supabase.functions.invoke('import-invoicehome', {
         body: {
-          importData: importData,
+          data: importData,
           importType: 'excel'
         }
       });
