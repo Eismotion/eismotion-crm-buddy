@@ -1,11 +1,10 @@
-import { Filter, Plus, Edit, Trash2, Package, Snowflake, Sun, Leaf, Flower, RefreshCw, Shield } from 'lucide-react';
+import { Plus, Edit, Trash2, Package, Snowflake, Sun, Leaf, Flower, RefreshCw, ShieldCheck } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { formatCurrency } from '@/data/mockData';
 import { supabase } from '@/integrations/supabase/client';
 import { useState, useEffect } from 'react';
-import { toast } from 'sonner';
 
 export const ProductManagement = () => {
   const [products, setProducts] = useState<any[]>([]);
@@ -22,14 +21,13 @@ export const ProductManagement = () => {
       const { data, error } = await supabase
         .from('products')
         .select('*')
-        .order('category', { ascending: true })
-        .order('name', { ascending: true });
+        .eq('active', true)
+        .order('name');
 
       if (error) throw error;
       setProducts(data || []);
     } catch (error) {
       console.error('Error loading products:', error);
-      toast.error('Fehler beim Laden der Produkte');
     } finally {
       setLoading(false);
     }
@@ -38,6 +36,9 @@ export const ProductManagement = () => {
   const filteredProducts = filterSeason === 'all' 
     ? products 
     : products.filter(p => p.season === filterSeason);
+
+  const seasons = ['Ganzjährig', 'Winter', 'Frühling', 'Sommer', 'Herbst'];
+
   const getSeasonIcon = (season: string) => {
     switch (season) {
       case 'Winter': return <Snowflake className="h-5 w-5 text-season-winter" />;
@@ -63,7 +64,7 @@ export const ProductManagement = () => {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h2 className="text-3xl font-bold text-foreground">Produktverwaltung</h2>
-          <p className="text-muted-foreground">Verwalten Sie Ihr Produktsortiment</p>
+          <p className="text-muted-foreground">Verwalten Sie Ihr Produktsortiment ({products.length} Produkte)</p>
         </div>
         <div className="flex flex-wrap gap-2">
           <Button variant="outline" onClick={loadProducts} className="flex-1 sm:flex-none">
@@ -76,11 +77,9 @@ export const ProductManagement = () => {
             className="px-3 py-2 border border-input bg-background rounded-md text-sm"
           >
             <option value="all">Alle Saisons</option>
-            <option value="Ganzjährig">Ganzjährig</option>
-            <option value="Frühling">Frühling</option>
-            <option value="Sommer">Sommer</option>
-            <option value="Herbst">Herbst</option>
-            <option value="Winter">Winter</option>
+            {seasons.map(season => (
+              <option key={season} value={season}>{season}</option>
+            ))}
           </select>
           <Button className="flex-1 sm:flex-none">
             <Plus className="h-4 w-4 sm:mr-2" />
@@ -92,9 +91,7 @@ export const ProductManagement = () => {
       {loading ? (
         <div className="text-center p-8">Laden...</div>
       ) : filteredProducts.length === 0 ? (
-        <div className="text-center p-8 text-muted-foreground">
-          Keine Produkte gefunden
-        </div>
+        <div className="text-center p-8 text-muted-foreground">Keine Produkte gefunden</div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {filteredProducts.map((product) => (
@@ -102,15 +99,7 @@ export const ProductManagement = () => {
               <CardContent className="p-6">
                 <div className="flex items-start justify-between mb-4">
                   <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-1">
-                      <h3 className="font-semibold text-lg">{product.name}</h3>
-                      {product.is_tax_exempt && (
-                        <Badge variant="outline" className="text-xs">
-                          <Shield className="h-3 w-3 mr-1" />
-                          MwSt-frei
-                        </Badge>
-                      )}
-                    </div>
+                    <h3 className="font-semibold text-lg mb-1">{product.name}</h3>
                     <p className="text-sm text-muted-foreground">{product.category}</p>
                     {product.sku && (
                       <p className="text-xs text-muted-foreground mt-1">SKU: {product.sku}</p>
@@ -121,21 +110,22 @@ export const ProductManagement = () => {
                   </div>
                 </div>
                 
-                <div className="mb-4 flex gap-2 flex-wrap">
+                <div className="flex flex-wrap gap-2 mb-4">
                   <Badge 
                     variant="outline" 
                     className={getSeasonColor(product.season)}
                   >
                     {product.season}
                   </Badge>
-                  {product.production_country && (
-                    <Badge variant="outline" className="text-xs">
-                      {product.production_country}
+                  {product.is_tax_exempt && (
+                    <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+                      <ShieldCheck className="h-3 w-3 mr-1" />
+                      MwSt-frei
                     </Badge>
                   )}
-                  {!product.active && (
-                    <Badge variant="outline" className="text-xs bg-muted">
-                      Inaktiv
+                  {product.production_country && product.production_country !== 'DE' && (
+                    <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
+                      {product.production_country}
                     </Badge>
                   )}
                 </div>
@@ -151,9 +141,7 @@ export const ProductManagement = () => {
                     {formatCurrency(product.price)}
                   </span>
                   {!product.is_tax_exempt && (
-                    <span className="text-xs text-muted-foreground">
-                      + 19% MwSt*
-                    </span>
+                    <span className="text-xs text-muted-foreground">zzgl. MwSt</span>
                   )}
                 </div>
 
@@ -170,17 +158,6 @@ export const ProductManagement = () => {
             </Card>
           ))}
         </div>
-      )}
-      
-      {!loading && filteredProducts.length > 0 && (
-        <Card>
-          <CardContent className="p-4">
-            <p className="text-xs text-muted-foreground">
-              * MwSt wird automatisch berechnet basierend auf: Produktionsland, Kundenland und USt-Nr. 
-              Versand & Design sind immer MwSt-frei. 19% nur für in DE produzierte Produkte an DE-Kunden oder Kunden ohne gültige EU-USt-Nr.
-            </p>
-          </CardContent>
-        </Card>
       )}
     </div>
   );
