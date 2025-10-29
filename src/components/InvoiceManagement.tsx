@@ -192,7 +192,7 @@ export const InvoiceManagement = () => {
                   ) : (
                     <>
                       {/* Desktop Table View */}
-                      <div className="hidden md:block rounded-md border">
+                      <div className="hidden lg:block rounded-md border">
                         <Table>
                           <TableHeader>
                             <TableRow>
@@ -266,7 +266,7 @@ export const InvoiceManagement = () => {
                       </div>
 
                       {/* Mobile Card View */}
-                      <div className="md:hidden space-y-4">
+                      <div className="lg:hidden space-y-4">
                         {invoicesByYear[year as keyof typeof invoicesByYear].map((invoice) => (
                           <Card key={invoice.id}>
                             <CardHeader className="pb-3">

@@ -239,7 +239,7 @@ export const CustomerManagement = () => {
           </CardHeader>
           <CardContent>
             {/* Desktop Table View */}
-            <div className="hidden md:block rounded-md border">
+            <div className="hidden lg:block rounded-md border">
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -356,7 +356,7 @@ export const CustomerManagement = () => {
             </div>
 
             {/* Mobile Card View */}
-            <div className="md:hidden space-y-4">
+            <div className="lg:hidden space-y-4">
               {sortedCustomers.map((customer) => (
                 <Card 
                   key={customer.id}
