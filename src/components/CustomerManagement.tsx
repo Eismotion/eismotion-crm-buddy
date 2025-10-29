@@ -1,4 +1,4 @@
-import { Upload, Plus, Edit, Trash2, RefreshCw, ArrowUpDown, Link2, UserPlus } from 'lucide-react';
+import { Upload, Plus, Edit, Trash2, RefreshCw, ArrowUpDown, Link2, UserPlus, Search } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -21,6 +21,7 @@ export const CustomerManagement = () => {
   const [loading, setLoading] = useState(true);
   const [sortField, setSortField] = useState<SortField>('name');
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
+  const [searchQuery, setSearchQuery] = useState('');
   const [linkDialogOpen, setLinkDialogOpen] = useState(false);
   const [selectedCustomer, setSelectedCustomer] = useState<any>(null);
   const [selectedParentId, setSelectedParentId] = useState<string>('');
@@ -196,6 +197,22 @@ export const CustomerManagement = () => {
     }
   });
 
+  // Filter by search query
+  const filteredCustomers = sortedCustomers.filter(customer => {
+    if (!searchQuery.trim()) return true;
+    
+    const query = searchQuery.toLowerCase();
+    return (
+      customer.name?.toLowerCase().includes(query) ||
+      customer.email?.toLowerCase().includes(query) ||
+      customer.phone?.toLowerCase().includes(query) ||
+      customer.address?.toLowerCase().includes(query) ||
+      customer.city?.toLowerCase().includes(query) ||
+      customer.postal_code?.toLowerCase().includes(query) ||
+      customer.customer_number?.toLowerCase().includes(query)
+    );
+  });
+
   const SortButton = ({ field, children }: { field: SortField; children: React.ReactNode }) => (
     <button
       onClick={() => handleSort(field)}
@@ -232,10 +249,24 @@ export const CustomerManagement = () => {
       ) : (
         <Card>
           <CardHeader>
-            <CardTitle>Kunden ({customers.length})</CardTitle>
-            <p className="text-sm text-muted-foreground">
-              Klicken Sie auf die Spaltenüberschriften zum Sortieren
-            </p>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div>
+                <CardTitle>Kunden ({filteredCustomers.length})</CardTitle>
+                <p className="text-sm text-muted-foreground">
+                  Klicken Sie auf die Spaltenüberschriften zum Sortieren
+                </p>
+              </div>
+              <div className="relative w-full sm:w-80">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  type="text"
+                  placeholder="Nach Name, Email, Stadt suchen..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
+            </div>
           </CardHeader>
           <CardContent>
             {/* Desktop Table View */}
@@ -265,7 +296,7 @@ export const CustomerManagement = () => {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {sortedCustomers.map((customer) => (
+                  {filteredCustomers.map((customer) => (
                     <TableRow 
                       key={customer.id}
                       className="cursor-pointer hover:bg-muted/50"
@@ -357,7 +388,7 @@ export const CustomerManagement = () => {
 
             {/* Mobile Card View */}
             <div className="lg:hidden space-y-4">
-              {sortedCustomers.map((customer) => (
+              {filteredCustomers.map((customer) => (
                 <Card 
                   key={customer.id}
                   className="cursor-pointer hover:bg-muted/50"
