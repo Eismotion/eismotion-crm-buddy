@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
+import logo from '@/assets/eismotion-logo.png';
 
 interface SidebarProps {
   activeTab: string;
@@ -40,7 +41,7 @@ export const Sidebar = ({ activeTab, onTabChange }: SidebarProps) => {
     <aside className="w-64 bg-sidebar border-r border-sidebar-border flex flex-col">
       <div className="p-6 border-b border-sidebar-border">
         <div className="flex items-center gap-3">
-          <Package className="h-8 w-8 text-primary" />
+          <img src={logo} alt="Eismotion Logo" className="h-12 w-12 object-contain" />
           <div>
             <h1 className="text-xl font-bold text-sidebar-foreground">Eismotion CRM</h1>
             <p className="text-xs text-muted-foreground">Rechnungen, die begeistern</p>
