@@ -4,21 +4,43 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Label } from '@/components/ui/label';
 import { formatCurrency } from '@/data/mockData';
 import { supabase } from '@/integrations/supabase/client';
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { toast } from 'sonner';
 
 export const InvoiceManagement = () => {
   const navigate = useNavigate();
   const [invoices, setInvoices] = useState<any[]>([]);
+  const [customers, setCustomers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedYear, setSelectedYear] = useState('2025');
   const [searchQuery, setSearchQuery] = useState('');
+  const [showCreateDialog, setShowCreateDialog] = useState(false);
+  const [selectedCustomerId, setSelectedCustomerId] = useState<string>('');
 
   useEffect(() => {
     loadInvoices();
+    loadCustomers();
   }, []);
+
+  const loadCustomers = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('customers')
+        .select('*')
+        .order('name');
+
+      if (error) throw error;
+      setCustomers(data || []);
+    } catch (error) {
+      console.error('Error loading customers:', error);
+    }
+  };
 
   const loadInvoices = async () => {
     setLoading(true);
@@ -70,6 +92,11 @@ export const InvoiceManagement = () => {
   };
 
   const handleCreateInvoice = async () => {
+    if (!selectedCustomerId) {
+      toast.error('Bitte wählen Sie einen Kunden aus');
+      return;
+    }
+
     try {
       const invoiceNumber = await generateInvoiceNumber();
       const today = new Date().toISOString().split('T')[0];
@@ -79,6 +106,7 @@ export const InvoiceManagement = () => {
         .insert({
           invoice_number: invoiceNumber,
           invoice_date: today,
+          customer_id: selectedCustomerId,
           status: 'draft',
           subtotal: 0,
           tax_rate: 19.00,
@@ -91,10 +119,12 @@ export const InvoiceManagement = () => {
       if (error) throw error;
       
       await loadInvoices();
-      // TODO: Navigate to edit view when implemented
-      console.log('Created invoice:', data);
+      setShowCreateDialog(false);
+      setSelectedCustomerId('');
+      toast.success('Rechnung erfolgreich erstellt');
     } catch (error) {
       console.error('Error creating invoice:', error);
+      toast.error('Fehler beim Erstellen der Rechnung');
     }
   };
 
@@ -147,7 +177,7 @@ export const InvoiceManagement = () => {
             <Palette className="h-4 w-4 sm:mr-2" />
             <span className="hidden sm:inline">Design-Studio</span>
           </Button>
-          <Button className="flex-1 sm:flex-none" onClick={handleCreateInvoice}>
+          <Button className="flex-1 sm:flex-none" onClick={() => setShowCreateDialog(true)}>
             <Plus className="h-4 w-4 sm:mr-2" />
             <span className="sm:inline">Neue Rechnung</span>
           </Button>
@@ -340,6 +370,70 @@ export const InvoiceManagement = () => {
           </CardContent>
         </Card>
       )}
+
+      <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Neue Rechnung erstellen</DialogTitle>
+            <DialogDescription>
+              Wählen Sie einen Kunden aus. Die vollständige Adresse wird automatisch übernommen.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="customer">Kunde auswählen</Label>
+              <Select value={selectedCustomerId} onValueChange={setSelectedCustomerId}>
+                <SelectTrigger id="customer">
+                  <SelectValue placeholder="Kunde wählen..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {customers.map((customer) => (
+                    <SelectItem key={customer.id} value={customer.id}>
+                      <div className="flex flex-col">
+                        <span className="font-medium">{customer.name}</span>
+                        {customer.address && (
+                          <span className="text-xs text-muted-foreground">
+                            {customer.address}, {customer.postal_code} {customer.city}
+                          </span>
+                        )}
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            {selectedCustomerId && customers.find(c => c.id === selectedCustomerId) && (
+              <div className="p-3 bg-muted rounded-md text-sm space-y-1">
+                <p className="font-medium">Kundenadresse:</p>
+                {(() => {
+                  const customer = customers.find(c => c.id === selectedCustomerId);
+                  return (
+                    <>
+                      <p>{customer.name}</p>
+                      {customer.address && <p>{customer.address}</p>}
+                      {(customer.postal_code || customer.city) && (
+                        <p>{customer.postal_code} {customer.city}</p>
+                      )}
+                      {customer.country && <p>{customer.country}</p>}
+                    </>
+                  );
+                })()}
+              </div>
+            )}
+            <div className="flex gap-2 justify-end pt-4">
+              <Button variant="outline" onClick={() => {
+                setShowCreateDialog(false);
+                setSelectedCustomerId('');
+              }}>
+                Abbrechen
+              </Button>
+              <Button onClick={handleCreateInvoice} disabled={!selectedCustomerId}>
+                Rechnung erstellen
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
