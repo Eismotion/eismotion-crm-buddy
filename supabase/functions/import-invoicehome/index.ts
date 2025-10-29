@@ -83,25 +83,6 @@ serve(async (req) => {
       try {
         console.log(`Processing invoice: ${row.invoiceNumber}`);
         
-        // Check for duplicate invoice number
-        const { data: existingInvoice } = await supabaseClient
-          .from('invoices')
-          .select('id, invoice_number, customer_id')
-          .eq('invoice_number', row.invoiceNumber)
-          .maybeSingle();
-        
-        if (existingInvoice) {
-          warnings.push({
-            type: 'duplicate_invoice_number',
-            invoice_number: row.invoiceNumber,
-            customer_name: row.customerName,
-            message: `Rechnungsnummer ${row.invoiceNumber} existiert bereits. Übersprungen.`,
-            data: { existingCustomerId: existingInvoice.customer_id }
-          });
-          console.warn(`Duplicate invoice number: ${row.invoiceNumber}`);
-          continue; // Skip this invoice
-        }
-        
         // Find or create customer - intelligent multi-level matching
         let customerId: string;
         
@@ -311,7 +292,7 @@ serve(async (req) => {
       processed: importData.length,
       successful: successCount,
       failed: failCount,
-      skipped: warnings.filter(w => w.type === 'duplicate_invoice_number').length,
+      skipped: 0,
       errors: errors,
       warnings: warnings
     };
