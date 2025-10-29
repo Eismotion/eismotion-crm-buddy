@@ -165,8 +165,11 @@ export const InvoiceManagement = () => {
     });
   };
 
-  const years = ['2023', '2024', '2025'];
+  const years = ['2020', '2021', '2022', '2023', '2024', '2025'];
   const invoicesByYear = {
+    '2020': filterBySearch(filterByYear('2020')),
+    '2021': filterBySearch(filterByYear('2021')),
+    '2022': filterBySearch(filterByYear('2022')),
     '2023': filterBySearch(filterByYear('2023')),
     '2024': filterBySearch(filterByYear('2024')),
     '2025': filterBySearch(filterByYear('2025')),
@@ -224,7 +227,7 @@ export const InvoiceManagement = () => {
           </CardHeader>
           <CardContent>
             <Tabs value={selectedYear} onValueChange={setSelectedYear}>
-              <TabsList className="grid w-full grid-cols-3 mb-4">
+              <TabsList className="grid w-full grid-cols-3 lg:grid-cols-6 mb-4">
                 {years.map(year => (
                   <TabsTrigger key={year} value={year}>
                     {year} ({invoicesByYear[year as keyof typeof invoicesByYear].length})
