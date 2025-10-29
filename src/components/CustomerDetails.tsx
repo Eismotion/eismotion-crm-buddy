@@ -13,6 +13,7 @@ export const CustomerDetails = () => {
   const navigate = useNavigate();
   const [customer, setCustomer] = useState<any>(null);
   const [invoices, setInvoices] = useState<any[]>([]);
+  const [products, setProducts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -34,7 +35,39 @@ export const CustomerDetails = () => {
       ]);
 
       if (customerRes.data) setCustomer(customerRes.data);
-      if (invoicesRes.data) setInvoices(invoicesRes.data);
+      if (invoicesRes.data) {
+        setInvoices(invoicesRes.data);
+        
+        // Load all products from invoice items
+        const invoiceIds = invoicesRes.data.map((inv: any) => inv.id);
+        if (invoiceIds.length > 0) {
+          const { data: itemsData } = await supabase
+            .from('invoice_items')
+            .select('*')
+            .in('invoice_id', invoiceIds);
+          
+          if (itemsData) {
+            // Group products by description and sum quantities
+            const productMap = new Map();
+            itemsData.forEach((item: any) => {
+              const key = item.description;
+              if (productMap.has(key)) {
+                const existing = productMap.get(key);
+                existing.totalQuantity += item.quantity;
+                existing.totalRevenue += item.total_price;
+              } else {
+                productMap.set(key, {
+                  description: item.description,
+                  totalQuantity: item.quantity,
+                  totalRevenue: item.total_price,
+                  unit_price: item.unit_price
+                });
+              }
+            });
+            setProducts(Array.from(productMap.values()));
+          }
+        }
+      }
     } catch (error) {
       console.error('Error loading customer data:', error);
     } finally {
@@ -138,31 +171,33 @@ export const CustomerDetails = () => {
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-3">
-              {customer.email && (
-                <div className="flex items-center gap-2">
-                  <Mail className="h-4 w-4 text-muted-foreground" />
-                  <span className="text-sm">{customer.email}</span>
-                </div>
-              )}
-              {customer.phone && (
-                <div className="flex items-center gap-2">
-                  <Phone className="h-4 w-4 text-muted-foreground" />
-                  <span className="text-sm">{customer.phone}</span>
-                </div>
-              )}
+              <div className="flex items-center gap-2">
+                <Mail className="h-4 w-4 text-muted-foreground" />
+                <span className="text-sm">{customer.email || 'Keine E-Mail'}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Phone className="h-4 w-4 text-muted-foreground" />
+                <span className="text-sm">{customer.phone || '-'}</span>
+              </div>
             </div>
             <div className="space-y-3">
-              {(customer.address || customer.city || customer.postal_code) && (
-                <div className="flex items-start gap-2">
-                  <MapPin className="h-4 w-4 text-muted-foreground mt-0.5" />
-                  <div className="text-sm">
-                    {customer.address && <div>{customer.address}</div>}
-                    {(customer.postal_code || customer.city) && (
-                      <div>{customer.postal_code} {customer.city}</div>
-                    )}
-                  </div>
+              <div className="flex items-start gap-2">
+                <MapPin className="h-4 w-4 text-muted-foreground mt-0.5" />
+                <div className="text-sm">
+                  <div className="font-medium">Adresse</div>
+                  {customer.address ? (
+                    <>
+                      <div>{customer.address}</div>
+                      {(customer.postal_code || customer.city) && (
+                        <div>{customer.postal_code} {customer.city}</div>
+                      )}
+                      {customer.country && <div>{customer.country}</div>}
+                    </>
+                  ) : (
+                    <div className="text-muted-foreground">-</div>
+                  )}
                 </div>
-              )}
+              </div>
             </div>
           </div>
           {customer.notes && (
@@ -173,6 +208,39 @@ export const CustomerDetails = () => {
           )}
         </CardContent>
       </Card>
+
+      {/* Products / Produktbeschreibungen */}
+      {products.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Produktbeschreibungen ({products.length})</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="rounded-md border">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Beschreibung</TableHead>
+                    <TableHead className="text-right">Gesamt Menge</TableHead>
+                    <TableHead className="text-right">Einzelpreis</TableHead>
+                    <TableHead className="text-right">Gesamt Umsatz</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {products.map((product, index) => (
+                    <TableRow key={index}>
+                      <TableCell className="font-medium">{product.description}</TableCell>
+                      <TableCell className="text-right">{product.totalQuantity}</TableCell>
+                      <TableCell className="text-right">{formatCurrency(product.unit_price)}</TableCell>
+                      <TableCell className="text-right font-bold">{formatCurrency(product.totalRevenue)}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Invoices / Druckdateien */}
       <Card>
