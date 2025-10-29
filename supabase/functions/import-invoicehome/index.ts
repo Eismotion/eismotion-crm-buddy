@@ -70,11 +70,37 @@ serve(async (req) => {
     let successCount = 0;
     let failCount = 0;
     const errors: string[] = [];
+    const warnings: Array<{
+      type: 'duplicate_invoice_number' | 'customer_ambiguous' | 'missing_data',
+      invoice_number: string,
+      customer_name: string,
+      message: string,
+      data?: any
+    }> = [];
 
     // Process each row
     for (const row of importData as ImportRow[]) {
       try {
         console.log(`Processing invoice: ${row.invoiceNumber}`);
+        
+        // Check for duplicate invoice number
+        const { data: existingInvoice } = await supabaseClient
+          .from('invoices')
+          .select('id, invoice_number, customer_id')
+          .eq('invoice_number', row.invoiceNumber)
+          .maybeSingle();
+        
+        if (existingInvoice) {
+          warnings.push({
+            type: 'duplicate_invoice_number',
+            invoice_number: row.invoiceNumber,
+            customer_name: row.customerName,
+            message: `Rechnungsnummer ${row.invoiceNumber} existiert bereits. Übersprungen.`,
+            data: { existingCustomerId: existingInvoice.customer_id }
+          });
+          console.warn(`Duplicate invoice number: ${row.invoiceNumber}`);
+          continue; // Skip this invoice
+        }
         
         // Find or create customer - intelligent multi-level matching
         let customerId: string;
@@ -114,9 +140,19 @@ serve(async (req) => {
               }
             }
             
-            // If still no unique match found, take the first one
+            // If still no unique match found, log warning
             if (!existingCustomer) {
               existingCustomer = customersByName[0];
+              warnings.push({
+                type: 'customer_ambiguous',
+                invoice_number: row.invoiceNumber,
+                customer_name: row.customerName,
+                message: `Mehrere Kunden mit Namen "${row.customerName}" gefunden. Erste Übereinstimmung verwendet. Bitte manuell prüfen.`,
+                data: { 
+                  matchCount: customersByName.length,
+                  customers: customersByName.map(c => ({ name: c.name, city: c.city, address: c.address }))
+                }
+              });
             }
           }
         }
@@ -142,6 +178,18 @@ serve(async (req) => {
         } else {
           // Create new customer
           const customerNumber = `CUST-${String(Math.floor(Math.random() * 9999)).padStart(4, '0')}`;
+          
+          // Warn if creating customer with minimal data
+          if (!row.customerAddress && !row.customerCity) {
+            warnings.push({
+              type: 'missing_data',
+              invoice_number: row.invoiceNumber,
+              customer_name: row.customerName,
+              message: `Neuer Kunde "${row.customerName}" ohne Adressdaten erstellt. Bitte manuell ergänzen.`,
+              data: { customerNumber }
+            });
+          }
+          
           const { data: newCustomer, error: customerError } = await supabaseClient
             .from('customers')
             .insert({
@@ -228,14 +276,16 @@ serve(async (req) => {
       }
     }
 
-    // Update import log
+    // Update import log with errors and warnings
     await supabaseClient
       .from('import_logs')
       .update({
         records_processed: importData.length,
         records_successful: successCount,
         records_failed: failCount,
-        error_details: errors.length > 0 ? { errors } : null,
+        error_details: errors.length > 0 || warnings.length > 0 
+          ? { errors, warnings } 
+          : null,
         status: failCount === 0 ? 'completed' : 'completed'
       })
       .eq('id', importLog.id);
@@ -246,7 +296,9 @@ serve(async (req) => {
       processed: importData.length,
       successful: successCount,
       failed: failCount,
-      errors: errors
+      skipped: warnings.filter(w => w.type === 'duplicate_invoice_number').length,
+      errors: errors,
+      warnings: warnings
     };
 
     console.log('Import completed:', result);
