@@ -83,17 +83,8 @@ export const InvoiceImport = () => {
         }
       }
 
-      // Parse products (format: "1 Product Name\n2 Product Name")
-      const productsText = row.Produkte || '';
-      const productLines = productsText.split('\n').filter((line: string) => line.trim());
-      const items = productLines.map((line: string) => {
-        const match = line.match(/^\d+\s+(.+)/);
-        return {
-          description: match ? match[1] : line,
-          quantity: 1,
-          unitPrice: 0
-        };
-      });
+      // Items will be added separately - create empty array
+      const items: any[] = [];
 
       // Parse amounts
       const nettoStr = (row.Nettosumme || '').toString().replace('€', '').replace(',', '.').trim();
@@ -183,7 +174,6 @@ export const InvoiceImport = () => {
       {
         'Name': 'Eisdiele Sommer',
         'Adresse': 'Eisdiele Sommer, Sonnenallee 10, 10999 Berlin',
-        'Produkte': '1 Eismaschine Compact',
         'Rechnungsnummer': '01/2020/001',
         'Rechnungsdatum': '2020-03-15',
         'Nettosumme': '850,00',
@@ -192,7 +182,6 @@ export const InvoiceImport = () => {
       {
         'Name': 'Gelateria Milano',
         'Adresse': 'Gelateria Milano, Bahnhofstraße 34, 80335 München',
-        'Produkte': '1 Kühlvitrine Groß\n2 Eisportionierer Set',
         'Rechnungsnummer': '06/2020/045',
         'Rechnungsdatum': '2020-06-22',
         'Nettosumme': '1200,00',
@@ -201,7 +190,6 @@ export const InvoiceImport = () => {
       {
         'Name': 'Eis & Café Zentral',
         'Adresse': 'Eis & Café Zentral, Marktplatz 5, 50667 Köln',
-        'Produkte': '1 Eismaschine Professional',
         'Rechnungsnummer': '02/2021/023',
         'Rechnungsdatum': '2021-02-10',
         'Nettosumme': '1500,00',
@@ -210,7 +198,6 @@ export const InvoiceImport = () => {
       {
         'Name': 'La Dolce Vita',
         'Adresse': 'La Dolce Vita, Hafenstraße 78, 20459 Hamburg',
-        'Produkte': '1 Vitrine Standard\n1 Waffelhalter',
         'Rechnungsnummer': '08/2021/112',
         'Rechnungsdatum': '2021-08-05',
         'Nettosumme': '650,00',
@@ -219,7 +206,6 @@ export const InvoiceImport = () => {
       {
         'Name': 'Eiscafé Venezia',
         'Adresse': 'Eiscafé Venezia, Kirchstraße 23, 60311 Frankfurt',
-        'Produkte': '1 Eismaschine Modell XY',
         'Rechnungsnummer': '04/2022/067',
         'Rechnungsdatum': '2022-04-18',
         'Nettosumme': '950,00',
@@ -228,7 +214,6 @@ export const InvoiceImport = () => {
       {
         'Name': 'Gelato Paradise',
         'Adresse': 'Gelato Paradise, Altstadt 12, 70173 Stuttgart',
-        'Produkte': '1 Kühlschrank Pro\n2 Eisbehälter Set',
         'Rechnungsnummer': '11/2022/189',
         'Rechnungsdatum': '2022-11-30',
         'Nettosumme': '1100,00',
@@ -237,7 +222,6 @@ export const InvoiceImport = () => {
       {
         'Name': 'Musterfirma GmbH',
         'Adresse': 'Musterfirma GmbH, Musterstraße 123, 12345 Musterstadt',
-        'Produkte': '1 Eismaschine Modell XY\n2 Kühlschrank Pro',
         'Rechnungsnummer': '01/2024/001',
         'Rechnungsdatum': '2024-01-15',
         'Nettosumme': '1000,00',
@@ -246,7 +230,6 @@ export const InvoiceImport = () => {
       {
         'Name': 'Beispiel Eiscafe',
         'Adresse': 'Beispiel Eiscafe, Hauptstraße 45, 54321 Beispielstadt',
-        'Produkte': '1 Vitrine Standard',
         'Rechnungsnummer': '01/2024/002',
         'Rechnungsdatum': '2024-01-16',
         'Nettosumme': '500,00',
@@ -263,7 +246,6 @@ export const InvoiceImport = () => {
     worksheet['!cols'] = [
       { wch: 25 }, // Name
       { wch: 50 }, // Adresse
-      { wch: 40 }, // Produkte
       { wch: 20 }, // Rechnungsnummer
       { wch: 15 }, // Rechnungsdatum
       { wch: 15 }, // Nettosumme
@@ -397,14 +379,13 @@ export const InvoiceImport = () => {
               <ul className="text-sm text-muted-foreground space-y-1">
                 <li>• Spalte "Name" - Kundenname</li>
                 <li>• Spalte "Adresse" - Vollständige Adresse (Format: Name, Straße, PLZ Ort)</li>
-                <li>• Spalte "Produkte" - Produktbeschreibungen (eine pro Zeile)</li>
                 <li>• Spalte "Rechnungsnummer" - Eindeutige Rechnungsnummer</li>
                 <li>• Spalte "Rechnungsdatum" - Datum der Rechnung (Format: YYYY-MM-DD)</li>
                 <li>• Spalte "Nettosumme" - Nettobetrag (Format: 1000,00)</li>
                 <li>• Spalte "Bruttosumme" - Bruttobetrag inkl. MwSt. (Format: 1190,00)</li>
               </ul>
               <p className="text-xs text-muted-foreground mt-2">
-                Hinweis: E-Mail-Adressen und Telefonnummern können später manuell in der Kundenverwaltung ergänzt werden.
+                Hinweis: Produkte werden separat verwaltet. E-Mail und Telefonnummern können in der Kundenverwaltung ergänzt werden.
               </p>
             </div>
 
