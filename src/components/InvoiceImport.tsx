@@ -86,17 +86,22 @@ export const InvoiceImport = () => {
       // Items will be added separately - create empty array
       const items: any[] = [];
 
-      // Parse amounts
-      const nettoStr = (row.Nettosumme || '').toString().replace('€', '').replace(',', '.').trim();
-      const bruttoStr = (row.Bruttosumme || '').toString().replace('€', '').replace(',', '.').trim();
-      
-      const subtotal = parseFloat(nettoStr) || 0;
-      const totalAmount = parseFloat(bruttoStr) || 0;
-      const taxAmount = totalAmount - subtotal;
+      // Parse amounts with DE formatting (remove thousands dots, convert comma to dot)
+      const parseEuro = (v: any) => {
+        if (v === undefined || v === null) return 0;
+        const s = v.toString().replace(/\./g, '').replace(/,/g, '.').replace(/[^0-9.\-]/g, '').trim();
+        const n = parseFloat(s);
+        return isNaN(n) ? 0 : n;
+      };
 
-      // Parse invoice date - handle both string and Excel serial date formats (incl. de-DE)
+      const subtotal = parseEuro(row.Nettosumme ?? row.Netto ?? row.Nettobetrag);
+      const totalAmount = parseEuro(row.Bruttosumme ?? row.Brutto ?? row.Gesamtbetrag ?? row.Gesamtbrutto);
+      const taxAmount = Math.max(totalAmount - subtotal, 0);
+
+      // Parse invoice date with multiple fallbacks
       let invoiceDate = '';
-      const rawDate = row.Rechnungsdatum;
+      const invoiceNumberRaw = (row.Rechnungsnummer || row['Rechnungs-Nr.'] || row['Rechnungsnr'] || row['Rechnung Nr'] || row['Rechnungs Nr'] || row['Nr'] || row['Nummer'] || '').toString().trim();
+      const rawDate = (row.Rechnungsdatum || row['Rechnungs-Datum'] || row['Rechnungs Datum'] || row['Datum'] || row['Invoice Date'] || row['Date']) as any;
       
       if (rawDate !== undefined && rawDate !== null) {
         if (typeof rawDate === 'number') {
@@ -143,6 +148,16 @@ export const InvoiceImport = () => {
           }
         }
       }
+
+      // Fallback: infer from invoice number like "12/2022/183" => 2022-12-15
+      if (!invoiceDate && invoiceNumberRaw) {
+        const m = invoiceNumberRaw.match(/^(\d{1,2})[.\/-](\d{4})[.\/-]?/);
+        if (m) {
+          const mth = Math.min(Math.max(parseInt(m[1], 10), 1), 12);
+          const yr = parseInt(m[2], 10);
+          invoiceDate = `${yr.toString().padStart(4, '0')}-${mth.toString().padStart(2, '0')}-15`;
+        }
+      }
       
       // If still empty or invalid, use current date as fallback
       if (!invoiceDate || invoiceDate === '' || invoiceDate === 'NaN-NaN-NaN') {
@@ -157,7 +172,7 @@ export const InvoiceImport = () => {
         customerCity: city,
         customerPostalCode: postalCode,
         customerCountry: 'DE',
-        invoiceNumber: row.Rechnungsnummer || '',
+        invoiceNumber: invoiceNumberRaw,
         invoiceDate: invoiceDate,
         subtotal: subtotal,
         taxAmount: taxAmount,
@@ -380,12 +395,12 @@ export const InvoiceImport = () => {
                 <li>• Spalte "Name" - Kundenname</li>
                 <li>• Spalte "Adresse" - Vollständige Adresse (Format: Name, Straße, PLZ Ort)</li>
                 <li>• Spalte "Rechnungsnummer" - Eindeutige Rechnungsnummer</li>
-                <li>• Spalte "Rechnungsdatum" - Datum der Rechnung (Format: YYYY-MM-DD)</li>
-                <li>• Spalte "Nettosumme" - Nettobetrag (Format: 1000,00)</li>
-                <li>• Spalte "Bruttosumme" - Bruttobetrag inkl. MwSt. (Format: 1190,00)</li>
+                <li>• Spalte "Rechnungsdatum" oder "Datum" – Format: YYYY-MM-DD, DD.MM.YYYY oder Excel-Datum</li>
+                <li>• Spalte "Nettosumme"/"Netto" – z. B. 1.081,00</li>
+                <li>• Spalte "Bruttosumme"/"Brutto"/"Gesamtbetrag" – z. B. 1.309,00</li>
               </ul>
               <p className="text-xs text-muted-foreground mt-2">
-                Hinweis: Produkte werden separat verwaltet. E-Mail und Telefonnummern können in der Kundenverwaltung ergänzt werden.
+                Hinweis: Produkte werden separat verwaltet. Falls kein Datum gesetzt ist, wird es aus der Rechnungsnummer (MM/YYYY) abgeleitet.
               </p>
             </div>
 
