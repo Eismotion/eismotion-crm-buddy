@@ -65,84 +65,57 @@ export const InvoiceImport = () => {
 
   const transformExcelData = (excelData: any[]): any[] => {
     return excelData.map((row) => {
-      // Parse address (format: "Name, Street, PLZ City")
-      const address = row.Adresse || '';
-      const addressParts = address.split(',').map((part: string) => part.trim());
-      
-      let street = '';
-      let postalCode = '';
-      let city = '';
-      
-      if (addressParts.length >= 3) {
-        street = addressParts[1] || '';
-        const plzCity = addressParts[2] || '';
-        const plzCityMatch = plzCity.match(/(\d+)\s+(.+)/);
-        if (plzCityMatch) {
-          postalCode = plzCityMatch[1];
-          city = plzCityMatch[2];
-        }
-      }
-
-      // Items will be added separately - create empty array
-      const items: any[] = [];
-
-      // Parse amounts with DE formatting (remove thousands dots, convert comma to dot)
-      const parseEuro = (v: any) => {
+      // Parse amounts with German formatting
+      const parseGermanAmount = (v: any) => {
         if (v === undefined || v === null) return 0;
-        const s = v.toString().replace(/\./g, '').replace(/,/g, '.').replace(/[^0-9.\-]/g, '').trim();
-        const n = parseFloat(s);
-        return isNaN(n) ? 0 : n;
+        let cleaned = v.toString()
+          .replace(/\s+/g, '')      // Remove spaces
+          .replace('€', '')          // Remove euro symbol
+          .trim();
+        
+        // If both dot and comma: German format (1.234,56)
+        if (cleaned.includes(',') && cleaned.includes('.')) {
+          cleaned = cleaned.replace(/\./g, '').replace(',', '.');
+        }
+        // Only comma: decimal separator
+        else if (cleaned.includes(',')) {
+          cleaned = cleaned.replace(',', '.');
+        }
+        
+        return parseFloat(cleaned) || 0;
       };
 
-      const subtotal = parseEuro(row.Nettosumme ?? row.Netto ?? row.Nettobetrag);
-      const totalAmount = parseEuro(row.Bruttosumme ?? row.Brutto ?? row.Gesamtbetrag ?? row.Gesamtbrutto);
-      const taxAmount = Math.max(totalAmount - subtotal, 0);
+      const netAmount = parseGermanAmount(row.Nettosumme ?? row.Netto ?? row.Nettobetrag);
+      const grossAmount = parseGermanAmount(row.Bruttosumme ?? row.Brutto ?? row.Gesamtbetrag ?? row.Gesamtbrutto);
 
-      // Parse invoice date with multiple fallbacks
+      // Parse invoice number
+      const invoiceNumber = (row.Rechnungsnummer || row['Rechnungs-Nr.'] || row['Rechnungsnr'] || row['Nr'] || '').toString().trim();
+      
+      // Parse invoice date
+      const rawDate = (row.Rechnungsdatum || row['Rechnungs-Datum'] || row['Datum'] || row['Invoice Date'] || row['Date']) as any;
       let invoiceDate = '';
-      const invoiceNumberRaw = (row.Rechnungsnummer || row['Rechnungs-Nr.'] || row['Rechnungsnr'] || row['Rechnung Nr'] || row['Rechnungs Nr'] || row['Nr'] || row['Nummer'] || '').toString().trim();
-      const rawDate = (row.Rechnungsdatum || row['Rechnungs-Datum'] || row['Rechnungs Datum'] || row['Datum'] || row['Invoice Date'] || row['Date']) as any;
       
       if (rawDate !== undefined && rawDate !== null) {
         if (typeof rawDate === 'number') {
-          // Excel serial date (1900-based, Excel leap-year bug accounted for)
+          // Excel serial date
           const excelEpoch = new Date(1900, 0, 1);
           const date = new Date(excelEpoch.getTime() + (rawDate - 2) * 86400000);
           invoiceDate = date.toISOString().split('T')[0];
         } else {
-          const dateStr = rawDate.toString().trim().replace(/\s+/g, ' ');
-          // 1) Already ISO (YYYY-MM-DD)
+          const dateStr = rawDate.toString().trim();
+          // Already ISO (YYYY-MM-DD)
           if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
             invoiceDate = dateStr;
           } else {
-            // 2) de-DE or DMY variants: DD.MM.YYYY | DD/MM/YYYY | DD-MM-YYYY (also allows 1/1/2022)
+            // DD.MM.YYYY | DD/MM/YYYY | DD-MM-YYYY
             const dmy = dateStr.match(/^(\d{1,2})[.\/\-](\d{1,2})[.\/\-](\d{2}|\d{4})$/);
             if (dmy) {
               let d = parseInt(dmy[1], 10);
               let m = parseInt(dmy[2], 10);
               let y = parseInt(dmy[3], 10);
-              if (y < 100) y += 2000; // assume 20xx for 2-digit years
+              if (y < 100) y += 2000;
               if (m >= 1 && m <= 12 && d >= 1 && d <= 31) {
                 invoiceDate = `${y.toString().padStart(4, '0')}-${m.toString().padStart(2, '0')}-${d.toString().padStart(2, '0')}`;
-              }
-            }
-            // 3) YMD with different separators: YYYY/MM/DD | YYYY.MM.DD
-            if (!invoiceDate) {
-              const ymd = dateStr.match(/^(\d{4})[.\/\-](\d{1,2})[.\/\-](\d{1,2})$/);
-              if (ymd) {
-                const y = parseInt(ymd[1], 10);
-                const m = parseInt(ymd[2], 10);
-                const d = parseInt(ymd[3], 10);
-                if (m >= 1 && m <= 12 && d >= 1 && d <= 31) {
-                  invoiceDate = `${y.toString().padStart(4, '0')}-${m.toString().padStart(2, '0')}-${d.toString().padStart(2, '0')}`;
-                }
-              }
-            }
-            // 4) Fallback to Date parser as last resort
-            if (!invoiceDate) {
-              const parsed = new Date(dateStr);
-              if (!isNaN(parsed.getTime())) {
-                invoiceDate = parsed.toISOString().split('T')[0];
               }
             }
           }
@@ -150,8 +123,8 @@ export const InvoiceImport = () => {
       }
 
       // Fallback: infer from invoice number like "12/2022/183" => 2022-12-15
-      if (!invoiceDate && invoiceNumberRaw) {
-        const m = invoiceNumberRaw.match(/^(\d{1,2})[.\/-](\d{4})[.\/-]?/);
+      if (!invoiceDate && invoiceNumber) {
+        const m = invoiceNumber.match(/^(\d{1,2})[.\/-](\d{4})[.\/-]?/);
         if (m) {
           const mth = Math.min(Math.max(parseInt(m[1], 10), 1), 12);
           const yr = parseInt(m[2], 10);
@@ -159,26 +132,18 @@ export const InvoiceImport = () => {
         }
       }
       
-      // If still empty or invalid, use current date as fallback
+      // Final fallback
       if (!invoiceDate || invoiceDate === '' || invoiceDate === 'NaN-NaN-NaN') {
         invoiceDate = new Date().toISOString().split('T')[0];
       }
 
       return {
         customerName: row.Name || '',
-        customerEmail: '',
-        customerPhone: '',
-        customerAddress: street,
-        customerCity: city,
-        customerPostalCode: postalCode,
-        customerCountry: 'DE',
-        invoiceNumber: invoiceNumberRaw,
+        customerAddress: row.Adresse || '',
+        invoiceNumber: invoiceNumber,
         invoiceDate: invoiceDate,
-        subtotal: subtotal,
-        taxAmount: taxAmount,
-        totalAmount: totalAmount,
-        status: 'bezahlt',
-        items: items
+        netAmount: netAmount,
+        grossAmount: grossAmount
       };
     });
   };

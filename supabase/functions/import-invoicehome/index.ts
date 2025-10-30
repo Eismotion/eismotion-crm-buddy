@@ -8,27 +8,32 @@ const corsHeaders = {
 
 interface ImportRow {
   customerName: string;
-  customerEmail?: string;
-  customerPhone?: string;
   customerAddress?: string;
-  customerPostalCode?: string;
-  customerCity?: string;
-  customerCountry?: string;
   invoiceNumber: string;
   invoiceDate: string;
-  paidDate?: string | null;
-  dueDate?: string | null;
-  subtotal: number;
-  taxAmount: number;
-  totalAmount: number;
-  currency?: string;
-  paymentMethod?: string;
-  status?: string;
-  items?: Array<{
-    description: string;
-    quantity: number;
-    unitPrice: number;
-  }>;
+  netAmount: number | string;
+  grossAmount: number | string;
+}
+
+// Parse German number format to float
+function parseGermanAmount(amountStr: string | number): number {
+  if (!amountStr) return 0;
+  
+  let cleaned = amountStr.toString()
+    .replace(/\s+/g, '')  // Remove spaces
+    .replace('€', '')     // Remove euro symbol
+    .trim();
+  
+  // If both dot and comma: German format (1.234,56)
+  if (cleaned.includes(',') && cleaned.includes('.')) {
+    cleaned = cleaned.replace(/\./g, '').replace(',', '.');
+  }
+  // Only comma: decimal separator
+  else if (cleaned.includes(',')) {
+    cleaned = cleaned.replace(',', '.');
+  }
+  
+  return parseFloat(cleaned) || 0;
 }
 
 serve(async (req) => {
@@ -83,108 +88,50 @@ serve(async (req) => {
       try {
         console.log(`Processing invoice: ${row.invoiceNumber}`);
         
-        // Find or create customer - intelligent multi-level matching
+        // Find or create customer - simple matching by name
         let customerId: string;
         
-        // Step 1: Search by name
+        // Search by name
         const { data: customersByName } = await supabaseClient
           .from('customers')
-          .select('id, name, email, phone, address, postal_code, city, country')
+          .select('id, name, address')
           .ilike('name', row.customerName.trim());
         
         let existingCustomer = null;
         
         if (customersByName && customersByName.length > 0) {
-          if (customersByName.length === 1) {
-            // Only one customer with this name - perfect match
-            existingCustomer = customersByName[0];
-          } else {
-            // Multiple customers with same name - check city
-            if (row.customerCity) {
-              const matchesByCity = customersByName.filter(c => 
-                c.city && c.city.toLowerCase() === row.customerCity!.toLowerCase()
-              );
-              
-              if (matchesByCity.length === 1) {
-                // Found unique match by name + city
-                existingCustomer = matchesByCity[0];
-              } else if (matchesByCity.length > 1 && row.customerAddress) {
-                // Still multiple - check address
-                const matchesByAddress = matchesByCity.filter(c =>
-                  c.address && c.address.toLowerCase().includes(row.customerAddress!.toLowerCase())
-                );
-                
-                if (matchesByAddress.length > 0) {
-                  // Found match by name + city + address
-                  existingCustomer = matchesByAddress[0];
-                }
-              }
-            }
-            
-            // If still no unique match found, log warning
-            if (!existingCustomer) {
-              existingCustomer = customersByName[0];
-              warnings.push({
-                type: 'customer_ambiguous',
-                invoice_number: row.invoiceNumber,
-                customer_name: row.customerName,
-                message: `Mehrere Kunden mit Namen "${row.customerName}" gefunden. Erste Übereinstimmung verwendet. Bitte manuell prüfen.`,
-                data: { 
-                  matchCount: customersByName.length,
-                  customers: customersByName.map(c => ({ name: c.name, city: c.city, address: c.address }))
-                }
-              });
-            }
+          existingCustomer = customersByName[0];
+          
+          if (customersByName.length > 1) {
+            warnings.push({
+              type: 'customer_ambiguous',
+              invoice_number: row.invoiceNumber,
+              customer_name: row.customerName,
+              message: `Mehrere Kunden mit Namen "${row.customerName}" gefunden. Erste Übereinstimmung verwendet.`,
+              data: { matchCount: customersByName.length }
+            });
           }
         }
 
         if (existingCustomer) {
           customerId = existingCustomer.id;
           
-          // Update customer with any new/missing information
-          const updateData: any = {};
-          if (row.customerAddress && !existingCustomer.address) updateData.address = row.customerAddress;
-          if (row.customerPostalCode && !existingCustomer.postal_code) updateData.postal_code = row.customerPostalCode;
-          if (row.customerCity && !existingCustomer.city) updateData.city = row.customerCity;
-          if (row.customerCountry && !existingCustomer.country) updateData.country = row.customerCountry;
-          if (row.customerEmail && row.customerEmail.trim() !== '' && !existingCustomer.email) {
-            updateData.email = row.customerEmail.trim();
-          }
-          if (row.customerPhone && row.customerPhone.trim() !== '' && !existingCustomer.phone) {
-            updateData.phone = row.customerPhone.trim();
-          }
-          
-          if (Object.keys(updateData).length > 0) {
+          // Update customer address if new information is provided
+          if (row.customerAddress && !existingCustomer.address) {
             await supabaseClient
               .from('customers')
-              .update(updateData)
+              .update({ address: row.customerAddress })
               .eq('id', customerId);
           }
         } else {
           // Create new customer
           const customerNumber = `CUST-${String(Math.floor(Math.random() * 9999)).padStart(4, '0')}`;
           
-          // Warn if creating customer with minimal data
-          if (!row.customerAddress && !row.customerCity) {
-            warnings.push({
-              type: 'missing_data',
-              invoice_number: row.invoiceNumber,
-              customer_name: row.customerName,
-              message: `Neuer Kunde "${row.customerName}" ohne Adressdaten erstellt. Bitte manuell ergänzen.`,
-              data: { customerNumber }
-            });
-          }
-          
           const { data: newCustomer, error: customerError } = await supabaseClient
             .from('customers')
             .insert({
               name: row.customerName,
-              email: row.customerEmail && row.customerEmail.trim() !== '' ? row.customerEmail.trim() : null,
-              phone: row.customerPhone && row.customerPhone.trim() !== '' ? row.customerPhone.trim() : null,
-              address: row.customerAddress,
-              postal_code: row.customerPostalCode,
-              city: row.customerCity,
-              country: row.customerCountry || 'DE',
+              address: row.customerAddress || null,
               customer_number: customerNumber
             })
             .select()
@@ -194,10 +141,11 @@ serve(async (req) => {
           customerId = newCustomer.id;
         }
 
-        // Calculate tax rate from amounts
-        const taxRate = row.subtotal > 0 
-          ? Math.round((row.taxAmount / row.subtotal) * 100) 
-          : 19;
+        // Parse German number formats
+        const netAmount = parseGermanAmount(row.netAmount);
+        const grossAmount = parseGermanAmount(row.grossAmount);
+        const taxAmount = grossAmount - netAmount;
+        const taxRate = netAmount > 0 ? (taxAmount / netAmount) * 100 : 19;
 
         // Create invoice with robust date normalization
         const numStr = (row.invoiceNumber || '').toString().trim();
@@ -260,56 +208,36 @@ serve(async (req) => {
           normalizedDate = '2022-01-15';
         }
 
+        // Create invoice with date normalization
         const { data: invoice, error: invoiceError } = await supabaseClient
           .from('invoices')
           .insert({
             invoice_number: row.invoiceNumber,
             customer_id: customerId,
             invoice_date: normalizedDate,
-            due_date: row.dueDate || null,
-            status: row.status || 'bezahlt',
-            subtotal: row.subtotal,
-            tax_rate: taxRate,
-            tax_amount: row.taxAmount,
-            total_amount: row.totalAmount,
-            notes: row.paymentMethod ? `Zahlungsmethode: ${row.paymentMethod}` : null
+            status: 'bezahlt',
+            subtotal: netAmount,
+            tax_rate: Math.round(taxRate * 100) / 100,
+            tax_amount: Math.round(taxAmount * 100) / 100,
+            total_amount: Math.round(grossAmount * 100) / 100
           })
           .select()
           .single();
 
         if (invoiceError) throw invoiceError;
 
-        // Create invoice items if provided
-        if (row.items && Array.isArray(row.items) && row.items.length > 0) {
-          for (const item of row.items) {
-            const totalPrice = item.quantity * item.unitPrice;
-            
-            const { error: itemError } = await supabaseClient
-              .from('invoice_items')
-              .insert({
-                invoice_id: invoice.id,
-                description: item.description,
-                quantity: item.quantity,
-                unit_price: item.unitPrice,
-                total_price: totalPrice
-              });
+        // Create a single generic invoice item
+        const { error: itemError } = await supabaseClient
+          .from('invoice_items')
+          .insert({
+            invoice_id: invoice.id,
+            description: 'Dienstleistung',
+            quantity: 1,
+            unit_price: netAmount,
+            total_price: netAmount
+          });
 
-            if (itemError) throw itemError;
-          }
-        } else {
-          // Create a single generic item for invoices without detailed items
-          const { error: itemError } = await supabaseClient
-            .from('invoice_items')
-            .insert({
-              invoice_id: invoice.id,
-              description: 'Importierte Rechnung',
-              quantity: 1,
-              unit_price: row.subtotal,
-              total_price: row.subtotal
-            });
-
-          if (itemError) throw itemError;
-        }
+        if (itemError) throw itemError;
 
         successCount++;
         console.log(`Successfully imported invoice: ${row.invoiceNumber}`);
