@@ -1,4 +1,4 @@
-import { Settings, Plus, Edit, Download, Palette, RefreshCw, Search, Upload } from 'lucide-react';
+import { Settings, Plus, Edit, Download, Palette, RefreshCw, Search, Upload, Trash2 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -205,27 +205,41 @@ export const InvoiceManagement = () => {
             <RefreshCw className="h-4 w-4 sm:mr-2" />
             <span className="hidden sm:inline">Aktualisieren</span>
           </Button>
-          {/* Conditional cleanup button for empty invoices */}
-          {(() => {
-            const emptyCount = invoices.filter(inv => !inv.invoice_number || inv.invoice_number === '').length;
-            return emptyCount > 0 ? (
-              <Button variant="destructive" onClick={async () => {
-                if (!confirm(`${emptyCount} leere Rechnungen löschen?`)) return;
-                try {
-                  const { data, error } = await supabase.functions.invoke('delete-empty-invoices', { body: {} });
-                  if (error) throw error;
-                  toast.success(`${data.deleted} leere Rechnungen gelöscht`);
-                  await loadInvoices();
-                } catch (e) {
-                  console.error(e);
-                  toast.error('Löschen fehlgeschlagen');
-                }
-              }} className="flex-1 sm:flex-none">
-                <RefreshCw className="h-4 w-4 sm:mr-2" />
-                <span className="hidden sm:inline">Leere Rechnungen löschen ({emptyCount})</span>
-              </Button>
-            ) : null;
-          })()}
+          <Button 
+            variant="destructive" 
+            onClick={async () => {
+              const confirmText = `ACHTUNG: Dies löscht ALLE ${invoices.length} Rechnungen unwiderruflich!\n\nMöchten Sie fortfahren?`;
+              if (!confirm(confirmText)) return;
+              
+              try {
+                // Delete all invoice_items first (foreign key constraint)
+                const { error: itemsError } = await supabase
+                  .from('invoice_items')
+                  .delete()
+                  .neq('id', '00000000-0000-0000-0000-000000000000'); // Delete all
+
+                if (itemsError) throw itemsError;
+
+                // Delete all invoices
+                const { error: invoicesError } = await supabase
+                  .from('invoices')
+                  .delete()
+                  .neq('id', '00000000-0000-0000-0000-000000000000'); // Delete all
+
+                if (invoicesError) throw invoicesError;
+
+                toast.success('Alle Rechnungen wurden gelöscht');
+                await loadInvoices();
+              } catch (e) {
+                console.error(e);
+                toast.error('Fehler beim Löschen der Rechnungen');
+              }
+            }} 
+            className="flex-1 sm:flex-none"
+          >
+            <Trash2 className="h-4 w-4 sm:mr-2" />
+            <span className="hidden sm:inline">Alle Rechnungen löschen</span>
+          </Button>
           <Button variant="outline" onClick={() => navigate('/import')} className="flex-1 sm:flex-none">
             <Upload className="h-4 w-4 sm:mr-2" />
             <span className="hidden sm:inline">Importieren</span>
