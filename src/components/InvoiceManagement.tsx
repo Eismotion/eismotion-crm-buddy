@@ -63,23 +63,33 @@ export const InvoiceManagement = () => {
   const loadInvoices = async () => {
     setLoading(true);
     try {
-      const { data, error } = await supabase
-        .from('invoices')
-        .select(`
-          *,
-          customer:customers(name)
-        `)
-        .order('invoice_date', { ascending: false });
+      const PAGE_SIZE = 1000;
+      let all: any[] = [];
+      let from = 0;
 
-      if (error) throw error;
-      setInvoices(data || []);
+      while (true) {
+        const { data, error } = await supabase
+          .from('invoices')
+          .select(`
+            *,
+            customer:customers(name)
+          `)
+          .order('invoice_date', { ascending: false })
+          .range(from, from + PAGE_SIZE - 1);
+
+        if (error) throw error;
+        all = all.concat(data || []);
+        if (!data || data.length < PAGE_SIZE) break;
+        from += PAGE_SIZE;
+      }
+
+      setInvoices(all);
     } catch (error) {
       console.error('Error loading invoices:', error);
     } finally {
       setLoading(false);
     }
   };
-
   const generateInvoiceNumber = async () => {
     const year = new Date().getFullYear();
     
