@@ -1,4 +1,4 @@
-import { Settings, Plus, Edit, Download, Palette, RefreshCw, Search } from 'lucide-react';
+import { Settings, Plus, Edit, Download, Palette, RefreshCw, Search, Upload } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -216,6 +216,10 @@ export const InvoiceManagement = () => {
               </Button>
             ) : null;
           })()}
+          <Button variant="outline" onClick={() => navigate('/import')} className="flex-1 sm:flex-none">
+            <Upload className="h-4 w-4 sm:mr-2" />
+            <span className="hidden sm:inline">Importieren</span>
+          </Button>
           <Button variant="outline" onClick={() => navigate('/design-studio')} className="flex-1 sm:flex-none">
             <Palette className="h-4 w-4 sm:mr-2" />
             <span className="hidden sm:inline">Design-Studio</span>
