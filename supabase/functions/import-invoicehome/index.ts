@@ -190,23 +190,35 @@ serve(async (req) => {
         };
 
         let normalizedDate = parseFlex(dateStr) || '';
-        // If invoice number clearly says 2022, force year 2022
-        if (numStr.includes('/2022/')) {
+        
+        // Extract year from invoice number (e.g., "01/2022/001" -> 2022)
+        const yearMatch = numStr.match(/\/(\d{4})\//);
+        const invoiceYear = yearMatch ? yearMatch[1] : null;
+        
+        // If invoice number contains a year, force that year
+        if (invoiceYear && (!normalizedDate || !normalizedDate.startsWith(invoiceYear))) {
           const inferred = deriveFromNumber(numStr);
-          if (inferred) normalizedDate = inferred;
-          else if (normalizedDate && !normalizedDate.startsWith('2022-')) {
-            // Keep month/day, but force year 2022
+          if (inferred) {
+            normalizedDate = inferred;
+          } else if (normalizedDate) {
+            // Keep month/day, but force year from invoice number
             const [, mm = '01', dd = '15'] = normalizedDate.match(/^\d{4}-(\d{2})-(\d{2})$/) || [];
-            normalizedDate = `2022-${mm}-${dd || '15'}`;
+            normalizedDate = `${invoiceYear}-${mm}-${dd || '15'}`;
+          } else {
+            normalizedDate = `${invoiceYear}-01-15`;
           }
         }
+        
+        // If still no date, try to derive from invoice number
         if (!normalizedDate) {
           const fromNum = deriveFromNumber(numStr);
           if (fromNum) normalizedDate = fromNum;
         }
+        
+        // Last resort: use current year with middle of month
         if (!normalizedDate) {
-          // As a last resort, default to 2022-01-15 to avoid "today" pollution
-          normalizedDate = '2022-01-15';
+          const currentYear = new Date().getFullYear();
+          normalizedDate = `${currentYear}-01-15`;
         }
 
         // Check if invoice already exists (UPSERT logic)

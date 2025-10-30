@@ -134,9 +134,9 @@ export const InvoiceImport = () => {
         }
       }
       
-      // Final fallback
+      // Final fallback: Don't use today's date! Send empty to let edge function handle it
       if (!invoiceDate || invoiceDate === '' || invoiceDate === 'NaN-NaN-NaN') {
-        invoiceDate = new Date().toISOString().split('T')[0];
+        invoiceDate = ''; // Edge function will derive from invoice number
       }
 
       return {
