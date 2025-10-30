@@ -267,7 +267,7 @@ serve(async (req) => {
             customer_id: customerId,
             invoice_date: normalizedDate,
             due_date: row.dueDate || null,
-            status: row.status || 'draft',
+            status: row.status || 'bezahlt',
             subtotal: row.subtotal,
             tax_rate: taxRate,
             tax_amount: row.taxAmount,

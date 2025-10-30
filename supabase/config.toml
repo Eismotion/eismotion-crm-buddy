@@ -27,3 +27,7 @@ verify_jwt = false
 # Data maintenance: delete empty/incomplete invoices
 [functions.delete-empty-invoices]
 verify_jwt = false
+
+# Data maintenance: update draft invoices to paid
+[functions.update-draft-invoices]
+verify_jwt = false
