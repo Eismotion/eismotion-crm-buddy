@@ -72,7 +72,8 @@ serve(async (req) => {
 
     if (logError) throw logError;
 
-    let successCount = 0;
+    let createdCount = 0;
+    let updatedCount = 0;
     let failCount = 0;
     const errors: string[] = [];
     const warnings: Array<{
@@ -208,29 +209,73 @@ serve(async (req) => {
           normalizedDate = '2022-01-15';
         }
 
-        // Create invoice with date normalization
-        const { data: invoice, error: invoiceError } = await supabaseClient
+        // Check if invoice already exists (UPSERT logic)
+        const { data: existingInvoice } = await supabaseClient
           .from('invoices')
-          .insert({
-            invoice_number: row.invoiceNumber,
-            customer_id: customerId,
-            invoice_date: normalizedDate,
-            status: 'bezahlt',
-            subtotal: netAmount,
-            tax_rate: Math.round(taxRate * 100) / 100,
-            tax_amount: Math.round(taxAmount * 100) / 100,
-            total_amount: Math.round(grossAmount * 100) / 100
-          })
-          .select()
-          .single();
+          .select('id')
+          .eq('invoice_number', row.invoiceNumber)
+          .maybeSingle();
 
-        if (invoiceError) throw invoiceError;
+        let invoiceId: string;
+        
+        if (existingInvoice) {
+          // UPDATE: Invoice exists, update it
+          const { data: updatedInvoice, error: updateError } = await supabaseClient
+            .from('invoices')
+            .update({
+              customer_id: customerId,
+              invoice_date: normalizedDate,
+              status: 'bezahlt',
+              subtotal: netAmount,
+              tax_rate: Math.round(taxRate * 100) / 100,
+              tax_amount: Math.round(taxAmount * 100) / 100,
+              total_amount: Math.round(grossAmount * 100) / 100,
+              updated_at: new Date().toISOString()
+            })
+            .eq('id', existingInvoice.id)
+            .select()
+            .single();
 
-        // Create a single generic invoice item
+          if (updateError) throw updateError;
+          invoiceId = updatedInvoice.id;
+          
+          // Delete old invoice items
+          await supabaseClient
+            .from('invoice_items')
+            .delete()
+            .eq('invoice_id', invoiceId);
+          
+          updatedCount++;
+          console.log(`Updated existing invoice: ${row.invoiceNumber}`);
+        } else {
+          // INSERT: New invoice
+          const { data: newInvoice, error: insertError } = await supabaseClient
+            .from('invoices')
+            .insert({
+              invoice_number: row.invoiceNumber,
+              customer_id: customerId,
+              invoice_date: normalizedDate,
+              status: 'bezahlt',
+              subtotal: netAmount,
+              tax_rate: Math.round(taxRate * 100) / 100,
+              tax_amount: Math.round(taxAmount * 100) / 100,
+              total_amount: Math.round(grossAmount * 100) / 100
+            })
+            .select()
+            .single();
+
+          if (insertError) throw insertError;
+          invoiceId = newInvoice.id;
+          
+          createdCount++;
+          console.log(`Created new invoice: ${row.invoiceNumber}`);
+        }
+
+        // Create/recreate invoice item
         const { error: itemError } = await supabaseClient
           .from('invoice_items')
           .insert({
-            invoice_id: invoice.id,
+            invoice_id: invoiceId,
             description: 'Dienstleistung',
             quantity: 1,
             unit_price: netAmount,
@@ -238,8 +283,6 @@ serve(async (req) => {
           });
 
         if (itemError) throw itemError;
-
-        successCount++;
         console.log(`Successfully imported invoice: ${row.invoiceNumber}`);
       } catch (error) {
         failCount++;
@@ -265,11 +308,11 @@ serve(async (req) => {
       .from('import_logs')
       .update({
         records_processed: importData.length,
-        records_successful: successCount,
+        records_successful: createdCount + updatedCount,
         records_failed: failCount,
         error_details: errors.length > 0 || warnings.length > 0 
-          ? { errors, warnings } 
-          : null,
+          ? { errors, warnings, created: createdCount, updated: updatedCount } 
+          : { created: createdCount, updated: updatedCount },
         status: failCount === 0 ? 'completed' : 'completed'
       })
       .eq('id', importLog.id);
@@ -278,7 +321,9 @@ serve(async (req) => {
       success: true,
       importLogId: importLog.id,
       processed: importData.length,
-      successful: successCount,
+      created: createdCount,
+      updated: updatedCount,
+      successful: createdCount + updatedCount,
       failed: failCount,
       skipped: 0,
       errors: errors,

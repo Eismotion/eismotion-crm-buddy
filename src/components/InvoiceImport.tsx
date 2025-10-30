@@ -13,6 +13,8 @@ interface ImportResult {
   success: boolean;
   processed: number;
   successful: number;
+  created?: number;
+  updated?: number;
   failed: number;
   skipped: number;
   errors: string[];
@@ -271,7 +273,10 @@ export const InvoiceImport = () => {
       setShowResults(true);
 
       if (data.successful > 0) {
-        toast.success(`${data.successful} Rechnungen erfolgreich importiert`);
+        const parts = [];
+        if (data.created > 0) parts.push(`${data.created} neue erstellt`);
+        if (data.updated > 0) parts.push(`${data.updated} aktualisiert`);
+        toast.success(`✓ Import abgeschlossen: ${parts.join(', ')}`);
       }
       if (data.failed > 0) {
         toast.error(`${data.failed} Rechnungen konnten nicht importiert werden`);
@@ -372,7 +377,7 @@ export const InvoiceImport = () => {
             {importResult && (
               <div className="space-y-4">
                 <h4 className="font-semibold">Import-Ergebnis:</h4>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
                   <Card>
                     <CardContent className="pt-6">
                       <div className="text-center">
@@ -385,8 +390,17 @@ export const InvoiceImport = () => {
                     <CardContent className="pt-6">
                       <div className="text-center">
                         <CheckCircle2 className="h-8 w-8 mx-auto text-green-500 mb-2" />
-                        <p className="text-2xl font-bold text-green-600">{importResult.successful}</p>
-                        <p className="text-sm text-muted-foreground">Erfolgreich</p>
+                        <p className="text-2xl font-bold text-green-600">{importResult.created ?? 0}</p>
+                        <p className="text-sm text-muted-foreground">Neu erstellt</p>
+                      </div>
+                    </CardContent>
+                  </Card>
+                  <Card>
+                    <CardContent className="pt-6">
+                      <div className="text-center">
+                        <CheckCircle2 className="h-8 w-8 mx-auto text-blue-500 mb-2" />
+                        <p className="text-2xl font-bold text-blue-600">{importResult.updated ?? 0}</p>
+                        <p className="text-sm text-muted-foreground">Aktualisiert</p>
                       </div>
                     </CardContent>
                   </Card>
