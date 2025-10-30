@@ -21,13 +21,12 @@ serve(async (req) => {
 
     console.log("fix-invoice-years: start");
 
-    // Strategy A: by invoice_number pattern "/2022/" and 2025-dated
+    // Find invoices whose number clearly indicates 2022 but date is NOT in 2022
     let { data: badInvoices, error: fetchErr } = await supabase
       .from("invoices")
       .select("id, invoice_number, invoice_date")
       .ilike("invoice_number", "%/2022/%")
-      .gte("invoice_date", "2025-01-01")
-      .lte("invoice_date", "2025-12-31");
+      .or("invoice_date.lt.2022-01-01,invoice_date.gt.2022-12-31");
 
     if (fetchErr) {
       console.error("fix-invoice-years: fetch error", fetchErr);
@@ -35,22 +34,6 @@ serve(async (req) => {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
-    }
-
-    // If none found, Strategy B: exact bad date '2025-10-29' (regardless of invoice_number)
-    if (!badInvoices || badInvoices.length === 0) {
-      const res = await supabase
-        .from("invoices")
-        .select("id, invoice_number, invoice_date")
-        .eq("invoice_date", "2025-10-29");
-      if (res.error) {
-        console.error("fix-invoice-years: fetch fallback error", res.error);
-        return new Response(JSON.stringify({ success: false, error: res.error.message }), {
-          status: 500,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-      badInvoices = res.data ?? [];
     }
 
     const updates: Array<{ id: string; newDate: string; from: string }> = [];
