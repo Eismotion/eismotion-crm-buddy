@@ -249,6 +249,11 @@ export const InvoiceManagement = () => {
     '2024': sortByInvoiceNumber(filterBySearch(filterByYear('2024'))),
     '2025': sortByInvoiceNumber(filterBySearch(filterByYear('2025'))),
   };
+
+  const calculateYearRevenue = (year: string) => {
+    const yearInvoices = invoicesByYear[year as keyof typeof invoicesByYear] || [];
+    return yearInvoices.reduce((sum, invoice) => sum + (invoice.total_amount || 0), 0);
+  };
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'bezahlt': return 'bg-status-paid text-white';
@@ -354,7 +359,11 @@ export const InvoiceManagement = () => {
                   </TabsTrigger>
                 ))}
                 </TabsList>
+                <div className="mt-3 text-sm text-muted-foreground px-2 py-2 bg-muted/50 rounded">
+                  <span className="font-medium">Gesamtumsatz {selectedYear}:</span> {new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' }).format(calculateYearRevenue(selectedYear))}
+                </div>
               </div>
+
 
               {years.map(year => (
                 <TabsContent key={year} value={year}>
