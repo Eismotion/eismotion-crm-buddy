@@ -89,6 +89,19 @@ serve(async (req) => {
       try {
         console.log(`Processing invoice: ${row.invoiceNumber}`);
         
+        // Basic validation: require invoice number
+        const invNum = (row.invoiceNumber || '').toString().trim();
+        if (!invNum) {
+          warnings.push({
+            type: 'missing_data',
+            invoice_number: '',
+            customer_name: row.customerName,
+            message: 'Rechnungsnummer fehlt – Zeile übersprungen',
+            data: row
+          });
+          continue; // Skip this row
+        }
+        
         // Find or create customer - simple matching by name
         let customerId: string;
         
