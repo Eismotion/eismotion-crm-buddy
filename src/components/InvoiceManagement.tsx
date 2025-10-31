@@ -224,14 +224,30 @@ export const InvoiceManagement = () => {
     });
   };
 
+  const sortByInvoiceNumber = (invoicesList: any[]) => {
+    return invoicesList.sort((a, b) => {
+      // Extrahiere die letzten 3 Ziffern aus der Rechnungsnummer (Format: MM/YYYY/NNN)
+      const extractNumber = (invoiceNumber: string) => {
+        const match = invoiceNumber?.match(/\/(\d{1,3})$/);
+        return match ? parseInt(match[1]) : 0;
+      };
+      
+      const numA = extractNumber(a.invoice_number);
+      const numB = extractNumber(b.invoice_number);
+      
+      // Sortiere absteigend (höchste Nummer zuerst)
+      return numB - numA;
+    });
+  };
+
   const years = ['2020', '2021', '2022', '2023', '2024', '2025'];
   const invoicesByYear = {
-    '2020': filterBySearch(filterByYear('2020')),
-    '2021': filterBySearch(filterByYear('2021')),
-    '2022': filterBySearch(filterByYear('2022')),
-    '2023': filterBySearch(filterByYear('2023')),
-    '2024': filterBySearch(filterByYear('2024')),
-    '2025': filterBySearch(filterByYear('2025')),
+    '2020': sortByInvoiceNumber(filterBySearch(filterByYear('2020'))),
+    '2021': sortByInvoiceNumber(filterBySearch(filterByYear('2021'))),
+    '2022': sortByInvoiceNumber(filterBySearch(filterByYear('2022'))),
+    '2023': sortByInvoiceNumber(filterBySearch(filterByYear('2023'))),
+    '2024': sortByInvoiceNumber(filterBySearch(filterByYear('2024'))),
+    '2025': sortByInvoiceNumber(filterBySearch(filterByYear('2025'))),
   };
   const getStatusColor = (status: string) => {
     switch (status) {
