@@ -177,10 +177,21 @@ export const InvoiceManagement = () => {
 
   const filterByYear = (year: string) => {
     return invoices.filter(inv => {
-      if (!inv.invoice_date) return false;
-      const d = new Date(inv.invoice_date);
-      if (isNaN(d.getTime())) return false;
-      return d.getFullYear().toString() === year;
+      // 1) Bevorzugt: gültiges invoice_date verwenden
+      if (inv.invoice_date) {
+        const d = new Date(inv.invoice_date);
+        if (!isNaN(d.getTime()) && d.getFullYear().toString() === year) {
+          return true;
+        }
+      }
+      // 2) Fallback: Jahr aus Rechnungsnummer (Form MM/YYYY/…)
+      const num: string = inv.invoice_number || '';
+      const m = num.match(/^([0-9]{1,2})[.\/-]([0-9]{4})\//);
+      if (m) {
+        const yr = m[2];
+        return yr === year;
+      }
+      return false;
     });
   };
   const filterBySearch = (invoicesList: any[]) => {
