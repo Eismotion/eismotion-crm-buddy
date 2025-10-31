@@ -30,6 +30,24 @@ export const InvoiceManagement = () => {
     loadCustomers();
   }, []);
 
+  // Realtime-Updates: Zählt sofort korrekt nach Änderungen (Import/Update/Delete)
+  useEffect(() => {
+    const channel = supabase
+      .channel('invoices-realtime')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'invoices' },
+        () => {
+          loadInvoices();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
+
   const loadCustomers = async () => {
     try {
       const { data, error } = await supabase
@@ -159,11 +177,12 @@ export const InvoiceManagement = () => {
 
   const filterByYear = (year: string) => {
     return invoices.filter(inv => {
-      const invoiceYear = new Date(inv.invoice_date).getFullYear().toString();
-      return invoiceYear === year;
+      if (!inv.invoice_date) return false;
+      const d = new Date(inv.invoice_date);
+      if (isNaN(d.getTime())) return false;
+      return d.getFullYear().toString() === year;
     });
   };
-
   const filterBySearch = (invoicesList: any[]) => {
     if (!searchQuery.trim()) return invoicesList;
     
