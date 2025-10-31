@@ -24,10 +24,12 @@ export const InvoiceManagement = () => {
   const [selectedCustomerId, setSelectedCustomerId] = useState<string>('');
   const [customerSearch, setCustomerSearch] = useState('');
   const [filteredCustomers, setFilteredCustomers] = useState<any[]>([]);
+  const [yearCounts, setYearCounts] = useState<Record<number, number>>({});
 
   useEffect(() => {
     loadInvoices();
     loadCustomers();
+    loadYearCounts();
   }, []);
 
   // Realtime-Updates: Zählt sofort korrekt nach Änderungen (Import/Update/Delete)
@@ -39,6 +41,7 @@ export const InvoiceManagement = () => {
         { event: '*', schema: 'public', table: 'invoices' },
         () => {
           loadInvoices();
+          loadYearCounts();
         }
       )
       .subscribe();
@@ -47,6 +50,21 @@ export const InvoiceManagement = () => {
       supabase.removeChannel(channel);
     };
   }, []);
+
+  const loadYearCounts = async () => {
+    try {
+      const { data, error } = await supabase.rpc('get_invoice_counts_by_year');
+      if (error) throw error;
+      
+      const counts: Record<number, number> = {};
+      data?.forEach((row: any) => {
+        counts[row.jahr] = row.anzahl;
+      });
+      setYearCounts(counts);
+    } catch (error) {
+      console.error('Error loading year counts:', error);
+    }
+  };
 
   const loadCustomers = async () => {
     try {
@@ -165,6 +183,7 @@ export const InvoiceManagement = () => {
       if (error) throw error;
       
       await loadInvoices();
+      await loadYearCounts();
       setShowCreateDialog(false);
       setSelectedCustomerId('');
       setCustomerSearch('');
@@ -260,6 +279,7 @@ export const InvoiceManagement = () => {
 
                 toast.success('Alle Rechnungen wurden gelöscht');
                 await loadInvoices();
+                await loadYearCounts();
               } catch (e) {
                 console.error(e);
                 toast.error('Fehler beim Löschen der Rechnungen');
@@ -308,15 +328,15 @@ export const InvoiceManagement = () => {
             <Tabs value={selectedYear} onValueChange={setSelectedYear}>
               <div className="relative mb-4">
                 <TabsList className="inline-flex w-auto gap-1 overflow-x-auto scrollbar-hide">
-                  {years.map(year => (
-                    <TabsTrigger 
-                      key={year} 
-                      value={year}
-                      className="whitespace-nowrap flex-shrink-0"
-                    >
-                      {year} <span className="ml-1 text-muted-foreground">({invoicesByYear[year as keyof typeof invoicesByYear].length})</span>
-                    </TabsTrigger>
-                  ))}
+                {years.map(year => (
+                  <TabsTrigger 
+                    key={year} 
+                    value={year}
+                    className="whitespace-nowrap flex-shrink-0"
+                  >
+                    {year} <span className="ml-1 text-muted-foreground">({yearCounts[parseInt(year)] || 0})</span>
+                  </TabsTrigger>
+                ))}
                 </TabsList>
               </div>
 

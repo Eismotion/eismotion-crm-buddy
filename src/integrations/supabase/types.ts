@@ -736,6 +736,13 @@ export type Database = {
         Returns: Json
       }
       get_country_vat_rate: { Args: { p_country: string }; Returns: number }
+      get_invoice_counts_by_year: {
+        Args: never
+        Returns: {
+          anzahl: number
+          jahr: number
+        }[]
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
