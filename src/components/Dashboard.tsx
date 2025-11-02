@@ -10,7 +10,7 @@ export const Dashboard = () => {
   const navigate = useNavigate();
   const [customers, setCustomers] = useState<any[]>([]);
   const [invoices, setInvoices] = useState<any[]>([]);
-  const [stats, setStats] = useState({ totalInvoices: 0, overdueInvoices: 0 });
+  const [stats, setStats] = useState({ totalInvoices: 0, overdueInvoices: 0, totalRevenue: 0 });
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -30,7 +30,8 @@ export const Dashboard = () => {
       if (statsRes.data) {
         setStats({
           totalInvoices: Number(statsRes.data.total_invoices) || 0,
-          overdueInvoices: Number(statsRes.data.overdue_invoices) || 0
+          overdueInvoices: Number(statsRes.data.overdue_invoices) || 0,
+          totalRevenue: Number(statsRes.data.total_revenue) || 0
         });
       }
     } catch (error) {
@@ -40,7 +41,6 @@ export const Dashboard = () => {
     }
   };
 
-  const totalRevenue = invoices.reduce((sum, inv) => sum + (Number(inv.total_amount) || 0), 0);
   const totalCustomers = customers.length;
 
   const topCustomers = [...customers]
@@ -79,7 +79,7 @@ export const Dashboard = () => {
             <Euro className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{formatCurrency(totalRevenue)}</div>
+            <div className="text-2xl font-bold">{formatCurrency(stats.totalRevenue)}</div>
             <div className="flex items-center text-xs text-status-paid mt-1">
               <TrendingUp className="h-3 w-3 mr-1" />
               +12.5% vs. letzter Monat
