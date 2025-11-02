@@ -164,24 +164,33 @@ export const CustomerDetails = () => {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="flex items-center gap-2 sm:gap-4">
           <Button variant="ghost" size="icon" onClick={() => navigate('/customers')}>
             <ArrowLeft className="h-5 w-5" />
           </Button>
           <div>
-            <h2 className="text-3xl font-bold text-foreground">{customer.name}</h2>
-            <p className="text-muted-foreground">Kundennummer: {customer.customer_number || 'N/A'}</p>
+            <h2 className="text-2xl sm:text-3xl font-bold text-foreground">{customer.name}</h2>
+            <p className="text-sm sm:text-base text-muted-foreground">
+              Kundennummer: {customer.customer_number || 'N/A'}
+            </p>
           </div>
         </div>
-        <div className="flex gap-2">
-          <Button variant="outline" onClick={() => setShowLoginDialog(true)}>
-            <UserPlus className="h-4 w-4 mr-2" />
-            Login erstellen
+        <div className="flex gap-2 flex-wrap sm:flex-nowrap">
+          <Button 
+            variant="outline" 
+            onClick={() => setShowLoginDialog(true)}
+            className="flex-1 sm:flex-none"
+          >
+            <UserPlus className="h-4 w-4 sm:mr-2" />
+            <span className="hidden sm:inline">Login erstellen</span>
           </Button>
-          <Button onClick={() => setShowEditDialog(true)}>
-            <Edit className="h-4 w-4 mr-2" />
-            Bearbeiten
+          <Button 
+            onClick={() => setShowEditDialog(true)}
+            className="flex-1 sm:flex-none"
+          >
+            <Edit className="h-4 w-4 sm:mr-2" />
+            <span className="sm:inline">Bearbeiten</span>
           </Button>
         </div>
       </div>
@@ -291,7 +300,8 @@ export const CustomerDetails = () => {
             <CardTitle>Produktbeschreibungen ({products.length})</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="rounded-md border">
+            {/* Desktop Table View */}
+            <div className="hidden md:block rounded-md border">
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -313,6 +323,33 @@ export const CustomerDetails = () => {
                 </TableBody>
               </Table>
             </div>
+
+            {/* Mobile Card View */}
+            <div className="md:hidden space-y-3">
+              {products.map((product, index) => (
+                <Card key={index}>
+                  <CardContent className="pt-4">
+                    <div className="space-y-2">
+                      <p className="font-medium text-sm">{product.description}</p>
+                      <div className="grid grid-cols-2 gap-2 text-sm">
+                        <div>
+                          <p className="text-muted-foreground text-xs">Menge</p>
+                          <p className="font-medium">{product.totalQuantity}</p>
+                        </div>
+                        <div>
+                          <p className="text-muted-foreground text-xs">Einzelpreis</p>
+                          <p className="font-medium">{formatCurrency(product.unit_price)}</p>
+                        </div>
+                      </div>
+                      <div className="pt-2 border-t">
+                        <p className="text-xs text-muted-foreground">Gesamt Umsatz</p>
+                        <p className="text-lg font-bold">{formatCurrency(product.totalRevenue)}</p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
           </CardContent>
         </Card>
       )}
@@ -328,58 +365,112 @@ export const CustomerDetails = () => {
               Keine Rechnungen für diesen Kunden gefunden
             </div>
           ) : (
-            <div className="rounded-md border">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Rechnungsnr.</TableHead>
-                    <TableHead>Datum</TableHead>
-                    <TableHead>Fällig</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Design-Vorlage</TableHead>
-                    <TableHead className="text-right">Betrag</TableHead>
-                    <TableHead className="text-right">Aktionen</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {invoices.map((invoice) => (
-                    <TableRow key={invoice.id}>
-                      <TableCell className="font-medium">{invoice.invoice_number}</TableCell>
-                      <TableCell>
-                        {new Date(invoice.invoice_date).toLocaleDateString('de-DE')}
-                      </TableCell>
-                      <TableCell>
-                        {invoice.due_date 
-                          ? new Date(invoice.due_date).toLocaleDateString('de-DE')
-                          : '-'
-                        }
-                      </TableCell>
-                      <TableCell>
-                        <Badge className={getStatusColor(invoice.status)}>
-                          {invoice.status}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        {invoice.template?.name || 'Standard'}
-                      </TableCell>
-                      <TableCell className="text-right font-bold">
-                        {formatCurrency(invoice.total_amount)}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex gap-1 justify-end">
-                          <Button variant="ghost" size="sm" title="Rechnung bearbeiten">
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                          <Button variant="ghost" size="sm" title="PDF herunterladen">
-                            <Download className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </TableCell>
+            <>
+              {/* Desktop Table View */}
+              <div className="hidden lg:block rounded-md border">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Rechnungsnr.</TableHead>
+                      <TableHead>Datum</TableHead>
+                      <TableHead>Fällig</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Design-Vorlage</TableHead>
+                      <TableHead className="text-right">Betrag</TableHead>
+                      <TableHead className="text-right">Aktionen</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
+                  </TableHeader>
+                  <TableBody>
+                    {invoices.map((invoice) => (
+                      <TableRow key={invoice.id}>
+                        <TableCell className="font-medium">{invoice.invoice_number}</TableCell>
+                        <TableCell>
+                          {new Date(invoice.invoice_date).toLocaleDateString('de-DE')}
+                        </TableCell>
+                        <TableCell>
+                          {invoice.due_date 
+                            ? new Date(invoice.due_date).toLocaleDateString('de-DE')
+                            : '-'
+                          }
+                        </TableCell>
+                        <TableCell>
+                          <Badge className={getStatusColor(invoice.status)}>
+                            {invoice.status}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          {invoice.template?.name || 'Standard'}
+                        </TableCell>
+                        <TableCell className="text-right font-bold">
+                          {formatCurrency(invoice.total_amount)}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex gap-1 justify-end">
+                            <Button variant="ghost" size="sm" title="Rechnung bearbeiten">
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                            <Button variant="ghost" size="sm" title="PDF herunterladen">
+                              <Download className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+
+              {/* Mobile Card View */}
+              <div className="lg:hidden space-y-3">
+                {invoices.map((invoice) => (
+                  <Card key={invoice.id}>
+                    <CardHeader className="pb-3">
+                      <div className="flex items-start justify-between">
+                        <div className="space-y-1">
+                          <p className="font-medium text-sm">{invoice.invoice_number}</p>
+                          <Badge className={getStatusColor(invoice.status)}>
+                            {invoice.status}
+                          </Badge>
+                        </div>
+                        <p className="text-lg font-bold">{formatCurrency(invoice.total_amount)}</p>
+                      </div>
+                    </CardHeader>
+                    <CardContent className="space-y-3">
+                      <div className="grid grid-cols-2 gap-2 text-sm">
+                        <div>
+                          <p className="text-muted-foreground text-xs">Datum</p>
+                          <p className="font-medium">
+                            {new Date(invoice.invoice_date).toLocaleDateString('de-DE')}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-muted-foreground text-xs">Fällig</p>
+                          <p className="font-medium">
+                            {invoice.due_date 
+                              ? new Date(invoice.due_date).toLocaleDateString('de-DE')
+                              : '-'
+                            }
+                          </p>
+                        </div>
+                      </div>
+                      <div className="text-xs text-muted-foreground">
+                        Design: {invoice.template?.name || 'Standard'}
+                      </div>
+                      <div className="flex gap-2 pt-2 border-t">
+                        <Button variant="outline" size="sm" className="flex-1">
+                          <Edit className="h-4 w-4 mr-2" />
+                          Bearbeiten
+                        </Button>
+                        <Button variant="outline" size="sm" className="flex-1">
+                          <Download className="h-4 w-4 mr-2" />
+                          Download
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </>
           )}
         </CardContent>
       </Card>
