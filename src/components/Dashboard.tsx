@@ -11,6 +11,7 @@ export const Dashboard = () => {
   const [customers, setCustomers] = useState<any[]>([]);
   const [invoices, setInvoices] = useState<any[]>([]);
   const [stats, setStats] = useState({ totalInvoices: 0, overdueInvoices: 0, totalRevenue: 0 });
+  const [topProduct, setTopProduct] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -19,10 +20,11 @@ export const Dashboard = () => {
 
   const loadData = async () => {
     try {
-      const [customersRes, invoicesRes, statsRes] = await Promise.all([
+      const [customersRes, invoicesRes, statsRes, topProductRes] = await Promise.all([
         supabase.from('customers').select('*').order('created_at', { ascending: false }),
         supabase.from('invoices').select('*, customer:customers(name)').order('created_at', { ascending: false }).limit(10),
-        supabase.from('dashboard_stats').select('*').single()
+        supabase.from('dashboard_stats').select('*').single(),
+        supabase.from('top_products').select('*').order('total_revenue', { ascending: false }).limit(1).single()
       ]);
 
       if (customersRes.data) setCustomers(customersRes.data);
@@ -34,6 +36,7 @@ export const Dashboard = () => {
           totalRevenue: Number(statsRes.data.total_revenue) || 0
         });
       }
+      if (topProductRes.data) setTopProduct(topProductRes.data);
     } catch (error) {
       console.error('Error loading data:', error);
     } finally {
@@ -120,14 +123,14 @@ export const Dashboard = () => {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
-              Saisonaler Trend
+              Bestes Produkt
             </CardTitle>
-            <Snowflake className="h-4 w-4 text-season-winter" />
+            <TrendingUp className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-lg font-bold">Winter</div>
+            <div className="text-lg font-bold">{topProduct?.name || 'N/A'}</div>
             <p className="text-xs text-muted-foreground mt-1">
-              Glühwein & Heißgetränke
+              {topProduct ? formatCurrency(topProduct.total_revenue) : 'Keine Daten'}
             </p>
           </CardContent>
         </Card>
