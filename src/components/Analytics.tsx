@@ -16,6 +16,7 @@ export const Analytics = () => {
     overdueInvoices: 0,
   });
   const [monthlyRevenue, setMonthlyRevenue] = useState<any[]>([]);
+  const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
   const [topProducts, setTopProducts] = useState<any[]>([]);
   const [popularDesigns, setPopularDesigns] = useState<any[]>([]);
   const [overdueInvoices, setOverdueInvoices] = useState<any[]>([]);
@@ -29,7 +30,7 @@ export const Analytics = () => {
     try {
       const [statsRes, revenueRes, productsRes, overdueRes] = await Promise.all([
         supabase.from('dashboard_stats').select('*').single(),
-        supabase.from('monthly_revenue').select('*').order('month', { ascending: true }).limit(12),
+        supabase.from('monthly_revenue').select('*').order('month', { ascending: false }),
         supabase.from('top_products').select('*').order('total_revenue', { ascending: false }).limit(3),
         supabase.from('invoices').select('*, customer:customers(name)').eq('status', 'überfällig')
       ]);
@@ -45,26 +46,31 @@ export const Analytics = () => {
       }
 
       if (revenueRes.data) {
-        const monthNames = ['Januar', 'Februar', 'März', 'April', 'Mai', 'Juni', 'Juli', 'August', 'September', 'Oktober', 'November', 'Dezember'];
+        const monthNames = ['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dez'];
         
-        // Erstelle alle 12 Monate mit 0 als Default
-        const currentYear = new Date().getFullYear();
-        const allMonths = monthNames.map((name, index) => ({
-          month: name,
-          amount: 0,
-          monthIndex: index
-        }));
-
-        // Fülle tatsächliche Daten ein
+        // Gruppiere Daten nach Jahr und Monat
+        const yearData: { [key: number]: any[] } = {};
+        
         revenueRes.data.forEach(r => {
-          const monthIndex = new Date(r.month).getMonth();
-          const existingMonth = allMonths.find(m => m.monthIndex === monthIndex);
-          if (existingMonth) {
-            existingMonth.amount = Number(r.revenue) || 0;
+          const date = new Date(r.month);
+          const year = date.getFullYear();
+          const monthIndex = date.getMonth();
+          
+          if (!yearData[year]) {
+            yearData[year] = monthNames.map((name, index) => ({
+              month: name,
+              amount: 0,
+              monthIndex: index
+            }));
           }
+          
+          yearData[year][monthIndex].amount = Number(r.revenue) || 0;
         });
 
-        setMonthlyRevenue(allMonths);
+        setMonthlyRevenue(Object.entries(yearData).map(([year, months]) => ({
+          year: Number(year),
+          months
+        })));
       }
 
       if (productsRes.data) {
@@ -193,13 +199,30 @@ export const Analytics = () => {
             {monthlyRevenue.length === 0 ? (
               <p className="text-sm text-muted-foreground text-center py-4">Keine Daten verfügbar</p>
             ) : (
-              <div className="space-y-3">
-                {monthlyRevenue.map((item) => (
-                  <div key={item.month} className="flex items-center justify-between">
-                    <span className="text-sm text-muted-foreground">{item.month}</span>
-                    <span className="font-semibold">{formatCurrency(item.amount)}</span>
-                  </div>
-                ))}
+              <div className="space-y-4">
+                {/* Year Tabs */}
+                <div className="flex flex-wrap gap-2">
+                  {monthlyRevenue.map((yearData) => (
+                    <Button
+                      key={yearData.year}
+                      variant={selectedYear === yearData.year ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setSelectedYear(yearData.year)}
+                    >
+                      {yearData.year}
+                    </Button>
+                  ))}
+                </div>
+                
+                {/* Monthly Data for Selected Year */}
+                <div className="space-y-2">
+                  {monthlyRevenue.find(y => y.year === selectedYear)?.months.map((item: any) => (
+                    <div key={item.month} className="flex items-center justify-between py-1">
+                      <span className="text-sm text-muted-foreground">{item.month}</span>
+                      <span className="font-semibold">{formatCurrency(item.amount)}</span>
+                    </div>
+                  ))}
+                </div>
               </div>
             )}
           </CardContent>
