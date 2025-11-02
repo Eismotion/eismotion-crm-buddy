@@ -1,4 +1,4 @@
-import { ArrowLeft, Mail, Phone, MapPin, Calendar, Euro, FileText, Download, Edit, UserPlus, MessageSquare } from 'lucide-react';
+import { ArrowLeft, Mail, Phone, MapPin, Calendar, Euro, FileText, Download, Edit, UserPlus, MessageSquare, Send, Copy } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -23,9 +23,11 @@ export const CustomerDetails = () => {
   const [loading, setLoading] = useState(true);
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [showLoginDialog, setShowLoginDialog] = useState(false);
+  const [showInviteDialog, setShowInviteDialog] = useState(false);
   const [editForm, setEditForm] = useState<any>({});
   const [loginEmail, setLoginEmail] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
+  const [generatedCredentials, setGeneratedCredentials] = useState<{email: string, password: string} | null>(null);
 
   useEffect(() => {
     if (customerId) {
@@ -116,6 +118,16 @@ export const CustomerDetails = () => {
     }
   };
 
+  const generatePassword = () => {
+    const length = 12;
+    const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%";
+    let password = "";
+    for (let i = 0; i < length; i++) {
+      password += charset.charAt(Math.floor(Math.random() * charset.length));
+    }
+    return password;
+  };
+
   const handleCreateLogin = async () => {
     if (!loginEmail || !loginPassword) {
       toast.error('Bitte E-Mail und Passwort eingeben');
@@ -143,6 +155,52 @@ export const CustomerDetails = () => {
       console.error('Error creating login:', error);
       toast.error('Fehler beim Erstellen des Logins');
     }
+  };
+
+  const handleGenerateInvite = async () => {
+    const email = customer.email || `${customer.name.toLowerCase().replace(/\s+/g, '.')}@beispiel.de`;
+    const password = generatePassword();
+
+    try {
+      const { error } = await supabase.functions.invoke('create-customer-login', {
+        body: {
+          customerId: customerId,
+          email: email,
+          password: password,
+          name: customer.name
+        }
+      });
+
+      if (error) throw error;
+
+      setGeneratedCredentials({ email, password });
+      setShowInviteDialog(true);
+      toast.success('Login-Zugangsdaten wurden erstellt');
+      await loadCustomerData();
+    } catch (error) {
+      console.error('Error generating invite:', error);
+      toast.error('Fehler beim Erstellen der Einladung');
+    }
+  };
+
+  const handleSendWhatsApp = () => {
+    if (!generatedCredentials) return;
+
+    const portalUrl = `${window.location.origin}/customer-portal`;
+    const message = `Hallo ${customer.name},\n\nIhr persönlicher Zugang zu unserem Kundenportal wurde erstellt!\n\n🔐 Ihre Zugangsdaten:\nE-Mail: ${generatedCredentials.email}\nPasswort: ${generatedCredentials.password}\n\n🌐 Login-Link:\n${portalUrl}\n\nIm Kundenportal können Sie:\n✅ Ihre Rechnungen einsehen und herunterladen\n✅ Ihre Dokumente verwalten\n✅ Ihre Kontaktdaten aktualisieren\n\nBei Fragen stehen wir Ihnen gerne zur Verfügung!\n\nViele Grüße`;
+
+    const whatsappUrl = `https://wa.me/${customer.phone?.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(message)}`;
+    window.open(whatsappUrl, '_blank');
+  };
+
+  const handleCopyCredentials = () => {
+    if (!generatedCredentials) return;
+
+    const portalUrl = `${window.location.origin}/customer-portal`;
+    const text = `Kundenportal-Zugang für ${customer.name}\n\nE-Mail: ${generatedCredentials.email}\nPasswort: ${generatedCredentials.password}\n\nLogin-Link: ${portalUrl}`;
+    
+    navigator.clipboard.writeText(text);
+    toast.success('Zugangsdaten in Zwischenablage kopiert');
   };
 
   const getStatusColor = (status: string) => {
@@ -610,6 +668,75 @@ export const CustomerDetails = () => {
             </Button>
             <Button onClick={handleCreateLogin}>
               Login erstellen
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Invite Dialog with Generated Credentials */}
+      <Dialog open={showInviteDialog} onOpenChange={setShowInviteDialog}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Kundeneinladung erstellt</DialogTitle>
+            <DialogDescription>
+              Die Login-Zugangsdaten wurden erfolgreich erstellt. Senden Sie diese nun an den Kunden.
+            </DialogDescription>
+          </DialogHeader>
+          {generatedCredentials && (
+            <div className="space-y-4 py-4">
+              <div className="p-4 bg-muted rounded-lg space-y-3">
+                <div>
+                  <Label className="text-xs text-muted-foreground">Kunde</Label>
+                  <p className="font-medium">{customer.name}</p>
+                </div>
+                <div>
+                  <Label className="text-xs text-muted-foreground">E-Mail</Label>
+                  <p className="font-medium font-mono text-sm">{generatedCredentials.email}</p>
+                </div>
+                <div>
+                  <Label className="text-xs text-muted-foreground">Passwort</Label>
+                  <p className="font-medium font-mono text-sm">{generatedCredentials.password}</p>
+                </div>
+                <div>
+                  <Label className="text-xs text-muted-foreground">Portal-Link</Label>
+                  <p className="font-medium text-sm break-all">{window.location.origin}/customer-portal</p>
+                </div>
+              </div>
+
+              <div className="flex flex-col gap-2">
+                {customer.phone && (
+                  <Button 
+                    onClick={handleSendWhatsApp} 
+                    className="w-full"
+                  >
+                    <MessageSquare className="h-4 w-4 mr-2" />
+                    Per WhatsApp senden
+                  </Button>
+                )}
+                <Button 
+                  variant="outline" 
+                  onClick={handleCopyCredentials}
+                  className="w-full"
+                >
+                  <Copy className="h-4 w-4 mr-2" />
+                  Zugangsdaten kopieren
+                </Button>
+              </div>
+
+              <div className="text-xs text-muted-foreground bg-amber-50 dark:bg-amber-950/20 p-3 rounded border border-amber-200 dark:border-amber-800">
+                <strong>Wichtig:</strong> Bewahren Sie diese Zugangsdaten sicher auf. Das Passwort kann später nicht mehr angezeigt werden.
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button 
+              variant="outline" 
+              onClick={() => {
+                setShowInviteDialog(false);
+                setGeneratedCredentials(null);
+              }}
+            >
+              Schließen
             </Button>
           </DialogFooter>
         </DialogContent>
