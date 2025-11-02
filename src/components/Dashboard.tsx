@@ -4,8 +4,10 @@ import { Badge } from '@/components/ui/badge';
 import { formatCurrency } from '@/data/mockData';
 import { supabase } from '@/integrations/supabase/client';
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 export const Dashboard = () => {
+  const navigate = useNavigate();
   const [customers, setCustomers] = useState<any[]>([]);
   const [invoices, setInvoices] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -130,14 +132,18 @@ export const Dashboard = () => {
         {/* Top Customers */}
         <Card>
           <CardHeader>
-            <CardTitle>Neueste Kunden</CardTitle>
+            <CardTitle>Beste Kunden</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
               {topCustomers.map((customer) => (
-                <div key={customer.id} className="flex items-center justify-between">
+                <div 
+                  key={customer.id} 
+                  className="flex items-center justify-between cursor-pointer hover:bg-muted/50 p-2 rounded-lg transition-colors"
+                  onClick={() => navigate(`/customers/${customer.id}`)}
+                >
                   <div>
-                    <p className="font-medium">{customer.name}</p>
+                    <p className="font-medium text-primary">{customer.name}</p>
                     <p className="text-sm text-muted-foreground">{customer.city || 'N/A'}</p>
                   </div>
                   <div className="text-right">
@@ -158,9 +164,13 @@ export const Dashboard = () => {
           <CardContent>
             <div className="space-y-4">
               {recentInvoices.map((invoice) => (
-                <div key={invoice.id} className="flex items-center justify-between">
+                <div 
+                  key={invoice.id} 
+                  className="flex items-center justify-between cursor-pointer hover:bg-muted/50 p-2 rounded-lg transition-colors"
+                  onClick={() => invoice.customer_id && navigate(`/customers/${invoice.customer_id}`)}
+                >
                   <div>
-                    <p className="font-medium">{invoice.invoice_number}</p>
+                    <p className="font-medium text-primary">{invoice.invoice_number}</p>
                     <p className="text-sm text-muted-foreground">{invoice.customer?.name || 'N/A'}</p>
                   </div>
                   <div className="flex items-center gap-2">
