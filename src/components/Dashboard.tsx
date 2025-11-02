@@ -22,7 +22,7 @@ export const Dashboard = () => {
     try {
       const [customersRes, invoicesRes, statsRes, topProductRes] = await Promise.all([
         supabase.from('customers').select('*').order('created_at', { ascending: false }),
-        supabase.from('invoices').select('*, customer:customers(name)').order('created_at', { ascending: false }).limit(10),
+        supabase.from('invoices').select('*, customer:customers(name)').neq('status', 'bezahlt').order('created_at', { ascending: false }).limit(10),
         supabase.from('dashboard_stats').select('*').single(),
         supabase.from('top_products').select('*').order('total_revenue', { ascending: false }).limit(1).single()
       ]);
@@ -165,10 +165,10 @@ export const Dashboard = () => {
           </CardContent>
         </Card>
 
-        {/* Recent Invoices */}
+        {/* Unpaid Invoices */}
         <Card>
           <CardHeader>
-            <CardTitle>Aktuelle Rechnungen</CardTitle>
+            <CardTitle>Unbezahlte Rechnungen</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
