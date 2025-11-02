@@ -10,6 +10,7 @@ export const Dashboard = () => {
   const navigate = useNavigate();
   const [customers, setCustomers] = useState<any[]>([]);
   const [invoices, setInvoices] = useState<any[]>([]);
+  const [stats, setStats] = useState({ totalInvoices: 0, overdueInvoices: 0 });
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -18,13 +19,20 @@ export const Dashboard = () => {
 
   const loadData = async () => {
     try {
-      const [customersRes, invoicesRes] = await Promise.all([
+      const [customersRes, invoicesRes, statsRes] = await Promise.all([
         supabase.from('customers').select('*').order('created_at', { ascending: false }),
-        supabase.from('invoices').select('*, customer:customers(name)').order('created_at', { ascending: false })
+        supabase.from('invoices').select('*, customer:customers(name)').order('created_at', { ascending: false }).limit(10),
+        supabase.from('dashboard_stats').select('*').single()
       ]);
 
       if (customersRes.data) setCustomers(customersRes.data);
       if (invoicesRes.data) setInvoices(invoicesRes.data);
+      if (statsRes.data) {
+        setStats({
+          totalInvoices: Number(statsRes.data.total_invoices) || 0,
+          overdueInvoices: Number(statsRes.data.overdue_invoices) || 0
+        });
+      }
     } catch (error) {
       console.error('Error loading data:', error);
     } finally {
@@ -34,8 +42,6 @@ export const Dashboard = () => {
 
   const totalRevenue = invoices.reduce((sum, inv) => sum + (Number(inv.total_amount) || 0), 0);
   const totalCustomers = customers.length;
-  const totalInvoices = invoices.length;
-  const overdueInvoices = invoices.filter(inv => inv.status === 'überfällig').length;
 
   const topCustomers = [...customers]
     .sort((a, b) => (b.total_spent || 0) - (a.total_spent || 0))
@@ -104,9 +110,9 @@ export const Dashboard = () => {
             <FileText className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{totalInvoices}</div>
+            <div className="text-2xl font-bold">{stats.totalInvoices}</div>
             <p className="text-xs text-destructive mt-1">
-              {overdueInvoices} überfällig
+              {stats.overdueInvoices} überfällig
             </p>
           </CardContent>
         </Card>
