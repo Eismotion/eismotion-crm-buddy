@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import { TemplateProvider } from "./contexts/TemplateContext";
+import { CustomerPortal } from "./components/CustomerPortal";
 
 const queryClient = new QueryClient();
 
@@ -20,6 +21,7 @@ const App = () => (
             <Route path="/" element={<Index />} />
             <Route path="/customers" element={<Index />} />
             <Route path="/customers/:customerId" element={<Index />} />
+            <Route path="/customer-portal" element={<CustomerPortal />} />
             <Route path="/invoices" element={<Index />} />
             <Route path="/import" element={<Index />} />
             <Route path="/incoming-invoices" element={<Index />} />

@@ -12,6 +12,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
+import { CustomerFileUpload } from './CustomerFileUpload';
 
 export const CustomerDetails = () => {
   const { customerId } = useParams();
@@ -353,6 +354,9 @@ export const CustomerDetails = () => {
           </CardContent>
         </Card>
       )}
+
+      {/* Customer Files */}
+      <CustomerFileUpload customerId={customerId!} />
 
       {/* Invoices / Druckdateien */}
       <Card>
