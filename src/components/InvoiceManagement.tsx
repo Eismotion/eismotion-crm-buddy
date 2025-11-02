@@ -433,7 +433,12 @@ export const InvoiceManagement = () => {
                                 </TableCell>
                                 <TableCell className="text-right">
                                   <div className="flex gap-1 justify-end">
-                                    <Button variant="ghost" size="sm">
+                                    <Button 
+                                      variant="ghost" 
+                                      size="sm"
+                                      onClick={() => invoice.customer_id && navigate(`/customers/${invoice.customer_id}`)}
+                                      title="Kunde bearbeiten"
+                                    >
                                       <Edit className="h-4 w-4" />
                                     </Button>
                                     <Button variant="ghost" size="sm">
@@ -501,7 +506,12 @@ export const InvoiceManagement = () => {
                                 <p className="text-lg font-bold">{formatCurrency(invoice.total_amount)}</p>
                               </div>
                               <div className="flex gap-2 pt-2">
-                                <Button variant="outline" size="sm" className="flex-1">
+                                <Button 
+                                  variant="outline" 
+                                  size="sm" 
+                                  className="flex-1"
+                                  onClick={() => invoice.customer_id && navigate(`/customers/${invoice.customer_id}`)}
+                                >
                                   <Edit className="h-4 w-4 mr-2" />
                                   Bearbeiten
                                 </Button>

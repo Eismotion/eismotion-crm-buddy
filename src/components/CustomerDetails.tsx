@@ -1,12 +1,17 @@
-import { ArrowLeft, Mail, Phone, MapPin, Calendar, Euro, FileText, Download, Edit } from 'lucide-react';
+import { ArrowLeft, Mail, Phone, MapPin, Calendar, Euro, FileText, Download, Edit, UserPlus, MessageSquare } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
+import { Label } from '@/components/ui/label';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { formatCurrency } from '@/data/mockData';
 import { supabase } from '@/integrations/supabase/client';
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { toast } from 'sonner';
 
 export const CustomerDetails = () => {
   const { customerId } = useParams();
@@ -15,6 +20,11 @@ export const CustomerDetails = () => {
   const [invoices, setInvoices] = useState<any[]>([]);
   const [products, setProducts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [showEditDialog, setShowEditDialog] = useState(false);
+  const [showLoginDialog, setShowLoginDialog] = useState(false);
+  const [editForm, setEditForm] = useState<any>({});
+  const [loginEmail, setLoginEmail] = useState('');
+  const [loginPassword, setLoginPassword] = useState('');
 
   useEffect(() => {
     if (customerId) {
@@ -34,7 +44,10 @@ export const CustomerDetails = () => {
           .order('invoice_date', { ascending: false })
       ]);
 
-      if (customerRes.data) setCustomer(customerRes.data);
+      if (customerRes.data) {
+        setCustomer(customerRes.data);
+        setEditForm(customerRes.data);
+      }
       if (invoicesRes.data) {
         setInvoices(invoicesRes.data);
         
@@ -75,6 +88,62 @@ export const CustomerDetails = () => {
     }
   };
 
+  const handleUpdateCustomer = async () => {
+    try {
+      const { error } = await supabase
+        .from('customers')
+        .update({
+          name: editForm.name,
+          email: editForm.email,
+          phone: editForm.phone,
+          address: editForm.address,
+          city: editForm.city,
+          postal_code: editForm.postal_code,
+          country: editForm.country,
+          notes: editForm.notes,
+        })
+        .eq('id', customerId);
+
+      if (error) throw error;
+      
+      setCustomer(editForm);
+      setShowEditDialog(false);
+      toast.success('Kundendaten erfolgreich aktualisiert');
+    } catch (error) {
+      console.error('Error updating customer:', error);
+      toast.error('Fehler beim Aktualisieren der Kundendaten');
+    }
+  };
+
+  const handleCreateLogin = async () => {
+    if (!loginEmail || !loginPassword) {
+      toast.error('Bitte E-Mail und Passwort eingeben');
+      return;
+    }
+
+    try {
+      const { data, error } = await supabase.functions.invoke('create-customer-login', {
+        body: {
+          customerId: customerId,
+          email: loginEmail,
+          password: loginPassword,
+          name: customer.name
+        }
+      });
+
+      if (error) throw error;
+
+      toast.success('Login erfolgreich erstellt');
+      setShowLoginDialog(false);
+      setLoginEmail('');
+      setLoginPassword('');
+      await loadCustomerData();
+    } catch (error) {
+      console.error('Error creating login:', error);
+      toast.error('Fehler beim Erstellen des Logins');
+    }
+  };
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'bezahlt': return 'bg-status-paid text-white';
@@ -105,10 +174,16 @@ export const CustomerDetails = () => {
             <p className="text-muted-foreground">Kundennummer: {customer.customer_number || 'N/A'}</p>
           </div>
         </div>
-        <Button>
-          <Edit className="h-4 w-4 mr-2" />
-          Bearbeiten
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={() => setShowLoginDialog(true)}>
+            <UserPlus className="h-4 w-4 mr-2" />
+            Login erstellen
+          </Button>
+          <Button onClick={() => setShowEditDialog(true)}>
+            <Edit className="h-4 w-4 mr-2" />
+            Bearbeiten
+          </Button>
+        </div>
       </div>
 
       {/* Customer Info Cards */}
@@ -308,6 +383,142 @@ export const CustomerDetails = () => {
           )}
         </CardContent>
       </Card>
+
+      {/* Edit Customer Dialog */}
+      <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Kundendaten bearbeiten</DialogTitle>
+            <DialogDescription>
+              Ändern Sie die Kundendaten. Die Änderungen werden sofort gespeichert.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="name">Name *</Label>
+                <Input
+                  id="name"
+                  value={editForm.name || ''}
+                  onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="email">E-Mail</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  value={editForm.email || ''}
+                  onChange={(e) => setEditForm({ ...editForm, email: e.target.value })}
+                />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="phone">Telefon</Label>
+                <Input
+                  id="phone"
+                  value={editForm.phone || ''}
+                  onChange={(e) => setEditForm({ ...editForm, phone: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="country">Land</Label>
+                <Input
+                  id="country"
+                  value={editForm.country || ''}
+                  onChange={(e) => setEditForm({ ...editForm, country: e.target.value })}
+                />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="address">Adresse</Label>
+              <Input
+                id="address"
+                value={editForm.address || ''}
+                onChange={(e) => setEditForm({ ...editForm, address: e.target.value })}
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="postal_code">PLZ</Label>
+                <Input
+                  id="postal_code"
+                  value={editForm.postal_code || ''}
+                  onChange={(e) => setEditForm({ ...editForm, postal_code: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="city">Stadt</Label>
+                <Input
+                  id="city"
+                  value={editForm.city || ''}
+                  onChange={(e) => setEditForm({ ...editForm, city: e.target.value })}
+                />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="notes">Notizen</Label>
+              <Textarea
+                id="notes"
+                value={editForm.notes || ''}
+                onChange={(e) => setEditForm({ ...editForm, notes: e.target.value })}
+                rows={3}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowEditDialog(false)}>
+              Abbrechen
+            </Button>
+            <Button onClick={handleUpdateCustomer}>
+              Speichern
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Create Login Dialog */}
+      <Dialog open={showLoginDialog} onOpenChange={setShowLoginDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Kundenlogin erstellen</DialogTitle>
+            <DialogDescription>
+              Erstellen Sie einen Login-Zugang für {customer?.name}. Der Kunde kann sich dann mit diesen Zugangsdaten anmelden.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="login-email">E-Mail-Adresse *</Label>
+              <Input
+                id="login-email"
+                type="email"
+                placeholder="kunde@beispiel.de"
+                value={loginEmail}
+                onChange={(e) => setLoginEmail(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="login-password">Passwort *</Label>
+              <Input
+                id="login-password"
+                type="password"
+                placeholder="Mindestens 6 Zeichen"
+                value={loginPassword}
+                onChange={(e) => setLoginPassword(e.target.value)}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowLoginDialog(false)}>
+              Abbrechen
+            </Button>
+            <Button onClick={handleCreateLogin}>
+              Login erstellen
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
