@@ -437,7 +437,7 @@ export const CustomerManagement = () => {
                             size="sm"
                             onClick={(e) => {
                               e.stopPropagation();
-                              openEditDialog(customer);
+                              navigate(`/customers/${customer.id}`);
                             }}
                             title="Kunde bearbeiten"
                           >
@@ -539,7 +539,7 @@ export const CustomerManagement = () => {
                         className="flex-1"
                         onClick={(e) => {
                           e.stopPropagation();
-                          openEditDialog(customer);
+                          navigate(`/customers/${customer.id}`);
                         }}
                       >
                         <Edit className="h-4 w-4 mr-2" />
