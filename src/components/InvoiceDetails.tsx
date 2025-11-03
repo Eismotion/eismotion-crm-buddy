@@ -115,6 +115,10 @@ export const InvoiceDetails = () => {
           status: invoice.status,
           notes: invoice.notes,
           custom_message: invoice.custom_message,
+          tax_rate: invoice.tax_rate,
+          subtotal: invoice.subtotal,
+          tax_amount: invoice.tax_amount,
+          total_amount: invoice.total_amount,
         })
         .eq('id', id);
 
@@ -256,8 +260,32 @@ export const InvoiceDetails = () => {
               </div>
 
               <div>
-                <Label>MwSt-Satz</Label>
-                <div className="text-2xl font-bold">{invoice.tax_rate}%</div>
+                <Label>MwSt-Satz (%)</Label>
+                <Input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  max="100"
+                  value={invoice.tax_rate || 0}
+                  onChange={(e) => {
+                    const newTaxRate = parseFloat(e.target.value) || 0;
+                    setInvoice({ ...invoice, tax_rate: newTaxRate });
+                    // Recalculate immediately when tax rate changes
+                    const subtotal = invoice.subtotal || 0;
+                    const taxAmount = subtotal * (newTaxRate / 100);
+                    const totalAmount = subtotal + taxAmount;
+                    setInvoice(prev => ({
+                      ...prev,
+                      tax_rate: newTaxRate,
+                      tax_amount: taxAmount,
+                      total_amount: totalAmount
+                    }));
+                  }}
+                  placeholder="z.B. 19 oder 0"
+                />
+                <p className="text-xs text-muted-foreground mt-1">
+                  Für B2B mit USt-IdNr: 0% (Reverse Charge)
+                </p>
               </div>
 
               <div>
