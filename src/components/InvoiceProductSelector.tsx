@@ -120,7 +120,7 @@ export const InvoiceProductSelector = ({ invoiceId, onItemsChange }: InvoiceProd
         .from('invoice_items')
         .insert({
           invoice_id: invoiceId,
-          product_id: selectedProduct.product_id,
+          product_id: selectedProduct.id,
           description: selectedProduct.name,
           quantity: quantity,
           unit_price: price,
