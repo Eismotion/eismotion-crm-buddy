@@ -177,15 +177,15 @@ export const InvoiceDetails = () => {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <Button variant="outline" size="sm" onClick={() => navigate('/invoices')}>
+      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
+          <Button variant="outline" size="sm" onClick={() => navigate('/invoices')} className="w-fit">
             <ArrowLeft className="h-4 w-4 mr-2" />
             Zurück
           </Button>
-          <div>
-            <h1 className="text-3xl font-bold">{invoice.invoice_number}</h1>
-            <p className="text-muted-foreground">
+          <div className="flex-1 min-w-0">
+            <h1 className="text-2xl sm:text-3xl font-bold truncate">{invoice.invoice_number}</h1>
+            <p className="text-muted-foreground truncate">
               {customer?.name || 'Kein Kunde'}
             </p>
           </div>
@@ -194,22 +194,22 @@ export const InvoiceDetails = () => {
           </Badge>
         </div>
         
-        <div className="flex gap-2">
-          <Button variant="outline" onClick={handleDelete}>
-            <Trash2 className="h-4 w-4 mr-2" />
-            Löschen
+        <div className="flex flex-wrap gap-2">
+          <Button variant="outline" onClick={handleDelete} size="sm" className="sm:size-default">
+            <Trash2 className="h-4 w-4 sm:mr-2" />
+            <span className="hidden sm:inline">Löschen</span>
           </Button>
-          <Button variant="outline">
-            <Download className="h-4 w-4 mr-2" />
-            PDF
+          <Button variant="outline" size="sm" className="sm:size-default">
+            <Download className="h-4 w-4 sm:mr-2" />
+            <span className="hidden sm:inline">PDF</span>
           </Button>
-          <Button variant="outline">
-            <Send className="h-4 w-4 mr-2" />
-            Senden
+          <Button variant="outline" size="sm" className="sm:size-default">
+            <Send className="h-4 w-4 sm:mr-2" />
+            <span className="hidden sm:inline">Senden</span>
           </Button>
-          <Button onClick={handleSave} disabled={saving}>
-            <Save className="h-4 w-4 mr-2" />
-            {saving ? 'Speichert...' : 'Speichern'}
+          <Button onClick={handleSave} disabled={saving} size="sm" className="sm:size-default">
+            <Save className="h-4 w-4 sm:mr-2" />
+            <span className="hidden sm:inline">{saving ? 'Speichert...' : 'Speichern'}</span>
           </Button>
         </div>
       </div>
