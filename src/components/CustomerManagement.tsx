@@ -520,32 +520,6 @@ export const CustomerManagement = () => {
                       </div>
                       <p className="text-lg font-bold text-primary">{formatCurrency(customer.total_spent || 0)}</p>
                     </div>
-                    <div className="flex gap-2 pt-2" onClick={(e) => e.stopPropagation()}>
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
-                        className="flex-1"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          openLinkDialog(customer);
-                        }}
-                      >
-                        <Link2 className="h-4 w-4 mr-2" />
-                        Verknüpfen
-                      </Button>
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
-                        className="flex-1"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          navigate(`/customers/${customer.id}`);
-                        }}
-                      >
-                        <Edit className="h-4 w-4 mr-2" />
-                        Bearbeiten
-                      </Button>
-                    </div>
                   </CardContent>
                 </Card>
               ))}
