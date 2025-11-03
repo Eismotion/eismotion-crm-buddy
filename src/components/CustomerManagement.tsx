@@ -457,68 +457,66 @@ export const CustomerManagement = () => {
             {/* Mobile Card View */}
             <div className="lg:hidden space-y-4">
               {filteredCustomers.map((customer) => (
-                <Card 
+                <Card
                   key={customer.id}
-                  className="cursor-pointer hover:bg-muted/50 transition-all"
+                  className="cursor-pointer hover:bg-muted/50 transition-all max-h-[240px] overflow-hidden"
                   onClick={() => navigate(`/customers/${customer.id}`)}
                 >
-                  <CardHeader className="pb-4">
-                    <div className="flex items-start justify-between">
-                      <div className="space-y-1 flex-1">
-                        <CardTitle className="text-xl font-bold text-foreground">{customer.name}</CardTitle>
-                        {customer.contact_person && (
-                          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                            <User className="h-4 w-4" />
-                            <span>{customer.contact_person}</span>
-                          </div>
-                        )}
-                      </div>
-                      <div className="text-right">
-                        <div className="flex items-center gap-1.5 text-xs text-muted-foreground mb-1">
-                          <Calendar className="h-3.5 w-3.5" />
-                          <span>Seit {new Date(customer.created_at).toLocaleDateString('de-DE')}</span>
+                  <CardHeader className="pb-3 pt-4 px-4">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="space-y-0.5 flex-1 min-w-0">
+                        <CardTitle className="text-lg font-bold text-foreground truncate">{customer.name}</CardTitle>
+                        <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                          <User className="h-3.5 w-3.5 flex-shrink-0" />
+                          <span className="truncate">{customer.contact_person || '-'}</span>
                         </div>
-                        <div className="flex items-center gap-1.5 text-lg font-bold text-primary">
-                          <Euro className="h-5 w-5" />
+                      </div>
+                      <div className="text-right flex-shrink-0">
+                        <div className="flex items-center gap-1 text-xs text-muted-foreground mb-1">
+                          <Calendar className="h-3 w-3" />
+                          <span className="whitespace-nowrap">Seit {new Date(customer.created_at).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: '2-digit' })}</span>
+                        </div>
+                        <div className="flex items-center justify-end gap-1 text-base font-bold text-primary bg-primary/10 px-2 py-0.5 rounded">
+                          <Euro className="h-4 w-4" />
                           <span>{formatCurrency(customer.total_spent || 0)}</span>
                         </div>
                       </div>
                     </div>
                   </CardHeader>
-                  <CardContent className="space-y-3">
+                  <CardContent className="space-y-2 px-4 pb-4">
                     {/* Adresse */}
-                    <div className="flex items-start gap-2 text-sm">
-                      <MapPin className="h-4 w-4 text-muted-foreground mt-0.5 flex-shrink-0" />
+                    <div className="flex items-start gap-2 text-xs">
+                      <MapPin className="h-3.5 w-3.5 text-muted-foreground mt-0.5 flex-shrink-0" />
                       {customer.address || customer.postal_code || customer.city ? (
-                        <div className="flex-1">
-                          <span className="font-medium">
-                            {[customer.address, [customer.postal_code, customer.city].filter(Boolean).join(' ')]
-                              .filter(Boolean)
-                              .join(', ')}
-                          </span>
-                        </div>
+                        <span className="font-medium truncate flex-1">
+                          {[customer.address, [customer.postal_code, customer.city].filter(Boolean).join(' ')]
+                            .filter(Boolean)
+                            .join(', ')}
+                        </span>
                       ) : (
                         <span className="text-muted-foreground">-</span>
                       )}
                     </div>
 
                     {/* Telefon */}
-                    <div className="flex items-center gap-2 text-sm">
-                      <Phone className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                    <div className="flex items-center gap-2 text-xs">
+                      <Phone className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
                       <span className="font-medium">{customer.phone || '-'}</span>
                     </div>
 
                     {/* E-Mail */}
-                    <div className="flex items-center gap-2 text-sm">
-                      <Mail className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-                      <span className="font-medium truncate">{customer.email || 'Keine E-Mail'}</span>
+                    <div className="flex items-center gap-2 text-xs">
+                      <Mail className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
+                      <span className="font-medium truncate flex-1">{customer.email || 'Keine E-Mail'}</span>
                     </div>
 
                     {customer.parent && (
-                      <div className="text-sm pt-2 border-t">
-                        <p className="text-muted-foreground mb-1">Gehört zu</p>
-                        <div className="flex items-center gap-2">
-                          <span className="font-medium text-primary">{customer.parent.name}</span>
+                      <div className="text-xs pt-2 border-t">
+                        <div className="flex items-center justify-between gap-2">
+                          <div className="flex items-center gap-1.5 text-muted-foreground">
+                            <Link2 className="h-3 w-3" />
+                            <span className="truncate">{customer.parent.name}</span>
+                          </div>
                           <Button
                             variant="ghost"
                             size="sm"
@@ -526,7 +524,7 @@ export const CustomerManagement = () => {
                               e.stopPropagation();
                               handleUnlinkCustomer(customer.id);
                             }}
-                            className="h-6 w-6 p-0"
+                            className="h-5 w-5 p-0"
                           >
                             <Trash2 className="h-3 w-3" />
                           </Button>
@@ -534,29 +532,29 @@ export const CustomerManagement = () => {
                       </div>
                     )}
 
-                    <div className="flex gap-2 pt-3 border-t" onClick={(e) => e.stopPropagation()}>
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
-                        className="flex-1"
+                    <div className="flex gap-2 pt-2 border-t" onClick={(e) => e.stopPropagation()}>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="flex-1 h-8 text-xs"
                         onClick={(e) => {
                           e.stopPropagation();
                           openLinkDialog(customer);
                         }}
                       >
-                        <Link2 className="h-4 w-4 mr-2" />
+                        <Link2 className="h-3.5 w-3.5 mr-1.5" />
                         Verknüpfen
                       </Button>
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
-                        className="flex-1"
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="flex-1 h-8 text-xs"
                         onClick={(e) => {
                           e.stopPropagation();
                           navigate(`/customers/${customer.id}`);
                         }}
                       >
-                        <Edit className="h-4 w-4 mr-2" />
+                        <Edit className="h-3.5 w-3.5 mr-1.5" />
                         Bearbeiten
                       </Button>
                     </div>
