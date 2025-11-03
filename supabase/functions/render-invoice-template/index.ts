@@ -187,6 +187,18 @@ serve(async (req) => {
     let html = template?.html_template || getDefaultTemplate();
     let css = template?.css_styles || getDefaultCSS();
 
+    // Hintergrundbild aus Template hinzufügen
+    const backgroundImage = template?.background_storage_url || template?.background_base64;
+    if (backgroundImage) {
+      css += `
+        .header{background-image:url('${backgroundImage}') !important;background-size:cover;background-position:center;}
+        .page{position:relative;}
+        .page::before{content:"";position:absolute;inset:0 0 auto 0;height:230px;background:url('${backgroundImage}') center/cover no-repeat;z-index:0;}
+        .top-address,.content,.footer,.footer-bar{position:relative;z-index:1;background:transparent;}
+      `;
+      console.log('Applied template background image');
+    }
+
     // Führendes IMG in Hintergrundbild umwandeln (falls Nutzer ein Bild oben eingefügt hat)
     try {
       // Suche nach einem IMG vor dem ersten <!DOCTYPE> oder <html>
