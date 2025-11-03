@@ -275,6 +275,15 @@ serve(async (req) => {
 
     let fullHTML: string;
     if (hasFullDoc) {
+      // Falls ein Hintergrundbild gesetzt wurde, sichere Fallback-Einbettung direkt nach <body>
+      if (backgroundImage) {
+        const bodyOpenMatch = html.match(/<body[^>]*>/i);
+        if (bodyOpenMatch) {
+          html = html.replace(bodyOpenMatch[0], `${bodyOpenMatch[0]}<div class="template-header-bg"></div>`);
+          css += `\n            .template-header-bg{height:230px;background:url('${backgroundImage}') center/cover no-repeat;}\n          `;
+        }
+      }
+
       // CSS injizieren
       if (html.includes('{{css}}')) {
         html = html.replace(/{{css}}/g, css);
@@ -292,6 +301,7 @@ serve(async (req) => {
           <title>Rechnung ${invoice.invoice_number}</title>
           <style>
             ${css}
+            ${backgroundImage ? `.template-header-bg{height:230px;background:url('${backgroundImage}') center/cover no-repeat;}` : ''}
             html, body { height: 100%; }
             body { background: #fff; color: #111; }
             .invoice-details { padding: 20px; }
@@ -303,6 +313,7 @@ serve(async (req) => {
           </style>
         </head>
         <body>
+          ${backgroundImage ? '<div class="template-header-bg"></div>' : ''}
           ${html}
         </body>
         </html>
