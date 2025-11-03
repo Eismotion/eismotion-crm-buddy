@@ -1,10 +1,9 @@
-import { ArrowLeft, Mail, Phone, MapPin, Calendar, Euro, FileText, Download, Edit, UserPlus, MessageSquare, Send, Copy, Trash2 } from 'lucide-react';
+import { ArrowLeft, Mail, Phone, MapPin, Calendar, Euro, FileText, Download, Edit, UserPlus, MessageSquare, Send, Copy } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -25,7 +24,6 @@ export const CustomerDetails = () => {
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [showLoginDialog, setShowLoginDialog] = useState(false);
   const [showInviteDialog, setShowInviteDialog] = useState(false);
-  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [editForm, setEditForm] = useState<any>({});
   const [loginEmail, setLoginEmail] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
@@ -205,23 +203,6 @@ export const CustomerDetails = () => {
     toast.success('Zugangsdaten in Zwischenablage kopiert');
   };
 
-  const handleDeleteCustomer = async () => {
-    try {
-      const { error } = await supabase
-        .from('customers')
-        .delete()
-        .eq('id', customerId);
-
-      if (error) throw error;
-
-      toast.success('Kunde erfolgreich gelöscht');
-      navigate('/customers');
-    } catch (error) {
-      console.error('Error deleting customer:', error);
-      toast.error('Fehler beim Löschen des Kunden');
-    }
-  };
-
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'bezahlt': return 'bg-status-paid text-white';
@@ -277,14 +258,6 @@ export const CustomerDetails = () => {
           >
             <Edit className="h-4 w-4 sm:mr-2" />
             <span className="sm:inline">Bearbeiten</span>
-          </Button>
-          <Button 
-            variant="outline" 
-            onClick={() => setShowDeleteDialog(true)}
-            className="flex-1 sm:flex-none"
-          >
-            <Trash2 className="h-4 w-4 sm:mr-2" />
-            <span className="sm:inline">Löschen</span>
           </Button>
         </div>
       </div>
@@ -776,24 +749,6 @@ export const CustomerDetails = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-
-      {/* Delete Confirmation Dialog */}
-      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Kunde löschen</AlertDialogTitle>
-            <AlertDialogDescription>
-              Möchten Sie den Kunden "{customer.name}" wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Abbrechen</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDeleteCustomer}>
-              Löschen
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </div>
   );
 };
