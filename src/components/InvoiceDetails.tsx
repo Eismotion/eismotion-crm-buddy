@@ -13,6 +13,7 @@ import { InvoiceProductSelector } from './InvoiceProductSelector';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { formatCurrency } from '@/data/mockData';
+import { useTemplates } from '@/contexts/TemplateContext';
 
 export const InvoiceDetails = () => {
   const { id } = useParams<{ id: string }>();
@@ -24,6 +25,7 @@ export const InvoiceDetails = () => {
   const [saving, setSaving] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string>('');
+  const { templates } = useTemplates();
 
   useEffect(() => {
     if (id) {
@@ -148,7 +150,10 @@ export const InvoiceDetails = () => {
       toast.loading('Vorschau wird erstellt...');
       
       const { data, error } = await supabase.functions.invoke('render-invoice-template', {
-        body: { invoiceId: id }
+        body: { 
+          invoiceId: id,
+          templateId: invoice?.template_id
+        }
       });
 
       if (error) throw error;
@@ -171,7 +176,10 @@ export const InvoiceDetails = () => {
       toast.loading('PDF wird erstellt...');
       
       const { data, error } = await supabase.functions.invoke('render-invoice-template', {
-        body: { invoiceId: id }
+        body: { 
+          invoiceId: id,
+          templateId: invoice?.template_id
+        }
       });
 
       if (error) throw error;
@@ -315,6 +323,41 @@ export const InvoiceDetails = () => {
                   value={invoice.due_date || ''}
                   onChange={(e) => setInvoice({ ...invoice, due_date: e.target.value })}
                 />
+              </div>
+
+              <div>
+                <Label>Rechnungstemplate</Label>
+                <Select 
+                  value={invoice.template_id || 'none'} 
+                  onValueChange={async (value) => {
+                    const newTemplateId = value === 'none' ? null : value;
+                    try {
+                      const { error } = await supabase
+                        .from('invoices')
+                        .update({ template_id: newTemplateId })
+                        .eq('id', id);
+                      
+                      if (error) throw error;
+                      
+                      setInvoice({ ...invoice, template_id: newTemplateId });
+                      toast.success('Template zugewiesen');
+                    } catch (error: any) {
+                      toast.error('Fehler beim Speichern des Templates');
+                    }
+                  }}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Template wählen" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">Kein Template</SelectItem>
+                    {templates.map((template) => (
+                      <SelectItem key={template.id} value={template.id}>
+                        {template.name || 'Unbenanntes Template'}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
 
               <div>
