@@ -12,6 +12,7 @@ import { ProductManagement } from '@/components/ProductManagement';
 import { Analytics } from '@/components/Analytics';
 import { Settings } from '@/components/Settings';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 const Index = () => {
   const location = useLocation();
@@ -65,10 +66,18 @@ const Index = () => {
         return <InvoiceManagement />;
       case 'import':
         return (
-          <div className="space-y-6">
-            <ContactImport />
-            <InvoiceImport />
-          </div>
+          <Tabs defaultValue="contacts" className="w-full">
+            <TabsList className="grid w-full grid-cols-2 max-w-md">
+              <TabsTrigger value="contacts">Ansprechpartner Import</TabsTrigger>
+              <TabsTrigger value="invoices">Rechnungs-Import</TabsTrigger>
+            </TabsList>
+            <TabsContent value="contacts" className="mt-6">
+              <ContactImport />
+            </TabsContent>
+            <TabsContent value="invoices" className="mt-6">
+              <InvoiceImport />
+            </TabsContent>
+          </Tabs>
         );
       case 'incoming-invoices':
         return <IncomingInvoices />;
