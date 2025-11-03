@@ -25,6 +25,17 @@ export const InvoiceManagement = () => {
   const [customerSearch, setCustomerSearch] = useState('');
   const [filteredCustomers, setFilteredCustomers] = useState<any[]>([]);
   const [yearCounts, setYearCounts] = useState<Record<number, number>>({});
+  const [showNewCustomerDialog, setShowNewCustomerDialog] = useState(false);
+  const [newCustomer, setNewCustomer] = useState({
+    name: '',
+    contact_person: '',
+    address: '',
+    postal_code: '',
+    city: '',
+    country: 'DE',
+    email: '',
+    phone: ''
+  });
 
   useEffect(() => {
     loadInvoices();
@@ -155,6 +166,56 @@ export const InvoiceManagement = () => {
     return `RE-${year}-${nextNumber.toString().padStart(4, '0')}`;
   };
 
+  const handleCreateCustomer = async () => {
+    if (!newCustomer.name.trim()) {
+      toast.error('Bitte geben Sie einen Kundennamen ein');
+      return;
+    }
+
+    try {
+      const { data, error } = await supabase
+        .from('customers')
+        .insert({
+          name: newCustomer.name,
+          contact_person: newCustomer.contact_person || null,
+          address: newCustomer.address || null,
+          postal_code: newCustomer.postal_code || null,
+          city: newCustomer.city || null,
+          country: newCustomer.country,
+          email: newCustomer.email || null,
+          phone: newCustomer.phone || null
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      // Reload customers and select the new one
+      await loadCustomers();
+      setSelectedCustomerId(data.id);
+      
+      // Close new customer dialog
+      setShowNewCustomerDialog(false);
+      
+      // Reset form
+      setNewCustomer({
+        name: '',
+        contact_person: '',
+        address: '',
+        postal_code: '',
+        city: '',
+        country: 'DE',
+        email: '',
+        phone: ''
+      });
+
+      toast.success('Kunde erfolgreich angelegt');
+    } catch (error) {
+      console.error('Error creating customer:', error);
+      toast.error('Fehler beim Anlegen des Kunden');
+    }
+  };
+
   const handleCreateInvoice = async () => {
     if (!selectedCustomerId) {
       toast.error('Bitte wählen Sie einen Kunden aus');
@@ -188,6 +249,9 @@ export const InvoiceManagement = () => {
       setSelectedCustomerId('');
       setCustomerSearch('');
       toast.success('Rechnung erfolgreich erstellt');
+      
+      // Navigate to invoice details
+      navigate(`/invoices/${data.id}`);
     } catch (error) {
       console.error('Error creating invoice:', error);
       toast.error('Fehler beim Erstellen der Rechnung');
@@ -549,7 +613,18 @@ export const InvoiceManagement = () => {
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label htmlFor="customerSearch">Kunde suchen</Label>
+              <div className="flex items-center justify-between">
+                <Label htmlFor="customerSearch">Kunde suchen</Label>
+                <Button 
+                  type="button"
+                  variant="default"
+                  size="sm"
+                  onClick={() => setShowNewCustomerDialog(true)}
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Neuer Kunde
+                </Button>
+              </div>
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
@@ -625,6 +700,137 @@ export const InvoiceManagement = () => {
               </Button>
               <Button onClick={handleCreateInvoice} disabled={!selectedCustomerId}>
                 Rechnung erstellen
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* New Customer Dialog */}
+      <Dialog open={showNewCustomerDialog} onOpenChange={setShowNewCustomerDialog}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Neuen Kunden anlegen</DialogTitle>
+            <DialogDescription>
+              Geben Sie die Kundendaten ein. Nach dem Anlegen wird der Kunde automatisch ausgewählt.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="customerName">Kundenname *</Label>
+              <Input
+                id="customerName"
+                placeholder="Firma oder Name"
+                value={newCustomer.name}
+                onChange={(e) => setNewCustomer({ ...newCustomer, name: e.target.value })}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="contactPerson">Ansprechpartner</Label>
+              <Input
+                id="contactPerson"
+                placeholder="Name des Ansprechpartners"
+                value={newCustomer.contact_person}
+                onChange={(e) => setNewCustomer({ ...newCustomer, contact_person: e.target.value })}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="address">Straße und Hausnummer</Label>
+              <Input
+                id="address"
+                placeholder="Musterstraße 123"
+                value={newCustomer.address}
+                onChange={(e) => setNewCustomer({ ...newCustomer, address: e.target.value })}
+              />
+            </div>
+
+            <div className="grid grid-cols-3 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="postalCode">PLZ</Label>
+                <Input
+                  id="postalCode"
+                  placeholder="12345"
+                  value={newCustomer.postal_code}
+                  onChange={(e) => setNewCustomer({ ...newCustomer, postal_code: e.target.value })}
+                />
+              </div>
+
+              <div className="col-span-2 space-y-2">
+                <Label htmlFor="city">Stadt</Label>
+                <Input
+                  id="city"
+                  placeholder="Musterstadt"
+                  value={newCustomer.city}
+                  onChange={(e) => setNewCustomer({ ...newCustomer, city: e.target.value })}
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="country">Land</Label>
+              <select
+                id="country"
+                value={newCustomer.country}
+                onChange={(e) => setNewCustomer({ ...newCustomer, country: e.target.value })}
+                className="w-full h-10 px-3 rounded-md border border-input bg-background"
+              >
+                <option value="DE">Deutschland</option>
+                <option value="AT">Österreich</option>
+                <option value="CH">Schweiz</option>
+                <option value="FR">Frankreich</option>
+                <option value="IT">Italien</option>
+                <option value="NL">Niederlande</option>
+                <option value="BE">Belgien</option>
+                <option value="PL">Polen</option>
+                <option value="ES">Spanien</option>
+              </select>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="email">E-Mail</Label>
+              <Input
+                id="email"
+                type="email"
+                placeholder="kunde@beispiel.de"
+                value={newCustomer.email}
+                onChange={(e) => setNewCustomer({ ...newCustomer, email: e.target.value })}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="phone">Telefon</Label>
+              <Input
+                id="phone"
+                type="tel"
+                placeholder="+49 123 456789"
+                value={newCustomer.phone}
+                onChange={(e) => setNewCustomer({ ...newCustomer, phone: e.target.value })}
+              />
+            </div>
+
+            <div className="flex gap-2 justify-end pt-4">
+              <Button 
+                variant="outline" 
+                onClick={() => {
+                  setShowNewCustomerDialog(false);
+                  setNewCustomer({
+                    name: '',
+                    contact_person: '',
+                    address: '',
+                    postal_code: '',
+                    city: '',
+                    country: 'DE',
+                    email: '',
+                    phone: ''
+                  });
+                }}
+              >
+                Abbrechen
+              </Button>
+              <Button onClick={handleCreateCustomer} disabled={!newCustomer.name.trim()}>
+                Kunde anlegen
               </Button>
             </div>
           </div>
