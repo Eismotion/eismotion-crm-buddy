@@ -255,29 +255,33 @@ export const CustomerDetails = () => {
           </div>
         </div>
         <div className="flex gap-2 flex-wrap sm:flex-nowrap">
-          <Button 
-            variant="outline" 
-            onClick={handleGenerateInvite}
-            className="flex-1 sm:flex-none"
-          >
-            <Send className="h-4 w-4 sm:mr-2" />
-            <span className="sm:inline">Einladen</span>
-          </Button>
-          <Button 
-            variant="outline" 
-            onClick={() => setShowLoginDialog(true)}
-            className="flex-1 sm:flex-none"
-          >
-            <UserPlus className="h-4 w-4 sm:mr-2" />
-            <span className="hidden sm:inline">Login</span>
-          </Button>
-          <Button 
-            onClick={() => setShowEditDialog(true)}
-            className="flex-1 sm:flex-none"
-          >
-            <Edit className="h-4 w-4 sm:mr-2" />
-            <span className="sm:inline">Bearbeiten</span>
-          </Button>
+          {customer.name && (customer.total_spent > 0) && (
+            <>
+              <Button 
+                variant="outline" 
+                onClick={handleGenerateInvite}
+                className="flex-1 sm:flex-none"
+              >
+                <Send className="h-4 w-4 sm:mr-2" />
+                <span className="sm:inline">Einladen</span>
+              </Button>
+              <Button 
+                variant="outline" 
+                onClick={() => setShowLoginDialog(true)}
+                className="flex-1 sm:flex-none"
+              >
+                <UserPlus className="h-4 w-4 sm:mr-2" />
+                <span className="hidden sm:inline">Login</span>
+              </Button>
+              <Button 
+                onClick={() => setShowEditDialog(true)}
+                className="flex-1 sm:flex-none"
+              >
+                <Edit className="h-4 w-4 sm:mr-2" />
+                <span className="sm:inline">Bearbeiten</span>
+              </Button>
+            </>
+          )}
           <Button 
             variant="outline" 
             onClick={() => setShowDeleteDialog(true)}
