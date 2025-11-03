@@ -631,7 +631,7 @@ export type Database = {
           is_tax_exempt: boolean | null
           material: string | null
           name: string
-          price: number
+          price: number | null
           product_id: string | null
           production_country: string | null
           quantity: string | null
@@ -654,7 +654,7 @@ export type Database = {
           is_tax_exempt?: boolean | null
           material?: string | null
           name: string
-          price: number
+          price?: number | null
           product_id?: string | null
           production_country?: string | null
           quantity?: string | null
@@ -677,7 +677,7 @@ export type Database = {
           is_tax_exempt?: boolean | null
           material?: string | null
           name?: string
-          price?: number
+          price?: number | null
           product_id?: string | null
           production_country?: string | null
           quantity?: string | null
