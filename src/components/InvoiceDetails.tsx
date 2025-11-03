@@ -69,14 +69,20 @@ export const InvoiceDetails = () => {
       // Get all invoice items
       const { data: items, error: itemsError } = await supabase
         .from('invoice_items')
-        .select('total_price')
+        .select('total_price, is_tax_exempt')
         .eq('invoice_id', id);
 
       if (itemsError) throw itemsError;
 
+      // Calculate subtotal from all items
       const subtotal = items?.reduce((sum, item) => sum + (item.total_price || 0), 0) || 0;
+      
+      // Calculate tax only on non-exempt items
+      const taxableAmount = items?.reduce((sum, item) => 
+        item.is_tax_exempt ? sum : sum + (item.total_price || 0), 0) || 0;
+      
       const taxRate = invoice?.tax_rate || 19.00;
-      const taxAmount = subtotal * (taxRate / 100);
+      const taxAmount = taxableAmount * (taxRate / 100);
       const totalAmount = subtotal + taxAmount;
 
       // Update invoice totals

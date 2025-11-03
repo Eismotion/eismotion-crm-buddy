@@ -419,7 +419,9 @@ export type Database = {
           description: string
           id: string
           invoice_id: string | null
+          is_tax_exempt: boolean | null
           material: string | null
+          position: number | null
           product_id: string | null
           quantity: number
           size: string | null
@@ -432,7 +434,9 @@ export type Database = {
           description: string
           id?: string
           invoice_id?: string | null
+          is_tax_exempt?: boolean | null
           material?: string | null
+          position?: number | null
           product_id?: string | null
           quantity?: number
           size?: string | null
@@ -445,7 +449,9 @@ export type Database = {
           description?: string
           id?: string
           invoice_id?: string | null
+          is_tax_exempt?: boolean | null
           material?: string | null
+          position?: number | null
           product_id?: string | null
           quantity?: number
           size?: string | null
