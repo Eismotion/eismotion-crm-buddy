@@ -431,21 +431,21 @@ export const InvoiceManagement = () => {
                                 <TableCell className="text-right font-bold">
                                   {formatCurrency(invoice.total_amount)}
                                 </TableCell>
-                                <TableCell className="text-right">
-                                  <div className="flex gap-1 justify-end">
-                                    <Button 
-                                      variant="ghost" 
-                                      size="sm"
-                                      onClick={() => invoice.customer_id && navigate(`/customers/${invoice.customer_id}`)}
-                                      title="Kunde bearbeiten"
-                                    >
-                                      <Edit className="h-4 w-4" />
-                                    </Button>
-                                    <Button variant="ghost" size="sm">
-                                      <Download className="h-4 w-4" />
-                                    </Button>
-                                  </div>
-                                </TableCell>
+                                 <TableCell className="text-right">
+                                   <div className="flex gap-1 justify-end">
+                                     <Button 
+                                       variant="ghost" 
+                                       size="sm"
+                                       onClick={() => navigate(`/invoices/${invoice.id}`)}
+                                       title="Rechnung bearbeiten"
+                                     >
+                                       <Edit className="h-4 w-4" />
+                                     </Button>
+                                     <Button variant="ghost" size="sm">
+                                       <Download className="h-4 w-4" />
+                                     </Button>
+                                   </div>
+                                 </TableCell>
                               </TableRow>
                             ))}
                           </TableBody>
@@ -510,7 +510,7 @@ export const InvoiceManagement = () => {
                                   variant="outline" 
                                   size="sm" 
                                   className="flex-1"
-                                  onClick={() => invoice.customer_id && navigate(`/customers/${invoice.customer_id}`)}
+                                  onClick={() => navigate(`/invoices/${invoice.id}`)}
                                 >
                                   <Edit className="h-4 w-4 mr-2" />
                                   Bearbeiten

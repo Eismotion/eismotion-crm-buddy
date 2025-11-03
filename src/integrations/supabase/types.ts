@@ -419,8 +419,11 @@ export type Database = {
           description: string
           id: string
           invoice_id: string | null
+          material: string | null
           product_id: string | null
           quantity: number
+          size: string | null
+          thickness: string | null
           total_price: number
           unit_price: number
         }
@@ -429,8 +432,11 @@ export type Database = {
           description: string
           id?: string
           invoice_id?: string | null
+          material?: string | null
           product_id?: string | null
           quantity?: number
+          size?: string | null
+          thickness?: string | null
           total_price: number
           unit_price: number
         }
@@ -439,8 +445,11 @@ export type Database = {
           description?: string
           id?: string
           invoice_id?: string | null
+          material?: string | null
           product_id?: string | null
           quantity?: number
+          size?: string | null
+          thickness?: string | null
           total_price?: number
           unit_price?: number
         }

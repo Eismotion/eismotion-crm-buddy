@@ -23,6 +23,7 @@ const App = () => (
             <Route path="/customers/:customerId" element={<Index />} />
             <Route path="/customer-portal" element={<CustomerPortal />} />
             <Route path="/invoices" element={<Index />} />
+            <Route path="/invoices/:id" element={<Index />} />
             <Route path="/import" element={<Index />} />
             <Route path="/incoming-invoices" element={<Index />} />
             <Route path="/accounting" element={<Index />} />

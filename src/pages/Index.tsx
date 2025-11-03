@@ -3,6 +3,7 @@ import { Dashboard } from '@/components/Dashboard';
 import { CustomerManagement } from '@/components/CustomerManagement';
 import { CustomerDetails } from '@/components/CustomerDetails';
 import { InvoiceManagement } from '@/components/InvoiceManagement';
+import { InvoiceDetails } from '@/components/InvoiceDetails';
 import { InvoiceImport } from '@/components/InvoiceImport';
 import { ContactImport } from '@/components/ContactImport';
 import IncomingInvoices from '@/components/IncomingInvoices';
@@ -17,12 +18,13 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 const Index = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  const { customerId } = useParams();
+  const { customerId, id: invoiceId } = useParams<{ customerId?: string; id?: string }>();
   
   const getActiveTab = () => {
     const path = location.pathname;
     if (path.startsWith('/customers/')) return 'customers';
     if (path === '/customers') return 'customers';
+    if (path.startsWith('/invoices/')) return 'invoices';
     if (path === '/invoices') return 'invoices';
     if (path === '/import') return 'import';
     if (path === '/incoming-invoices') return 'incoming-invoices';
@@ -55,6 +57,10 @@ const Index = () => {
   const renderContent = () => {
     if (customerId) {
       return <CustomerDetails />;
+    }
+    
+    if (invoiceId) {
+      return <InvoiceDetails />;
     }
     
     switch (activeTab) {
