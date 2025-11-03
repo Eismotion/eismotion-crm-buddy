@@ -1,4 +1,4 @@
-import { ArrowLeft, Mail, Phone, MapPin, Calendar, Euro, FileText, Download, Edit, UserPlus, MessageSquare, Send, Copy } from 'lucide-react';
+import { ArrowLeft, Mail, Phone, MapPin, Calendar, Euro, FileText, Download, Edit, UserPlus, MessageSquare, Send, Copy, User } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -24,7 +24,9 @@ export const CustomerDetails = () => {
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [showLoginDialog, setShowLoginDialog] = useState(false);
   const [showInviteDialog, setShowInviteDialog] = useState(false);
+  const [showContactEditDialog, setShowContactEditDialog] = useState(false);
   const [editForm, setEditForm] = useState<any>({});
+  const [contactForm, setContactForm] = useState<any>({});
   const [loginEmail, setLoginEmail] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
   const [generatedCredentials, setGeneratedCredentials] = useState<{email: string, password: string} | null>(null);
@@ -50,6 +52,7 @@ export const CustomerDetails = () => {
       if (customerRes.data) {
         setCustomer(customerRes.data);
         setEditForm(customerRes.data);
+        setContactForm(customerRes.data);
       }
       if (invoicesRes.data) {
         setInvoices(invoicesRes.data);
@@ -115,6 +118,33 @@ export const CustomerDetails = () => {
     } catch (error) {
       console.error('Error updating customer:', error);
       toast.error('Fehler beim Aktualisieren der Kundendaten');
+    }
+  };
+
+  const handleUpdateContact = async () => {
+    try {
+      const { error } = await supabase
+        .from('customers')
+        .update({
+          contact_person: contactForm.contact_person,
+          email: contactForm.email,
+          phone: contactForm.phone,
+          address: contactForm.address,
+          city: contactForm.city,
+          postal_code: contactForm.postal_code,
+          country: contactForm.country,
+        })
+        .eq('id', customerId);
+
+      if (error) throw error;
+      
+      setCustomer({ ...customer, ...contactForm });
+      setShowContactEditDialog(false);
+      toast.success('Kontaktinformationen erfolgreich aktualisiert');
+      await loadCustomerData();
+    } catch (error) {
+      console.error('Error updating contact:', error);
+      toast.error('Fehler beim Aktualisieren der Kontaktinformationen');
     }
   };
 
@@ -316,12 +346,32 @@ export const CustomerDetails = () => {
 
       {/* Contact Information */}
       <Card>
-        <CardHeader>
+        <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle>Kontaktinformationen</CardTitle>
+          <Button 
+            variant="outline" 
+            size="sm"
+            onClick={() => {
+              setContactForm(customer);
+              setShowContactEditDialog(true);
+            }}
+          >
+            <Edit className="h-4 w-4 mr-2" />
+            Bearbeiten
+          </Button>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-3">
+              {customer.contact_person && (
+                <div className="flex items-center gap-2">
+                  <User className="h-4 w-4 text-muted-foreground" />
+                  <div className="text-sm">
+                    <span className="font-medium text-muted-foreground">Ansprechpartner: </span>
+                    <span>{customer.contact_person}</span>
+                  </div>
+                </div>
+              )}
               <div className="flex items-center gap-2">
                 <Mail className="h-4 w-4 text-muted-foreground" />
                 <span className="text-sm">{customer.email || 'Keine E-Mail'}</span>
@@ -676,6 +726,94 @@ export const CustomerDetails = () => {
             </Button>
             <Button onClick={handleCreateLogin}>
               Login erstellen
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Contact Edit Dialog */}
+      <Dialog open={showContactEditDialog} onOpenChange={setShowContactEditDialog}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Kontaktinformationen bearbeiten</DialogTitle>
+            <DialogDescription>
+              Ändern Sie die Kontaktdaten des Kunden.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid gap-2">
+              <Label htmlFor="contact_person">Ansprechpartner</Label>
+              <Input
+                id="contact_person"
+                value={contactForm.contact_person || ''}
+                onChange={(e) => setContactForm({ ...contactForm, contact_person: e.target.value })}
+                placeholder="Name des Ansprechpartners"
+              />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="contact_email">E-Mail</Label>
+              <Input
+                id="contact_email"
+                type="email"
+                value={contactForm.email || ''}
+                onChange={(e) => setContactForm({ ...contactForm, email: e.target.value })}
+                placeholder="kunde@beispiel.de"
+              />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="contact_phone">Telefon</Label>
+              <Input
+                id="contact_phone"
+                value={contactForm.phone || ''}
+                onChange={(e) => setContactForm({ ...contactForm, phone: e.target.value })}
+                placeholder="+49 123 456789"
+              />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="contact_address">Straße und Hausnummer</Label>
+              <Input
+                id="contact_address"
+                value={contactForm.address || ''}
+                onChange={(e) => setContactForm({ ...contactForm, address: e.target.value })}
+                placeholder="Musterstraße 123"
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="grid gap-2">
+                <Label htmlFor="contact_postal">PLZ</Label>
+                <Input
+                  id="contact_postal"
+                  value={contactForm.postal_code || ''}
+                  onChange={(e) => setContactForm({ ...contactForm, postal_code: e.target.value })}
+                  placeholder="12345"
+                />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="contact_city">Stadt</Label>
+                <Input
+                  id="contact_city"
+                  value={contactForm.city || ''}
+                  onChange={(e) => setContactForm({ ...contactForm, city: e.target.value })}
+                  placeholder="Berlin"
+                />
+              </div>
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="contact_country">Land</Label>
+              <Input
+                id="contact_country"
+                value={contactForm.country || ''}
+                onChange={(e) => setContactForm({ ...contactForm, country: e.target.value })}
+                placeholder="DE"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowContactEditDialog(false)}>
+              Abbrechen
+            </Button>
+            <Button onClick={handleUpdateContact}>
+              Speichern
             </Button>
           </DialogFooter>
         </DialogContent>
