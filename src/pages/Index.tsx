@@ -4,6 +4,7 @@ import { CustomerManagement } from '@/components/CustomerManagement';
 import { CustomerDetails } from '@/components/CustomerDetails';
 import { InvoiceManagement } from '@/components/InvoiceManagement';
 import { InvoiceImport } from '@/components/InvoiceImport';
+import { ContactImport } from '@/components/ContactImport';
 import IncomingInvoices from '@/components/IncomingInvoices';
 import Accounting from '@/components/Accounting';
 import { InvoiceDesignStudio } from '@/components/InvoiceDesignStudio';
@@ -63,7 +64,12 @@ const Index = () => {
       case 'invoices':
         return <InvoiceManagement />;
       case 'import':
-        return <InvoiceImport />;
+        return (
+          <div className="space-y-6">
+            <ContactImport />
+            <InvoiceImport />
+          </div>
+        );
       case 'incoming-invoices':
         return <IncomingInvoices />;
       case 'accounting':
