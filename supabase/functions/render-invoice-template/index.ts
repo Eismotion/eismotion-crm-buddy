@@ -6,6 +6,93 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// Standard-Template wenn kein Template ausgewählt wurde
+function getDefaultTemplate() {
+  return `
+    <div class="page">
+      <div class="header">
+        <h1>RECHNUNG</h1>
+        <div class="company-info">
+          <strong>Eismotion</strong><br>
+          Ihre Eisdiele<br>
+          Beispielstraße 1<br>
+          12345 Stadt
+        </div>
+      </div>
+      
+      <div class="top-address">
+        <p><strong>{{customer_name}}</strong><br>
+        {{customer_address}}<br>
+        {{customer_postal_code}} {{customer_city}}</p>
+      </div>
+      
+      <div class="content">
+        <div class="invoice-details">
+          <p><strong>Rechnungsnummer:</strong> {{invoice_number}}</p>
+          <p><strong>Rechnungsdatum:</strong> {{invoice_date}}</p>
+          <p><strong>Fälligkeitsdatum:</strong> {{due_date}}</p>
+        </div>
+        
+        <div class="custom-message">
+          {{custom_message}}
+        </div>
+        
+        <table class="items-table">
+          <thead>
+            <tr>
+              <th>Beschreibung</th>
+              <th style="text-align: center;">Menge</th>
+              <th style="text-align: right;">Einzelpreis</th>
+              <th style="text-align: right;">Gesamt</th>
+            </tr>
+          </thead>
+          <tbody>
+            {{#each items}}
+            <tr>
+              <td>{{description}}</td>
+              <td style="text-align: center;">{{quantity}}</td>
+              <td style="text-align: right;">{{unit_price}} €</td>
+              <td style="text-align: right;">{{total_price}} €</td>
+            </tr>
+            {{/each}}
+          </tbody>
+        </table>
+        
+        <div class="totals">
+          <p><strong>Zwischensumme:</strong> {{subtotal}} €</p>
+          <p><strong>MwSt ({{tax_rate}}%):</strong> {{tax_amount}} €</p>
+          <p class="total"><strong>Gesamtbetrag:</strong> {{total_amount}} €</p>
+        </div>
+      </div>
+      
+      <div class="footer">
+        <p>Vielen Dank für Ihren Einkauf!</p>
+      </div>
+    </div>
+  `;
+}
+
+function getDefaultCSS() {
+  return `
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: Arial, sans-serif; font-size: 14px; line-height: 1.6; color: #333; }
+    .page { max-width: 800px; margin: 0 auto; padding: 40px; }
+    .header { text-align: center; margin-bottom: 40px; padding: 20px; background: #f8f9fa; }
+    .header h1 { font-size: 32px; color: #2c3e50; margin-bottom: 10px; }
+    .company-info { font-size: 12px; color: #666; }
+    .top-address { margin-bottom: 30px; }
+    .invoice-details { margin-bottom: 20px; }
+    .custom-message { margin: 20px 0; padding: 15px; background: #f0f8ff; border-left: 4px solid #007bff; }
+    .items-table { width: 100%; margin: 30px 0; border-collapse: collapse; }
+    .items-table th { background: #f8f9fa; padding: 12px; text-align: left; font-weight: bold; border-bottom: 2px solid #dee2e6; }
+    .items-table td { padding: 10px; border-bottom: 1px solid #dee2e6; }
+    .totals { margin-top: 30px; text-align: right; }
+    .totals p { margin: 8px 0; }
+    .totals .total { font-size: 18px; margin-top: 15px; padding-top: 15px; border-top: 2px solid #333; }
+    .footer { margin-top: 50px; padding-top: 20px; border-top: 1px solid #dee2e6; text-align: center; color: #666; font-size: 12px; }
+  `;
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -20,16 +107,21 @@ serve(async (req) => {
     
     console.log(`Rendering invoice ${invoiceId} with template ${templateId}`);
     
-    // Lade Template
-    const { data: template, error: templateError } = await supabase
-      .from('invoice_templates')
-      .select('*')
-      .eq('id', templateId)
-      .single();
+    // Lade Template (optional)
+    let template: any = null;
     
-    if (templateError) {
-      console.error('Template error:', templateError);
-      throw new Error(`Template nicht gefunden: ${templateError.message}`);
+    if (templateId && templateId !== 'null' && templateId !== null) {
+      const { data: templateData, error: templateError } = await supabase
+        .from('invoice_templates')
+        .select('*')
+        .eq('id', templateId)
+        .single();
+      
+      if (templateError) {
+        console.warn('Template not found, using default:', templateError);
+      } else {
+        template = templateData;
+      }
     }
     
     // Lade Rechnung oder verwende Demo-Daten
@@ -91,9 +183,9 @@ serve(async (req) => {
       };
     }
     
-    // Template-Variablen ersetzen
-    let html = template.html_template || '';
-    let css = template.css_styles || '';
+    // Template-Variablen ersetzen oder Standard-Template verwenden
+    let html = template?.html_template || getDefaultTemplate();
+    let css = template?.css_styles || getDefaultCSS();
 
     // Führendes IMG in Hintergrundbild umwandeln (falls Nutzer ein Bild oben eingefügt hat)
     try {
@@ -207,8 +299,12 @@ serve(async (req) => {
     
     console.log('Template successfully rendered');
     
+    // Erstelle Data-URL für PDF-Vorschau
+    const dataUrl = `data:text/html;base64,${btoa(unescape(encodeURIComponent(fullHTML)))}`;
+    
     return new Response(JSON.stringify({ 
       html: fullHTML,
+      pdfUrl: dataUrl,
       invoice_id: invoiceId,
       template_id: templateId
     }), {
