@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Save, Trash2, Send, Download, Calendar } from 'lucide-react';
+import { ArrowLeft, Save, Trash2, Send, Download, Eye } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -8,6 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { InvoiceProductSelector } from './InvoiceProductSelector';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -21,6 +22,8 @@ export const InvoiceDetails = () => {
   const [customer, setCustomer] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [showPreview, setShowPreview] = useState(false);
+  const [previewUrl, setPreviewUrl] = useState<string>('');
 
   useEffect(() => {
     if (id) {
@@ -138,6 +141,66 @@ export const InvoiceDetails = () => {
     }
   };
 
+  const handlePreview = async () => {
+    if (!id) return;
+    
+    try {
+      toast.loading('Vorschau wird erstellt...');
+      
+      const { data, error } = await supabase.functions.invoke('render-invoice-template', {
+        body: { invoiceId: id }
+      });
+
+      if (error) throw error;
+      
+      if (data?.pdfUrl) {
+        setPreviewUrl(data.pdfUrl);
+        setShowPreview(true);
+        toast.dismiss();
+      }
+    } catch (error: any) {
+      toast.dismiss();
+      toast.error('Fehler bei der Vorschau: ' + error.message);
+    }
+  };
+
+  const handleDownloadPDF = async () => {
+    if (!id) return;
+    
+    try {
+      toast.loading('PDF wird erstellt...');
+      
+      const { data, error } = await supabase.functions.invoke('render-invoice-template', {
+        body: { invoiceId: id }
+      });
+
+      if (error) throw error;
+      
+      if (data?.pdfUrl) {
+        // Download PDF
+        const link = document.createElement('a');
+        link.href = data.pdfUrl;
+        link.download = `Rechnung_${invoice.invoice_number}.pdf`;
+        link.click();
+        toast.dismiss();
+        toast.success('PDF heruntergeladen');
+      }
+    } catch (error: any) {
+      toast.dismiss();
+      toast.error('Fehler beim PDF-Download: ' + error.message);
+    }
+  };
+
+  const handleSendInvoice = async () => {
+    if (!id || !customer?.email) {
+      toast.error('Kunde hat keine Email-Adresse');
+      return;
+    }
+    
+    toast.info('Email-Versand wird in Kürze verfügbar sein');
+    // TODO: Implement email sending
+  };
+
   const handleDelete = async () => {
     if (!id) return;
     
@@ -205,15 +268,19 @@ export const InvoiceDetails = () => {
         </div>
         
         <div className="flex flex-wrap gap-2">
+          <Button variant="outline" onClick={handlePreview} size="sm" className="sm:size-default">
+            <Eye className="h-4 w-4 sm:mr-2" />
+            <span className="hidden sm:inline">Vorschau</span>
+          </Button>
           <Button variant="outline" onClick={handleDelete} size="sm" className="sm:size-default">
             <Trash2 className="h-4 w-4 sm:mr-2" />
             <span className="hidden sm:inline">Löschen</span>
           </Button>
-          <Button variant="outline" size="sm" className="sm:size-default">
+          <Button variant="outline" onClick={handleDownloadPDF} size="sm" className="sm:size-default">
             <Download className="h-4 w-4 sm:mr-2" />
             <span className="hidden sm:inline">PDF</span>
           </Button>
-          <Button variant="outline" size="sm" className="sm:size-default">
+          <Button variant="outline" onClick={handleSendInvoice} size="sm" className="sm:size-default">
             <Send className="h-4 w-4 sm:mr-2" />
             <span className="hidden sm:inline">Senden</span>
           </Button>
@@ -371,6 +438,28 @@ export const InvoiceDetails = () => {
           />
         </div>
       </div>
+
+      {/* Preview Dialog */}
+      <Dialog open={showPreview} onOpenChange={setShowPreview}>
+        <DialogContent className="max-w-4xl max-h-[90vh]">
+          <DialogHeader>
+            <DialogTitle>Rechnungsvorschau - {invoice?.invoice_number}</DialogTitle>
+          </DialogHeader>
+          <div className="w-full h-[70vh] overflow-auto">
+            {previewUrl ? (
+              <iframe
+                src={previewUrl}
+                className="w-full h-full border-0"
+                title="Rechnungsvorschau"
+              />
+            ) : (
+              <div className="flex items-center justify-center h-full">
+                <p className="text-muted-foreground">Vorschau wird geladen...</p>
+              </div>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
