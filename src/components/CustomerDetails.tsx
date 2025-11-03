@@ -138,7 +138,6 @@ export const CustomerDetails = () => {
 
       if (error) throw error;
       
-      setCustomer({ ...customer, ...contactForm });
       setShowContactEditDialog(false);
       toast.success('Kontaktinformationen erfolgreich aktualisiert');
       await loadCustomerData();
@@ -352,7 +351,16 @@ export const CustomerDetails = () => {
             variant="outline" 
             size="sm"
             onClick={() => {
-              setContactForm(customer);
+              setContactForm({
+                ...customer,
+                contact_person: customer.contact_person || '',
+                email: customer.email || '',
+                phone: customer.phone || '',
+                address: customer.address || '',
+                city: customer.city || '',
+                postal_code: customer.postal_code || '',
+                country: customer.country || 'DE'
+              });
               setShowContactEditDialog(true);
             }}
           >
