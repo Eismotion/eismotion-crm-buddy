@@ -627,12 +627,21 @@ export type Database = {
           created_at: string | null
           description: string | null
           id: string
+          image_url: string | null
           is_tax_exempt: boolean | null
+          material: string | null
           name: string
           price: number
+          product_id: string | null
           production_country: string | null
+          quantity: string | null
           season: string | null
+          size: string | null
           sku: string | null
+          supplier: string | null
+          supplier_price: number | null
+          supplier_product_id: string | null
+          thickness: string | null
           updated_at: string | null
         }
         Insert: {
@@ -641,12 +650,21 @@ export type Database = {
           created_at?: string | null
           description?: string | null
           id?: string
+          image_url?: string | null
           is_tax_exempt?: boolean | null
+          material?: string | null
           name: string
           price: number
+          product_id?: string | null
           production_country?: string | null
+          quantity?: string | null
           season?: string | null
+          size?: string | null
           sku?: string | null
+          supplier?: string | null
+          supplier_price?: number | null
+          supplier_product_id?: string | null
+          thickness?: string | null
           updated_at?: string | null
         }
         Update: {
@@ -655,12 +673,21 @@ export type Database = {
           created_at?: string | null
           description?: string | null
           id?: string
+          image_url?: string | null
           is_tax_exempt?: boolean | null
+          material?: string | null
           name?: string
           price?: number
+          product_id?: string | null
           production_country?: string | null
+          quantity?: string | null
           season?: string | null
+          size?: string | null
           sku?: string | null
+          supplier?: string | null
+          supplier_price?: number | null
+          supplier_product_id?: string | null
+          thickness?: string | null
           updated_at?: string | null
         }
         Relationships: []
