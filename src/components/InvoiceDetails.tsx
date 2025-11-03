@@ -51,12 +51,9 @@ export const InvoiceDetails = () => {
           .eq('id', invoiceData.customer_id)
           .single();
 
-        if (customerError) throw customerError;
+      if (customerError) throw customerError;
         setCustomer(customerData);
       }
-
-      // Recalculate totals
-      await recalculateTotals();
     } catch (error: any) {
       console.error('Error loading invoice:', error);
       toast.error('Fehler beim Laden der Rechnung');
@@ -83,19 +80,23 @@ export const InvoiceDetails = () => {
       const totalAmount = subtotal + taxAmount;
 
       // Update invoice totals
-      const { error: updateError } = await supabase
+      const { data: updatedInvoice, error: updateError } = await supabase
         .from('invoices')
         .update({
           subtotal,
           tax_amount: taxAmount,
           total_amount: totalAmount,
         })
-        .eq('id', id);
+        .eq('id', id)
+        .select()
+        .single();
 
       if (updateError) throw updateError;
 
-      // Reload invoice
-      await loadInvoice();
+      // Update local state without reloading everything
+      if (updatedInvoice) {
+        setInvoice(updatedInvoice);
+      }
     } catch (error) {
       console.error('Error recalculating totals:', error);
     }
