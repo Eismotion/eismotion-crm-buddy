@@ -8,7 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { InvoiceProductSelector } from './InvoiceProductSelector';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -25,6 +25,7 @@ export const InvoiceDetails = () => {
   const [saving, setSaving] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string>('');
+  const [previewHtml, setPreviewHtml] = useState<string>('');
   const { templates } = useTemplates();
 
   useEffect(() => {
@@ -158,8 +159,9 @@ export const InvoiceDetails = () => {
 
       if (error) throw error;
       
-      if (data?.pdfUrl) {
-        setPreviewUrl(data.pdfUrl);
+      if (data) {
+        setPreviewHtml(data.html || '');
+        if (data.pdfUrl) setPreviewUrl(data.pdfUrl);
         setShowPreview(true);
         toast.dismiss();
       }
@@ -487,9 +489,16 @@ export const InvoiceDetails = () => {
         <DialogContent className="max-w-4xl max-h-[90vh]">
           <DialogHeader>
             <DialogTitle>Rechnungsvorschau - {invoice?.invoice_number}</DialogTitle>
+            <DialogDescription className="sr-only">Vorschau der Rechnung als HTML</DialogDescription>
           </DialogHeader>
           <div className="w-full h-[70vh] overflow-auto">
-            {previewUrl ? (
+            {previewHtml ? (
+              <iframe
+                srcDoc={previewHtml}
+                className="w-full h-full border-0"
+                title="Rechnungsvorschau"
+              />
+            ) : previewUrl ? (
               <iframe
                 src={previewUrl}
                 className="w-full h-full border-0"
