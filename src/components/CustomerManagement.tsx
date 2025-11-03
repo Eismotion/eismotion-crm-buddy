@@ -1,4 +1,4 @@
-import { Upload, Plus, Edit, Trash2, RefreshCw, ArrowUpDown, Link2, UserPlus, Search } from 'lucide-react';
+import { Upload, Plus, Edit, Trash2, RefreshCw, ArrowUpDown, Link2, UserPlus, Search, User, MapPin, Phone, Mail, Calendar, Euro } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -459,44 +459,64 @@ export const CustomerManagement = () => {
               {filteredCustomers.map((customer) => (
                 <Card 
                   key={customer.id}
-                  className="cursor-pointer hover:bg-muted/50"
+                  className="cursor-pointer hover:bg-muted/50 transition-all"
                   onClick={() => navigate(`/customers/${customer.id}`)}
                 >
-                  <CardHeader className="pb-3">
+                  <CardHeader className="pb-4">
                     <div className="flex items-start justify-between">
-                      <div className="space-y-1">
-                        <CardTitle className="text-lg text-primary">{customer.name}</CardTitle>
-                        <p className="text-sm text-muted-foreground">{customer.email || 'Keine E-Mail'}</p>
+                      <div className="space-y-1 flex-1">
+                        <CardTitle className="text-xl font-bold text-foreground">{customer.name}</CardTitle>
+                        {customer.contact_person && (
+                          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                            <User className="h-4 w-4" />
+                            <span>{customer.contact_person}</span>
+                          </div>
+                        )}
+                      </div>
+                      <div className="text-right">
+                        <div className="flex items-center gap-1.5 text-xs text-muted-foreground mb-1">
+                          <Calendar className="h-3.5 w-3.5" />
+                          <span>Seit {new Date(customer.created_at).toLocaleDateString('de-DE')}</span>
+                        </div>
+                        <div className="flex items-center gap-1.5 text-lg font-bold text-primary">
+                          <Euro className="h-5 w-5" />
+                          <span>{formatCurrency(customer.total_spent || 0)}</span>
+                        </div>
                       </div>
                     </div>
                   </CardHeader>
                   <CardContent className="space-y-3">
-                    <div className="grid grid-cols-2 gap-2 text-sm">
-                      <div>
-                        <p className="text-muted-foreground">Telefon</p>
-                        <p className="font-medium">{customer.phone || '-'}</p>
-                      </div>
-                      <div>
-                        <p className="text-muted-foreground">Bestellungen</p>
-                        <p className="font-medium">{customer.total_orders || 0}</p>
-                      </div>
-                    </div>
-                    <div className="text-sm">
-                      <p className="text-muted-foreground">Adresse</p>
+                    {/* Adresse */}
+                    <div className="flex items-start gap-2 text-sm">
+                      <MapPin className="h-4 w-4 text-muted-foreground mt-0.5 flex-shrink-0" />
                       {customer.address || customer.postal_code || customer.city ? (
-                        <div>
-                          {customer.address && <p className="font-medium">{customer.address}</p>}
-                          <p className="font-medium">
-                            {[customer.postal_code, customer.city].filter(Boolean).join(' ') || '-'}
-                          </p>
+                        <div className="flex-1">
+                          <span className="font-medium">
+                            {[customer.address, [customer.postal_code, customer.city].filter(Boolean).join(' ')]
+                              .filter(Boolean)
+                              .join(', ')}
+                          </span>
                         </div>
                       ) : (
-                        <p className="font-medium">-</p>
+                        <span className="text-muted-foreground">-</span>
                       )}
                     </div>
+
+                    {/* Telefon */}
+                    <div className="flex items-center gap-2 text-sm">
+                      <Phone className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                      <span className="font-medium">{customer.phone || '-'}</span>
+                    </div>
+
+                    {/* E-Mail */}
+                    <div className="flex items-center gap-2 text-sm">
+                      <Mail className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                      <span className="font-medium truncate">{customer.email || 'Keine E-Mail'}</span>
+                    </div>
+
                     {customer.parent && (
-                      <div className="text-sm">
-                        <p className="text-muted-foreground">Gehört zu</p>
+                      <div className="text-sm pt-2 border-t">
+                        <p className="text-muted-foreground mb-1">Gehört zu</p>
                         <div className="flex items-center gap-2">
                           <span className="font-medium text-primary">{customer.parent.name}</span>
                           <Button
@@ -513,14 +533,8 @@ export const CustomerManagement = () => {
                         </div>
                       </div>
                     )}
-                    <div className="flex items-center justify-between pt-2 border-t">
-                      <div className="text-sm">
-                        <p className="text-muted-foreground">Beigetreten</p>
-                        <p className="font-medium">{new Date(customer.created_at).toLocaleDateString('de-DE')}</p>
-                      </div>
-                      <p className="text-lg font-bold text-primary">{formatCurrency(customer.total_spent || 0)}</p>
-                    </div>
-                    <div className="flex gap-2 pt-2" onClick={(e) => e.stopPropagation()}>
+
+                    <div className="flex gap-2 pt-3 border-t" onClick={(e) => e.stopPropagation()}>
                       <Button 
                         variant="outline" 
                         size="sm" 
