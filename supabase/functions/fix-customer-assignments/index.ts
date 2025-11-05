@@ -27,19 +27,18 @@ serve(async (req) => {
       return match ? match[0] : null;
     };
 
-    // Step 1: Find all invoices with temp columns (from migration)
-    const { data: invoicesWithTemp, error: tempError } = await supabaseClient
+    // Step 1: Get all invoices with customer data
+    const { data: allInvoices, error: invoicesError } = await supabaseClient
       .from('invoices')
-      .select('id, customer_id, customer_name_temp, customer_address_temp')
-      .not('customer_name_temp', 'is', null)
+      .select('id, customer_id, invoice_number, customers(id, name, address)')
       .limit(1000);
 
-    if (tempError) {
-      console.error('Error fetching invoices:', tempError);
-      throw tempError;
+    if (invoicesError) {
+      console.error('Error fetching invoices:', invoicesError);
+      throw invoicesError;
     }
 
-    console.log(`Found ${invoicesWithTemp?.length || 0} invoices to check`);
+    console.log(`Found ${allInvoices?.length || 0} invoices to check`);
 
     // Step 2: Build correction map
     const corrections: Array<{
@@ -51,46 +50,37 @@ serve(async (req) => {
       newCustomerName: string;
     }> = [];
 
-    for (const invoice of invoicesWithTemp || []) {
-      const invoicePLZ = extractPLZ(invoice.customer_address_temp);
+    for (const invoice of allInvoices || []) {
+      if (!invoice.customers) continue;
+
+      const currentCustomer = invoice.customers as any;
+      const currentPLZ = extractPLZ(currentCustomer.address);
       
-      // Find correct customer by name + PLZ
+      // Find all customers with same name
       const { data: matchingCustomers } = await supabaseClient
         .from('customers')
         .select('id, name, address')
-        .ilike('name', invoice.customer_name_temp);
+        .ilike('name', currentCustomer.name);
 
-      if (matchingCustomers && matchingCustomers.length > 0) {
+      // Only check if there are multiple customers with same name
+      if (matchingCustomers && matchingCustomers.length > 1) {
         let correctCustomer = null;
 
-        // Try to match by PLZ if multiple customers
-        if (matchingCustomers.length > 1 && invoicePLZ) {
-          correctCustomer = matchingCustomers.find(c => extractPLZ(c.address) === invoicePLZ);
-        } else {
-          correctCustomer = matchingCustomers[0];
+        // Try to match by PLZ
+        if (currentPLZ) {
+          correctCustomer = matchingCustomers.find(c => 
+            c.id !== invoice.customer_id && extractPLZ(c.address) === currentPLZ
+          );
         }
 
+        // If we found a better match, add to corrections
         if (correctCustomer && correctCustomer.id !== invoice.customer_id) {
-          // Get invoice number for logging
-          const { data: invData } = await supabaseClient
-            .from('invoices')
-            .select('invoice_number')
-            .eq('id', invoice.id)
-            .single();
-
-          // Get old customer name
-          const { data: oldCustomer } = await supabaseClient
-            .from('customers')
-            .select('name')
-            .eq('id', invoice.customer_id)
-            .single();
-
           corrections.push({
             invoiceId: invoice.id,
             oldCustomerId: invoice.customer_id,
             newCustomerId: correctCustomer.id,
-            invoiceNumber: invData?.invoice_number || 'unknown',
-            oldCustomerName: oldCustomer?.name || 'unknown',
+            invoiceNumber: invoice.invoice_number || 'unknown',
+            oldCustomerName: currentCustomer.name,
             newCustomerName: correctCustomer.name
           });
         }
@@ -118,7 +108,7 @@ serve(async (req) => {
       }
     }
 
-    // Step 4: Clean up temp columns (done via migration, skip here)
+    // Step 4: No cleanup needed (no temp columns used)
 
     // Step 5: Update customer statistics for affected customers
     const affectedCustomerIds = [
