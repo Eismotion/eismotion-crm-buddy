@@ -322,6 +322,7 @@ export const InvoiceManagement = () => {
   };
 
   const years = ['2020', '2021', '2022', '2023', '2024', '2025'];
+  const getCountForYear = (year: string) => filterByYear(year).length;
   const invoicesByYear = {
     '2020': sortByInvoiceNumber(filterBySearch(filterByYear('2020'))),
     '2021': sortByInvoiceNumber(filterBySearch(filterByYear('2021'))),
@@ -436,7 +437,7 @@ export const InvoiceManagement = () => {
                     value={year}
                     className="whitespace-nowrap flex-shrink-0"
                   >
-                    {year} <span className="ml-1 text-muted-foreground">({yearCounts[parseInt(year)] || 0})</span>
+                    {year} <span className="ml-1 text-muted-foreground">({getCountForYear(year)})</span>
                   </TabsTrigger>
                 ))}
                 </TabsList>
