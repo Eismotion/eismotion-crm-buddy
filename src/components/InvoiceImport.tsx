@@ -85,7 +85,10 @@ export const InvoiceImport = () => {
   };
 
   const transformExcelData = (excelData: any[]): any[] => {
-    return excelData.map((row) => {
+    console.log('🔍 transformExcelData RAW input:', excelData.slice(0, 3));
+    console.log('🔍 First row keys:', excelData[0] ? Object.keys(excelData[0]) : 'no data');
+    
+    return excelData.map((row, index) => {
       // Parse amounts with German formatting
       const parseGermanAmount = (v: any) => {
         if (v === undefined || v === null) return 0;
@@ -111,6 +114,17 @@ export const InvoiceImport = () => {
 
       // Parse invoice number
       const invoiceNumber = (row.Rechnungsnummer || row['Rechnungs-Nr.'] || row['Rechnungsnr'] || row['Nr'] || '').toString().trim();
+      
+      // DEBUG: Log first few rows
+      if (index < 3) {
+        console.log(`Row ${index}:`, {
+          rawRechnungsnummer: row.Rechnungsnummer,
+          parsedInvoiceNumber: invoiceNumber,
+          customerName: row.Name,
+          netAmount,
+          grossAmount
+        });
+      }
       
       // Parse invoice date
       const rawDate = (row.Rechnungsdatum || row['Rechnungs-Datum'] || row['Datum'] || row['Invoice Date'] || row['Date']) as any;
