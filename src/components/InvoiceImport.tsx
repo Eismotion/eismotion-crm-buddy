@@ -54,7 +54,14 @@ export const InvoiceImport = () => {
           const workbook = XLSX.read(data, { type: 'binary' });
           const sheetName = workbook.SheetNames[0];
           const worksheet = workbook.Sheets[sheetName];
-          const jsonData = XLSX.utils.sheet_to_json(worksheet);
+          
+          // Parse with options to handle headers correctly
+          const jsonData = XLSX.utils.sheet_to_json(worksheet, {
+            defval: '', // Use empty string for missing values instead of undefined
+            raw: false  // Convert all values to strings first (preserves formatting)
+          });
+          
+          console.log('Excel data sample:', jsonData.slice(0, 2));
           resolve(jsonData);
         } catch (error) {
           reject(error);
