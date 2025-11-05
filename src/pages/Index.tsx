@@ -13,6 +13,7 @@ import { ProductManagement } from '@/components/ProductManagement';
 import { Analytics } from '@/components/Analytics';
 import { Settings } from '@/components/Settings';
 import { CustomerFixTool } from '@/components/CustomerFixTool';
+import VATFixTool from '@/components/VATFixTool';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
@@ -35,6 +36,7 @@ const Index = () => {
     if (path === '/analytics') return 'analytics';
     if (path === '/settings') return 'settings';
     if (path === '/fix-customers') return 'fix-customers';
+    if (path === '/vat-fix') return 'vat-fix';
     return 'dashboard';
   };
 
@@ -53,6 +55,7 @@ const Index = () => {
       'analytics': '/analytics',
       'settings': '/settings',
       'fix-customers': '/fix-customers',
+      'vat-fix': '/vat-fix',
     };
     navigate(routes[tab] || '/');
   };
@@ -102,6 +105,8 @@ const Index = () => {
         return <Settings />;
       case 'fix-customers':
         return <CustomerFixTool />;
+      case 'vat-fix':
+        return <VATFixTool />;
       default:
         return <Dashboard />;
     }

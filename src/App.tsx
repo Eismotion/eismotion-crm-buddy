@@ -32,6 +32,7 @@ const App = () => (
             <Route path="/analytics" element={<Index />} />
             <Route path="/settings" element={<Index />} />
             <Route path="/fix-customers" element={<Index />} />
+            <Route path="/vat-fix" element={<Index />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
