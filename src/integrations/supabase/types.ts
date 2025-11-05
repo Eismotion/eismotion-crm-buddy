@@ -375,6 +375,42 @@ export type Database = {
         }
         Relationships: []
       }
+      invoice_audit_log: {
+        Row: {
+          changed_at: string | null
+          changed_by: string | null
+          created_at: string | null
+          id: string
+          invoice_id: string | null
+          new_data: Json | null
+          old_data: Json | null
+          operation: string
+          user_role: string | null
+        }
+        Insert: {
+          changed_at?: string | null
+          changed_by?: string | null
+          created_at?: string | null
+          id?: string
+          invoice_id?: string | null
+          new_data?: Json | null
+          old_data?: Json | null
+          operation: string
+          user_role?: string | null
+        }
+        Update: {
+          changed_at?: string | null
+          changed_by?: string | null
+          created_at?: string | null
+          id?: string
+          invoice_id?: string | null
+          new_data?: Json | null
+          old_data?: Json | null
+          operation?: string
+          user_role?: string | null
+        }
+        Relationships: []
+      }
       invoice_fields: {
         Row: {
           created_at: string | null
@@ -419,7 +455,9 @@ export type Database = {
           description: string
           id: string
           invoice_id: string | null
+          is_tax_exempt: boolean | null
           material: string | null
+          position: number | null
           product_id: string | null
           quantity: number
           size: string | null
@@ -432,7 +470,9 @@ export type Database = {
           description: string
           id?: string
           invoice_id?: string | null
+          is_tax_exempt?: boolean | null
           material?: string | null
+          position?: number | null
           product_id?: string | null
           quantity?: number
           size?: string | null
@@ -445,7 +485,9 @@ export type Database = {
           description?: string
           id?: string
           invoice_id?: string | null
+          is_tax_exempt?: boolean | null
           material?: string | null
+          position?: number | null
           product_id?: string | null
           quantity?: number
           size?: string | null

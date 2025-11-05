@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Save, Trash2, Send, Download, Calendar } from 'lucide-react';
+import { ArrowLeft, Save, Trash2, Send, Download, Calendar, Lock } from 'lucide-react';
+import { useAdmin } from '@/hooks/use-admin';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -21,6 +22,7 @@ export const InvoiceDetails = () => {
   const [customer, setCustomer] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const { isAdmin, loading: adminLoading } = useAdmin();
 
   useEffect(() => {
     if (id) {
@@ -104,6 +106,11 @@ export const InvoiceDetails = () => {
 
   const handleSave = async () => {
     if (!invoice || !id) return;
+    
+    if (!isAdmin) {
+      toast.error('Nur Administratoren dürfen Rechnungen ändern');
+      return;
+    }
 
     setSaving(true);
     try {
@@ -130,6 +137,11 @@ export const InvoiceDetails = () => {
 
   const handleDelete = async () => {
     if (!id) return;
+    
+    if (!isAdmin) {
+      toast.error('Nur Administratoren dürfen Rechnungen löschen');
+      return;
+    }
     
     if (!confirm('Möchten Sie diese Rechnung wirklich löschen?')) return;
 
@@ -166,7 +178,7 @@ export const InvoiceDetails = () => {
     }
   };
 
-  if (loading) {
+  if (loading || adminLoading) {
     return <div className="p-8 text-center">Laden...</div>;
   }
 
@@ -195,7 +207,7 @@ export const InvoiceDetails = () => {
         </div>
         
         <div className="flex gap-2">
-          <Button variant="outline" onClick={handleDelete}>
+          <Button variant="outline" onClick={handleDelete} disabled={!isAdmin}>
             <Trash2 className="h-4 w-4 mr-2" />
             Löschen
           </Button>
@@ -207,7 +219,7 @@ export const InvoiceDetails = () => {
             <Send className="h-4 w-4 mr-2" />
             Senden
           </Button>
-          <Button onClick={handleSave} disabled={saving}>
+          <Button onClick={handleSave} disabled={saving || !isAdmin}>
             <Save className="h-4 w-4 mr-2" />
             {saving ? 'Speichert...' : 'Speichern'}
           </Button>
@@ -217,6 +229,21 @@ export const InvoiceDetails = () => {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Rechnungsdetails */}
         <div className="lg:col-span-1 space-y-6">
+          {!isAdmin && (
+            <Card className="border-warning bg-warning/10">
+              <CardContent className="pt-6">
+                <div className="flex items-start gap-3">
+                  <Lock className="h-5 w-5 text-warning mt-0.5" />
+                  <div>
+                    <p className="font-semibold text-warning">Schreibgeschützt</p>
+                    <p className="text-sm text-muted-foreground">
+                      Nur Administratoren dürfen historische Rechnungsdaten ändern.
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
           <Card>
             <CardHeader>
               <CardTitle>Rechnungsdetails</CardTitle>
@@ -228,6 +255,8 @@ export const InvoiceDetails = () => {
                   type="date"
                   value={invoice.invoice_date || ''}
                   onChange={(e) => setInvoice({ ...invoice, invoice_date: e.target.value })}
+                  disabled={!isAdmin}
+                  className={!isAdmin ? 'cursor-not-allowed opacity-60' : ''}
                 />
               </div>
               
@@ -237,13 +266,19 @@ export const InvoiceDetails = () => {
                   type="date"
                   value={invoice.due_date || ''}
                   onChange={(e) => setInvoice({ ...invoice, due_date: e.target.value })}
+                  disabled={!isAdmin}
+                  className={!isAdmin ? 'cursor-not-allowed opacity-60' : ''}
                 />
               </div>
 
               <div>
                 <Label>Status</Label>
-                <Select value={invoice.status} onValueChange={(value) => setInvoice({ ...invoice, status: value })}>
-                  <SelectTrigger>
+                <Select 
+                  value={invoice.status} 
+                  onValueChange={(value) => setInvoice({ ...invoice, status: value })}
+                  disabled={!isAdmin}
+                >
+                  <SelectTrigger className={!isAdmin ? 'cursor-not-allowed opacity-60' : ''}>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -267,6 +302,8 @@ export const InvoiceDetails = () => {
                   onChange={(e) => setInvoice({ ...invoice, notes: e.target.value })}
                   rows={3}
                   placeholder="Interne Notizen..."
+                  disabled={!isAdmin}
+                  className={!isAdmin ? 'cursor-not-allowed opacity-60' : ''}
                 />
               </div>
 
@@ -277,6 +314,8 @@ export const InvoiceDetails = () => {
                   onChange={(e) => setInvoice({ ...invoice, custom_message: e.target.value })}
                   rows={3}
                   placeholder="Diese Nachricht erscheint auf der Rechnung..."
+                  disabled={!isAdmin}
+                  className={!isAdmin ? 'cursor-not-allowed opacity-60' : ''}
                 />
               </div>
             </CardContent>

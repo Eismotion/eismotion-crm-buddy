@@ -46,9 +46,69 @@ export const Dashboard = () => {
 
   const totalCustomers = customers.length;
 
-  const topCustomers = [...customers]
-    .sort((a, b) => Number(b.total_spent || 0) - Number(a.total_spent || 0))
-    .slice(0, 3);
+  // Berechne Top-Kunden direkt aus Rechnungen (nicht aus customers.total_spent)
+  // Grund: total_spent wird durch Triggers berechnet und könnte veraltet sein
+  const [topCustomers, setTopCustomers] = useState<any[]>([]);
+
+  useEffect(() => {
+    calculateTopCustomers();
+  }, []);
+
+  const calculateTopCustomers = async () => {
+    try {
+      // Hole alle Rechnungen (außer stornierte)
+      const { data: allInvoices, error } = await supabase
+        .from('invoices')
+        .select('customer_id, total_amount, subtotal, customers(name, city)')
+        .neq('status', 'storniert');
+
+      if (error) throw error;
+      if (!allInvoices) return;
+
+      // Gruppiere nach Kunde
+      const customerMap = new Map<string, {
+        id: string;
+        name: string;
+        city: string;
+        totalGross: number;
+        totalNet: number;
+        invoiceCount: number;
+      }>();
+
+      allInvoices.forEach((inv: any) => {
+        if (!inv.customer_id || !inv.customers) return;
+        
+        const customerId = inv.customer_id;
+        const existing = customerMap.get(customerId);
+        const gross = Number(inv.total_amount || 0);
+        const net = Number(inv.subtotal || 0);
+
+        if (existing) {
+          existing.totalGross += gross;
+          existing.totalNet += net;
+          existing.invoiceCount++;
+        } else {
+          customerMap.set(customerId, {
+            id: customerId,
+            name: inv.customers.name,
+            city: inv.customers.city || 'N/A',
+            totalGross: gross,
+            totalNet: net,
+            invoiceCount: 1
+          });
+        }
+      });
+
+      // Sortiere nach Brutto-Umsatz und nimm Top 3
+      const sorted = Array.from(customerMap.values())
+        .sort((a, b) => b.totalGross - a.totalGross)
+        .slice(0, 3);
+
+      setTopCustomers(sorted);
+    } catch (error) {
+      console.error('Error calculating top customers:', error);
+    }
+  };
 
   const recentInvoices = invoices.slice(0, 3);
 
@@ -145,22 +205,28 @@ export const Dashboard = () => {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {topCustomers.map((customer) => (
-                <div 
-                  key={customer.id} 
-                  className="flex items-center justify-between cursor-pointer hover:bg-muted/50 p-2 rounded-lg transition-colors"
-                  onClick={() => navigate(`/customers/${customer.id}`)}
-                >
-                  <div>
-                    <p className="font-medium text-primary">{customer.name}</p>
-                    <p className="text-sm text-muted-foreground">{customer.city || 'N/A'}</p>
+              {topCustomers.length === 0 ? (
+                <p className="text-sm text-muted-foreground text-center py-4">
+                  Keine Kundendaten verfügbar
+                </p>
+              ) : (
+                topCustomers.map((customer) => (
+                  <div 
+                    key={customer.id} 
+                    className="flex items-center justify-between cursor-pointer hover:bg-muted/50 p-2 rounded-lg transition-colors"
+                    onClick={() => navigate(`/customers/${customer.id}`)}
+                  >
+                    <div>
+                      <p className="font-medium text-primary">{customer.name}</p>
+                      <p className="text-sm text-muted-foreground">{customer.city}</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="font-bold">{formatCurrency(customer.totalGross)}</p>
+                      <p className="text-sm text-muted-foreground">{customer.invoiceCount} Rechnungen</p>
+                    </div>
                   </div>
-                  <div className="text-right">
-                    <p className="font-bold">{formatCurrency(Number(customer.total_spent || 0))}</p>
-                    <p className="text-sm text-muted-foreground">{customer.total_orders || 0} Bestellungen</p>
-                  </div>
-                </div>
-              ))}
+                ))
+              )}
             </div>
           </CardContent>
         </Card>
