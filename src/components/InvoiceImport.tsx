@@ -350,12 +350,12 @@ export const InvoiceImport = () => {
             <div className="flex justify-end mb-4 gap-4 flex-col sm:flex-row sm:items-center">
               <div className="w-full sm:w-auto">
                 <Label>Zieljahr (optional)</Label>
-                <Select value={forceYear === '' ? '' : String(forceYear)} onValueChange={(v) => setForceYear(v ? parseInt(v, 10) : '')}>
+<Select value={forceYear === '' ? 'auto' : String(forceYear)} onValueChange={(v) => setForceYear(v === 'auto' ? '' : parseInt(v, 10))}>
                   <SelectTrigger className="w-[180px]">
                     <SelectValue placeholder="Jahr wählen" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">Automatisch</SelectItem>
+                    <SelectItem value="auto">Automatisch</SelectItem>
                     <SelectItem value="2021">2021</SelectItem>
                     <SelectItem value="2022">2022</SelectItem>
                     <SelectItem value="2023">2023</SelectItem>
