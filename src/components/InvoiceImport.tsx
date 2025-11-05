@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -66,13 +66,33 @@ export const InvoiceImport = () => {
           const workbook = XLSX.read(data, { type: 'binary' });
           const sheetName = workbook.SheetNames[0];
           const worksheet = workbook.Sheets[sheetName];
-          
-          // Parse with options to handle headers correctly
+
+          // Try to detect the header row (look for known column titles within first 10 rows)
+          const ref = worksheet['!ref'];
+          let headerRow = 0;
+          if (ref) {
+            const range = XLSX.utils.decode_range(ref);
+            headerRow = range.s.r;
+            const candidates = ['name', 'adresse', 'rechnungsnummer', 'rechnungsdatum', 'nettosumme', 'bruttosumme'];
+            outer: for (let r = range.s.r; r <= Math.min(range.e.r, range.s.r + 10); r++) {
+              for (let c = range.s.c; c <= range.e.c; c++) {
+                const cell = worksheet[XLSX.utils.encode_cell({ r, c })];
+                const val = (cell?.w ?? cell?.v ?? '').toString().trim().toLowerCase();
+                if (candidates.includes(val)) {
+                  headerRow = r;
+                  break outer;
+                }
+              }
+            }
+          }
+
+          // If the first row is empty (as seen in your file), move the range to start at the detected header row
           const jsonData = XLSX.utils.sheet_to_json(worksheet, {
-            defval: '', // Use empty string for missing values instead of undefined
-            raw: false  // Convert all values to strings first (preserves formatting)
+            defval: '',
+            raw: false,
+            range: headerRow, // ensures the detected row is used as header
           });
-          
+
           console.log('Excel data sample:', jsonData.slice(0, 2));
           resolve(jsonData);
         } catch (error) {
@@ -349,7 +369,6 @@ export const InvoiceImport = () => {
             Importieren Sie Ihre InvoiceHome-Rechnungen aus einer Excel-Datei
           </p>
         </div>
-
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -432,12 +451,12 @@ export const InvoiceImport = () => {
                   <div className="font-medium">Netto</div>
                   <div className="font-medium">Brutto</div>
                   {preview.map((r, idx) => (
-                    <>
-                      <div key={`i-${idx}-n`}>{r.invoiceNumber || '-'}</div>
-                      <div key={`i-${idx}-d`}>{r.invoiceDate || '-'}</div>
-                      <div key={`i-${idx}-net`}>{r.netAmount}</div>
-                      <div key={`i-${idx}-gross`}>{r.grossAmount}</div>
-                    </>
+                    <div key={`row-${idx}`} className="contents">
+                      <div>{r.invoiceNumber || '-'}</div>
+                      <div>{r.invoiceDate || '-'}</div>
+                      <div>{r.netAmount}</div>
+                      <div>{r.grossAmount}</div>
+                    </div>
                   ))}
                 </div>
               </div>
