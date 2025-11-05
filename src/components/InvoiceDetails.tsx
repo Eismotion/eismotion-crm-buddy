@@ -69,20 +69,14 @@ export const InvoiceDetails = () => {
       // Get all invoice items
       const { data: items, error: itemsError } = await supabase
         .from('invoice_items')
-        .select('total_price, is_tax_exempt')
+        .select('total_price')
         .eq('invoice_id', id);
 
       if (itemsError) throw itemsError;
 
-      // Calculate subtotal from all items
       const subtotal = items?.reduce((sum, item) => sum + (item.total_price || 0), 0) || 0;
-      
-      // Calculate tax only on non-exempt items
-      const taxableAmount = items?.reduce((sum, item) => 
-        item.is_tax_exempt ? sum : sum + (item.total_price || 0), 0) || 0;
-      
       const taxRate = invoice?.tax_rate || 19.00;
-      const taxAmount = taxableAmount * (taxRate / 100);
+      const taxAmount = subtotal * (taxRate / 100);
       const totalAmount = subtotal + taxAmount;
 
       // Update invoice totals
@@ -121,10 +115,6 @@ export const InvoiceDetails = () => {
           status: invoice.status,
           notes: invoice.notes,
           custom_message: invoice.custom_message,
-          tax_rate: invoice.tax_rate,
-          subtotal: invoice.subtotal,
-          tax_amount: invoice.tax_amount,
-          total_amount: invoice.total_amount,
         })
         .eq('id', id);
 
@@ -187,15 +177,15 @@ export const InvoiceDetails = () => {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
-          <Button variant="outline" size="sm" onClick={() => navigate('/invoices')} className="w-fit">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-4">
+          <Button variant="outline" size="sm" onClick={() => navigate('/invoices')}>
             <ArrowLeft className="h-4 w-4 mr-2" />
             Zurück
           </Button>
-          <div className="flex-1 min-w-0">
-            <h1 className="text-2xl sm:text-3xl font-bold truncate">{invoice.invoice_number}</h1>
-            <p className="text-muted-foreground truncate">
+          <div>
+            <h1 className="text-3xl font-bold">{invoice.invoice_number}</h1>
+            <p className="text-muted-foreground">
               {customer?.name || 'Kein Kunde'}
             </p>
           </div>
@@ -204,22 +194,22 @@ export const InvoiceDetails = () => {
           </Badge>
         </div>
         
-        <div className="flex flex-wrap gap-2">
-          <Button variant="outline" onClick={handleDelete} size="sm" className="sm:size-default">
-            <Trash2 className="h-4 w-4 sm:mr-2" />
-            <span className="hidden sm:inline">Löschen</span>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={handleDelete}>
+            <Trash2 className="h-4 w-4 mr-2" />
+            Löschen
           </Button>
-          <Button variant="outline" size="sm" className="sm:size-default">
-            <Download className="h-4 w-4 sm:mr-2" />
-            <span className="hidden sm:inline">PDF</span>
+          <Button variant="outline">
+            <Download className="h-4 w-4 mr-2" />
+            PDF
           </Button>
-          <Button variant="outline" size="sm" className="sm:size-default">
-            <Send className="h-4 w-4 sm:mr-2" />
-            <span className="hidden sm:inline">Senden</span>
+          <Button variant="outline">
+            <Send className="h-4 w-4 mr-2" />
+            Senden
           </Button>
-          <Button onClick={handleSave} disabled={saving} size="sm" className="sm:size-default">
-            <Save className="h-4 w-4 sm:mr-2" />
-            <span className="hidden sm:inline">{saving ? 'Speichert...' : 'Speichern'}</span>
+          <Button onClick={handleSave} disabled={saving}>
+            <Save className="h-4 w-4 mr-2" />
+            {saving ? 'Speichert...' : 'Speichern'}
           </Button>
         </div>
       </div>
@@ -266,32 +256,8 @@ export const InvoiceDetails = () => {
               </div>
 
               <div>
-                <Label>MwSt-Satz (%)</Label>
-                <Input
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  max="100"
-                  value={invoice.tax_rate || 0}
-                  onChange={(e) => {
-                    const newTaxRate = parseFloat(e.target.value) || 0;
-                    setInvoice({ ...invoice, tax_rate: newTaxRate });
-                    // Recalculate immediately when tax rate changes
-                    const subtotal = invoice.subtotal || 0;
-                    const taxAmount = subtotal * (newTaxRate / 100);
-                    const totalAmount = subtotal + taxAmount;
-                    setInvoice(prev => ({
-                      ...prev,
-                      tax_rate: newTaxRate,
-                      tax_amount: taxAmount,
-                      total_amount: totalAmount
-                    }));
-                  }}
-                  placeholder="z.B. 19 oder 0"
-                />
-                <p className="text-xs text-muted-foreground mt-1">
-                  Für B2B mit USt-IdNr: 0% (Reverse Charge)
-                </p>
+                <Label>MwSt-Satz</Label>
+                <div className="text-2xl font-bold">{invoice.tax_rate}%</div>
               </div>
 
               <div>

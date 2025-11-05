@@ -25,7 +25,6 @@ export const InvoiceProductSelector = ({ invoiceId, onItemsChange }: InvoiceProd
   const [selectedProduct, setSelectedProduct] = useState<any | null>(null);
   const [quantity, setQuantity] = useState<number>(1);
   const [unitPrice, setUnitPrice] = useState<string>('');
-  const [isTaxExempt, setIsTaxExempt] = useState<boolean>(false);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -87,7 +86,7 @@ export const InvoiceProductSelector = ({ invoiceId, onItemsChange }: InvoiceProd
         .from('invoice_items')
         .select('*')
         .eq('invoice_id', invoiceId)
-        .order('position');
+        .order('created_at');
 
       if (error) throw error;
       setInvoiceItems(data || []);
@@ -117,11 +116,6 @@ export const InvoiceProductSelector = ({ invoiceId, onItemsChange }: InvoiceProd
       const price = parseFloat(unitPrice);
       const total = price * quantity;
 
-      // Get the highest position to add new item at the end
-      const maxPosition = invoiceItems.length > 0 
-        ? Math.max(...invoiceItems.map(item => item.position || 0))
-        : 0;
-
       const { error } = await supabase
         .from('invoice_items')
         .insert({
@@ -134,8 +128,6 @@ export const InvoiceProductSelector = ({ invoiceId, onItemsChange }: InvoiceProd
           size: selectedProduct.size,
           material: selectedProduct.material,
           thickness: selectedProduct.thickness,
-          position: maxPosition + 1,
-          is_tax_exempt: isTaxExempt,
         });
 
       if (error) throw error;
@@ -149,7 +141,6 @@ export const InvoiceProductSelector = ({ invoiceId, onItemsChange }: InvoiceProd
       setSelectedProduct(null);
       setQuantity(1);
       setUnitPrice('');
-      setIsTaxExempt(false);
       
       onItemsChange?.();
     } catch (error: any) {
@@ -266,46 +257,31 @@ export const InvoiceProductSelector = ({ invoiceId, onItemsChange }: InvoiceProd
 
           {/* Menge und Preis */}
           {selectedProduct && (
-            <div className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div>
-                  <Label>Anzahl *</Label>
-                  <Input
-                    type="number"
-                    min="1"
-                    value={quantity}
-                    onChange={(e) => setQuantity(parseInt(e.target.value) || 1)}
-                  />
-                </div>
-                <div>
-                  <Label>Einzelpreis (Netto) *</Label>
-                  <Input
-                    type="number"
-                    step="0.01"
-                    value={unitPrice}
-                    onChange={(e) => setUnitPrice(e.target.value)}
-                    placeholder="0.00"
-                  />
-                </div>
-                <div>
-                  <Label>Gesamtpreis (Netto)</Label>
-                  <div className="h-10 px-3 py-2 border rounded-md bg-muted flex items-center font-semibold">
-                    {formatCurrency((parseFloat(unitPrice) || 0) * quantity)}
-                  </div>
-                </div>
-              </div>
-              
-              <div className="flex items-center space-x-2">
-                <input
-                  type="checkbox"
-                  id="taxExempt"
-                  checked={isTaxExempt}
-                  onChange={(e) => setIsTaxExempt(e.target.checked)}
-                  className="h-4 w-4 rounded border-gray-300"
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div>
+                <Label>Anzahl *</Label>
+                <Input
+                  type="number"
+                  min="1"
+                  value={quantity}
+                  onChange={(e) => setQuantity(parseInt(e.target.value) || 1)}
                 />
-                <Label htmlFor="taxExempt" className="cursor-pointer">
-                  MwSt-befreit (z.B. Versand, Design)
-                </Label>
+              </div>
+              <div>
+                <Label>Einzelpreis (Netto) *</Label>
+                <Input
+                  type="number"
+                  step="0.01"
+                  value={unitPrice}
+                  onChange={(e) => setUnitPrice(e.target.value)}
+                  placeholder="0.00"
+                />
+              </div>
+              <div>
+                <Label>Gesamtpreis (Netto)</Label>
+                <div className="h-10 px-3 py-2 border rounded-md bg-muted flex items-center font-semibold">
+                  {formatCurrency((parseFloat(unitPrice) || 0) * quantity)}
+                </div>
               </div>
             </div>
           )}
@@ -335,9 +311,9 @@ export const InvoiceProductSelector = ({ invoiceId, onItemsChange }: InvoiceProd
                       <div className="flex items-center gap-2 mb-1">
                         <span className="font-semibold">{index + 1}.</span>
                         <h4 className="font-semibold">{item.description}</h4>
-                        {item.is_tax_exempt && (
-                          <Badge variant="secondary" className="text-xs">
-                            MwSt-befreit
+                        {item.product_id && (
+                          <Badge variant="outline" className="text-xs">
+                            {item.product_id}
                           </Badge>
                         )}
                       </div>
@@ -355,9 +331,6 @@ export const InvoiceProductSelector = ({ invoiceId, onItemsChange }: InvoiceProd
                       <div className="text-sm">
                         <span className="text-muted-foreground">Menge:</span> {item.quantity} × {formatCurrency(item.unit_price)} = 
                         <span className="font-semibold ml-1">{formatCurrency(item.total_price)}</span>
-                        {item.is_tax_exempt && (
-                          <span className="text-muted-foreground ml-2">(ohne MwSt)</span>
-                        )}
                       </div>
                     </div>
                     
