@@ -102,10 +102,20 @@ serve(async (req) => {
           continue; // Skip this row
         }
         
-        // Find or create customer - simple matching by name
+        // Find or create customer - IMPROVED: Match by name + PLZ/address
         let customerId: string;
         
-        // Search by name
+        // Helper function to extract PLZ from address
+        const extractPLZ = (address: string): string | null => {
+          if (!address) return null;
+          const match = address.match(/\d{5}/);
+          return match ? match[0] : null;
+        };
+        
+        // Extract PLZ from import data
+        const invoicePLZ = row.customerAddress ? extractPLZ(row.customerAddress) : null;
+        
+        // Search by name first
         const { data: customersByName } = await supabaseClient
           .from('customers')
           .select('id, name, address')
@@ -114,16 +124,34 @@ serve(async (req) => {
         let existingCustomer = null;
         
         if (customersByName && customersByName.length > 0) {
-          existingCustomer = customersByName[0];
-          
-          if (customersByName.length > 1) {
-            warnings.push({
-              type: 'customer_ambiguous',
-              invoice_number: row.invoiceNumber,
-              customer_name: row.customerName,
-              message: `Mehrere Kunden mit Namen "${row.customerName}" gefunden. Erste Übereinstimmung verwendet.`,
-              data: { matchCount: customersByName.length }
+          // If multiple customers with same name, try to match by PLZ
+          if (customersByName.length > 1 && invoicePLZ) {
+            const matchByPLZ = customersByName.find(c => {
+              const customerPLZ = extractPLZ(c.address || '');
+              return customerPLZ === invoicePLZ;
             });
+            
+            if (matchByPLZ) {
+              existingCustomer = matchByPLZ;
+              console.log(`Matched customer by name + PLZ: ${row.customerName} (${invoicePLZ})`);
+            } else {
+              // No PLZ match - create new customer
+              existingCustomer = null;
+              warnings.push({
+                type: 'customer_ambiguous',
+                invoice_number: row.invoiceNumber,
+                customer_name: row.customerName,
+                message: `Mehrere Kunden mit Namen "${row.customerName}" gefunden, aber keine PLZ-Übereinstimmung. Neuer Kunde erstellt.`,
+                data: { 
+                  matchCount: customersByName.length,
+                  invoicePLZ,
+                  existingPLZs: customersByName.map(c => extractPLZ(c.address || ''))
+                }
+              });
+            }
+          } else {
+            // Only one customer with this name, or no PLZ to check
+            existingCustomer = customersByName[0];
           }
         }
 
