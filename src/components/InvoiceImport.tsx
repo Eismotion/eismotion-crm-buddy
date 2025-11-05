@@ -8,6 +8,7 @@ import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import * as XLSX from 'xlsx';
 import { ImportWarningsDialog } from './ImportWarningsDialog';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 interface ImportResult {
   success: boolean;
@@ -32,6 +33,8 @@ export const InvoiceImport = () => {
   const [importing, setImporting] = useState(false);
   const [importResult, setImportResult] = useState<ImportResult | null>(null);
   const [showResults, setShowResults] = useState(false);
+  const [forceYear, setForceYear] = useState<number | ''>('');
+  const [preview, setPreview] = useState<any[]>([]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0];
@@ -39,6 +42,15 @@ export const InvoiceImport = () => {
       if (selectedFile.name.endsWith('.xlsx') || selectedFile.name.endsWith('.xls')) {
         setFile(selectedFile);
         setImportResult(null);
+        // Parse immediately to show a quick preview (first rows)
+        parseExcelFile(selectedFile)
+          .then((excelData) => {
+            const rows = transformExcelData(excelData);
+            setPreview(rows.slice(0, 5));
+          })
+          .catch(() => {
+            setPreview([]);
+          });
       } else {
         toast.error('Bitte wählen Sie eine Excel-Datei (.xlsx oder .xls)');
       }
@@ -145,6 +157,21 @@ export const InvoiceImport = () => {
       if (!invoiceDate || invoiceDate === '' || invoiceDate === 'NaN-NaN-NaN') {
         invoiceDate = ''; // Edge function will derive from invoice number
       }
+
+      // Optional: force all rows into a specific year selected by the user
+      if (forceYear !== '') {
+        const yyyy = String(forceYear);
+        // Try to keep month/day from parsed date, else derive month from invoice number, else use mid-year
+        if (invoiceDate && /^\d{4}-\d{2}-\d{2}$/.test(invoiceDate)) {
+          const [, mm = '06', dd = '15'] = invoiceDate.match(/^\d{4}-(\d{2})-(\d{2})$/) || [];
+          invoiceDate = `${yyyy}-${mm}-${dd}`;
+        } else {
+          const m = invoiceNumber.match(/^(\d{1,2})[.\/-](\d{4})/);
+          const mm = m ? String(Math.min(Math.max(parseInt(m[1], 10), 1), 12)).padStart(2, '0') : '06';
+          invoiceDate = `${yyyy}-${mm}-15`;
+        }
+      }
+
 
       return {
         customerName: row.Name || '',
@@ -320,11 +347,27 @@ export const InvoiceImport = () => {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
-            <div className="flex justify-end mb-4">
+            <div className="flex justify-end mb-4 gap-4 flex-col sm:flex-row sm:items-center">
+              <div className="w-full sm:w-auto">
+                <Label>Zieljahr (optional)</Label>
+                <Select value={forceYear === '' ? '' : String(forceYear)} onValueChange={(v) => setForceYear(v ? parseInt(v, 10) : '')}>
+                  <SelectTrigger className="w-[180px]">
+                    <SelectValue placeholder="Jahr wählen" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">Automatisch</SelectItem>
+                    <SelectItem value="2021">2021</SelectItem>
+                    <SelectItem value="2022">2022</SelectItem>
+                    <SelectItem value="2023">2023</SelectItem>
+                    <SelectItem value="2024">2024</SelectItem>
+                    <SelectItem value="2025">2025</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
               <Button
                 variant="outline"
                 onClick={downloadTemplate}
-                className="gap-2"
+                className="gap-2 w-full sm:w-auto"
               >
                 <Download className="h-4 w-4" />
                 Vorlage herunterladen
@@ -365,6 +408,27 @@ export const InvoiceImport = () => {
                 </p>
               )}
             </div>
+
+            {preview.length > 0 && (
+              <div className="bg-muted p-3 rounded-md">
+                <h4 className="font-semibold text-sm mb-2">Vorschau (erste 5 Zeilen)</h4>
+                <div className="text-xs text-muted-foreground grid grid-cols-4 gap-2">
+                  <div className="font-medium">Rechnungsnummer</div>
+                  <div className="font-medium">Datum</div>
+                  <div className="font-medium">Netto</div>
+                  <div className="font-medium">Brutto</div>
+                  {preview.map((r, idx) => (
+                    <>
+                      <div key={`i-${idx}-n`}>{r.invoiceNumber || '-'}</div>
+                      <div key={`i-${idx}-d`}>{r.invoiceDate || '-'}</div>
+                      <div key={`i-${idx}-net`}>{r.netAmount}</div>
+                      <div key={`i-${idx}-gross`}>{r.grossAmount}</div>
+                    </>
+                  ))}
+                </div>
+              </div>
+            )}
+
 
             <div className="bg-muted p-4 rounded-lg space-y-2">
               <h4 className="font-semibold text-sm">Anforderungen an die Excel-Datei:</h4>
