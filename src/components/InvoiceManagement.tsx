@@ -12,6 +12,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
+import { AutoImport2023 } from './AutoImport2023';
 
 export const InvoiceManagement = () => {
   const navigate = useNavigate();
@@ -26,6 +27,7 @@ export const InvoiceManagement = () => {
   const [filteredCustomers, setFilteredCustomers] = useState<any[]>([]);
   const [yearCounts, setYearCounts] = useState<Record<number, number>>({});
   const [showNewCustomerDialog, setShowNewCustomerDialog] = useState(false);
+  const [showAutoImport2023, setShowAutoImport2023] = useState(false);
   const [newCustomer, setNewCustomer] = useState({
     name: '',
     contact_person: '',
@@ -41,6 +43,21 @@ export const InvoiceManagement = () => {
     loadInvoices();
     loadCustomers();
     loadYearCounts();
+    
+    // Check if we need to auto-import 2023 data
+    const checkAndImportData = async () => {
+      const { count } = await supabase
+        .from('invoices')
+        .select('*', { count: 'exact', head: true })
+        .gte('invoice_date', '2023-01-01')
+        .lt('invoice_date', '2024-01-01');
+      
+      if (count === 0) {
+        setShowAutoImport2023(true);
+      }
+    };
+    
+    checkAndImportData();
   }, []);
 
   // Realtime-Updates: Zählt sofort korrekt nach Änderungen (Import/Update/Delete)
@@ -836,6 +853,9 @@ export const InvoiceManagement = () => {
           </div>
         </DialogContent>
       </Dialog>
+      
+      {/* Auto-Import 2023 Daten */}
+      {showAutoImport2023 && <AutoImport2023 />}
     </div>
   );
 };
