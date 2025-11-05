@@ -335,7 +335,7 @@ export const CustomerPortal = () => {
                             </Badge>
                           </TableCell>
                           <TableCell className="text-right font-bold">
-                            {formatCurrency(invoice.total_amount)}
+                            {formatCurrency(Number(invoice.total_amount || 0))}
                           </TableCell>
                         </TableRow>
                       ))}
@@ -355,7 +355,7 @@ export const CustomerPortal = () => {
                               {invoice.status}
                             </Badge>
                           </div>
-                          <p className="text-lg font-bold">{formatCurrency(invoice.total_amount)}</p>
+                          <p className="text-lg font-bold">{formatCurrency(Number(invoice.total_amount || 0))}</p>
                         </div>
                       </CardHeader>
                       <CardContent className="space-y-2">

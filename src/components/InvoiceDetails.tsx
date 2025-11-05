@@ -74,8 +74,8 @@ export const InvoiceDetails = () => {
 
       if (itemsError) throw itemsError;
 
-      const subtotal = items?.reduce((sum, item) => sum + (item.total_price || 0), 0) || 0;
-      const taxRate = invoice?.tax_rate || 19.00;
+      const subtotal = (items || []).reduce((sum, item) => sum + Number(item.total_price || 0), 0);
+      const taxRate = Number(invoice?.tax_rate ?? 19.0);
       const taxAmount = subtotal * (taxRate / 100);
       const totalAmount = subtotal + taxAmount;
 

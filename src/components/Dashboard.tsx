@@ -47,7 +47,7 @@ export const Dashboard = () => {
   const totalCustomers = customers.length;
 
   const topCustomers = [...customers]
-    .sort((a, b) => (b.total_spent || 0) - (a.total_spent || 0))
+    .sort((a, b) => Number(b.total_spent || 0) - Number(a.total_spent || 0))
     .slice(0, 3);
 
   const recentInvoices = invoices.slice(0, 3);
@@ -130,7 +130,7 @@ export const Dashboard = () => {
           <CardContent>
             <div className="text-lg font-bold">{topProduct?.name || 'N/A'}</div>
             <p className="text-xs text-muted-foreground mt-1">
-              {topProduct ? formatCurrency(topProduct.total_revenue) : 'Keine Daten'}
+              {topProduct ? formatCurrency(Number(topProduct.total_revenue || 0)) : 'Keine Daten'}
             </p>
           </CardContent>
         </Card>
@@ -156,7 +156,7 @@ export const Dashboard = () => {
                     <p className="text-sm text-muted-foreground">{customer.city || 'N/A'}</p>
                   </div>
                   <div className="text-right">
-                    <p className="font-bold">{formatCurrency(customer.total_spent || 0)}</p>
+                    <p className="font-bold">{formatCurrency(Number(customer.total_spent || 0))}</p>
                     <p className="text-sm text-muted-foreground">{customer.total_orders || 0} Bestellungen</p>
                   </div>
                 </div>
@@ -183,7 +183,7 @@ export const Dashboard = () => {
                     <p className="text-sm text-muted-foreground">{invoice.customer?.name || 'N/A'}</p>
                   </div>
                   <div className="flex items-center gap-2">
-                    <p className="font-bold">{formatCurrency(invoice.total_amount)}</p>
+                    <p className="font-bold">{formatCurrency(Number(invoice.total_amount || 0))}</p>
                     <Badge className={getStatusColor(invoice.status)}>
                       {invoice.status}
                     </Badge>

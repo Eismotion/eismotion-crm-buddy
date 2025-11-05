@@ -334,7 +334,7 @@ export const InvoiceManagement = () => {
 
   const calculateYearRevenue = (year: string) => {
     const yearInvoices = invoicesByYear[year as keyof typeof invoicesByYear] || [];
-    return yearInvoices.reduce((sum, invoice) => sum + (invoice.total_amount || 0), 0);
+    return yearInvoices.reduce((sum, invoice) => sum + Number(invoice.total_amount || 0), 0);
   };
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -511,7 +511,7 @@ export const InvoiceManagement = () => {
                                   )}
                                 </TableCell>
                                 <TableCell className="text-right font-bold">
-                                  {formatCurrency(invoice.total_amount)}
+                                  {formatCurrency(Number(invoice.total_amount || 0))}
                                 </TableCell>
                                  <TableCell className="text-right">
                                    <div className="flex gap-1 justify-end">
@@ -585,7 +585,7 @@ export const InvoiceManagement = () => {
                                     <span className="text-xs text-muted-foreground">Standard</span>
                                   )}
                                 </div>
-                                <p className="text-lg font-bold">{formatCurrency(invoice.total_amount)}</p>
+                                <p className="text-lg font-bold">{formatCurrency(Number(invoice.total_amount || 0))}</p>
                               </div>
                               <div className="flex gap-2 pt-2">
                                 <Button 

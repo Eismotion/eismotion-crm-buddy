@@ -168,7 +168,7 @@ export const InvoiceProductSelector = ({ invoiceId, onItemsChange }: InvoiceProd
   };
 
   const calculateTotal = () => {
-    return invoiceItems.reduce((sum, item) => sum + (item.total_price || 0), 0);
+    return invoiceItems.reduce((sum, item) => sum + Number(item.total_price || 0), 0);
   };
 
   return (

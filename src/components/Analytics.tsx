@@ -305,7 +305,7 @@ export const Analytics = () => {
                     <p className="text-sm text-muted-foreground">{invoice.customer?.name || 'N/A'}</p>
                   </div>
                   <div className="text-right">
-                    <p className="font-bold text-destructive">{formatCurrency(invoice.total_amount)}</p>
+                    <p className="font-bold text-destructive">{formatCurrency(Number(invoice.total_amount || 0))}</p>
                     <p className="text-xs text-muted-foreground">
                       Fällig seit {new Date(invoice.invoice_date).toLocaleDateString('de-DE')}
                     </p>
