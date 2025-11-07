@@ -31,3 +31,7 @@ verify_jwt = false
 # Data maintenance: update draft invoices to paid
 [functions.update-draft-invoices]
 verify_jwt = false
+
+# Data maintenance: fix customer assignments based on PLZ and address
+[functions.fix-customer-assignments]
+verify_jwt = false

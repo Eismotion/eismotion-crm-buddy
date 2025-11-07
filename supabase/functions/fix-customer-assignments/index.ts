@@ -27,11 +27,46 @@ serve(async (req) => {
       return match ? match[0] : null;
     };
 
-    // Step 1: Get all invoices with customer data
+    // Step 1: Get all customers grouped by name to find duplicates
+    console.log('Step 1: Finding duplicate customer names...');
+    const { data: allCustomers, error: customersError } = await supabaseClient
+      .from('customers')
+      .select('id, name, address, postal_code')
+      .order('name');
+
+    if (customersError) {
+      console.error('Error fetching customers:', customersError);
+      throw customersError;
+    }
+
+    // Build map: name -> list of customers with that name
+    const customersByName = new Map<string, Array<{id: string; name: string; address: string; postal_code: string | null}>>();
+    
+    for (const customer of allCustomers || []) {
+      const lowerName = (customer.name || '').toLowerCase().trim();
+      if (!customersByName.has(lowerName)) {
+        customersByName.set(lowerName, []);
+      }
+      customersByName.get(lowerName)!.push({
+        id: customer.id,
+        name: customer.name || '',
+        address: customer.address || '',
+        postal_code: customer.postal_code
+      });
+    }
+
+    // Find only duplicate names (>1 customer with same name)
+    const duplicateNames = Array.from(customersByName.entries())
+      .filter(([_, customers]) => customers.length > 1)
+      .map(([name, customers]) => ({ name, customers }));
+
+    console.log(`Found ${duplicateNames.length} duplicate customer names`);
+
+    // Step 2: Get all invoices
     const { data: allInvoices, error: invoicesError } = await supabaseClient
       .from('invoices')
-      .select('id, customer_id, invoice_number, customers(id, name, address)')
-      .limit(1000);
+      .select('id, customer_id, invoice_number, customers(id, name, address, postal_code)')
+      .limit(2000);
 
     if (invoicesError) {
       console.error('Error fetching invoices:', invoicesError);
@@ -40,7 +75,7 @@ serve(async (req) => {
 
     console.log(`Found ${allInvoices?.length || 0} invoices to check`);
 
-    // Step 2: Build correction map
+    // Step 3: Build correction map
     const corrections: Array<{
       invoiceId: string;
       oldCustomerId: string;
@@ -48,42 +83,64 @@ serve(async (req) => {
       invoiceNumber: string;
       oldCustomerName: string;
       newCustomerName: string;
+      oldAddress: string;
+      newAddress: string;
+      matchedBy: string;
     }> = [];
 
     for (const invoice of allInvoices || []) {
       if (!invoice.customers) continue;
 
       const currentCustomer = invoice.customers as any;
-      const currentPLZ = extractPLZ(currentCustomer.address);
+      const lowerName = (currentCustomer.name || '').toLowerCase().trim();
       
-      // Find all customers with same name
-      const { data: matchingCustomers } = await supabaseClient
-        .from('customers')
-        .select('id, name, address')
-        .ilike('name', currentCustomer.name);
+      // Check if this customer name has duplicates
+      const duplicateEntry = duplicateNames.find(d => d.name === lowerName);
+      if (!duplicateEntry) continue;
 
-      // Only check if there are multiple customers with same name
-      if (matchingCustomers && matchingCustomers.length > 1) {
-        let correctCustomer = null;
+      const currentPLZ = currentCustomer.postal_code || extractPLZ(currentCustomer.address);
+      const currentAddress = (currentCustomer.address || '').toLowerCase().trim();
 
-        // Try to match by PLZ
-        if (currentPLZ) {
-          correctCustomer = matchingCustomers.find(c => 
-            c.id !== invoice.customer_id && extractPLZ(c.address) === currentPLZ
-          );
+      // Find best match among duplicate customers
+      let bestMatch = null;
+      let matchReason = '';
+
+      for (const candidate of duplicateEntry.customers) {
+        // Skip if it's the same customer
+        if (candidate.id === invoice.customer_id) continue;
+
+        const candidatePLZ = candidate.postal_code || extractPLZ(candidate.address);
+        const candidateAddress = (candidate.address || '').toLowerCase().trim();
+
+        // Match by PLZ (strongest signal)
+        if (currentPLZ && candidatePLZ && currentPLZ === candidatePLZ) {
+          bestMatch = candidate;
+          matchReason = `PLZ ${currentPLZ}`;
+          break;
         }
 
-        // If we found a better match, add to corrections
-        if (correctCustomer && correctCustomer.id !== invoice.customer_id) {
-          corrections.push({
-            invoiceId: invoice.id,
-            oldCustomerId: invoice.customer_id,
-            newCustomerId: correctCustomer.id,
-            invoiceNumber: invoice.invoice_number || 'unknown',
-            oldCustomerName: currentCustomer.name,
-            newCustomerName: correctCustomer.name
-          });
+        // Match by address substring (weaker signal)
+        if (currentAddress && candidateAddress && 
+            (currentAddress.includes(candidateAddress.slice(0, 15)) || 
+             candidateAddress.includes(currentAddress.slice(0, 15)))) {
+          bestMatch = candidate;
+          matchReason = 'Adress-Match';
         }
+      }
+
+      // If we found a better match, add to corrections
+      if (bestMatch && bestMatch.id !== invoice.customer_id) {
+        corrections.push({
+          invoiceId: invoice.id,
+          oldCustomerId: invoice.customer_id,
+          newCustomerId: bestMatch.id,
+          invoiceNumber: invoice.invoice_number || 'unknown',
+          oldCustomerName: currentCustomer.name,
+          newCustomerName: bestMatch.name,
+          oldAddress: currentCustomer.address || '',
+          newAddress: bestMatch.address || '',
+          matchedBy: matchReason
+        });
       }
     }
 
@@ -104,9 +161,13 @@ serve(async (req) => {
         errors.push(`${correction.invoiceNumber}: ${updateError.message}`);
       } else {
         successCount++;
-        console.log(`✓ Corrected ${correction.invoiceNumber}: ${correction.oldCustomerName} → ${correction.newCustomerName}`);
+        console.log(`✓ Corrected ${correction.invoiceNumber}: ${correction.oldCustomerName} (${correction.oldAddress.slice(0, 30)}) → ${correction.newCustomerName} (${correction.newAddress.slice(0, 30)}) [${correction.matchedBy}]`);
       }
     }
+
+    console.log(`\n=== Summary ===`);
+    console.log(`Total corrections applied: ${successCount}/${corrections.length}`);
+    console.log(`Errors: ${errors.length}`);
 
     // Step 4: No cleanup needed (no temp columns used)
 
@@ -144,42 +205,44 @@ serve(async (req) => {
         .eq('id', customerId);
     }
 
-    // Step 6: Validate - check specific invoice
-    const { data: testInvoice } = await supabaseClient
-      .from('invoices')
-      .select('invoice_number, customers(name, address)')
-      .eq('invoice_number', '07/2025/956')
-      .single();
-
-    // Step 7: Get new top customers
-    const { data: topCustomers } = await supabaseClient
-      .from('invoices')
-      .select('customer_id, total_amount, customers(name, address)')
-      .neq('status', 'storniert')
-      .order('total_amount', { ascending: false })
-      .limit(100);
-
-    const customerMap = new Map<string, { name: string; address: string; totalRevenue: number; invoiceCount: number }>();
+    // Step 6: Validate - check all Venezia customers
+    console.log('\n=== Validierung: Alle "Eiscafe Venezia" ===');
     
-    topCustomers?.forEach((inv: any) => {
-      if (!inv.customer_id || !inv.customers) return;
-      const existing = customerMap.get(inv.customer_id);
-      if (existing) {
-        existing.totalRevenue += Number(inv.total_amount || 0);
-        existing.invoiceCount++;
-      } else {
-        customerMap.set(inv.customer_id, {
-          name: inv.customers.name,
-          address: inv.customers.address,
-          totalRevenue: Number(inv.total_amount || 0),
-          invoiceCount: 1
-        });
-      }
-    });
+    const { data: veneziaCustomers } = await supabaseClient
+      .from('customers')
+      .select('id, name, address, postal_code')
+      .ilike('name', '%Venezia%')
+      .order('postal_code');
 
-    const topCustomersList = Array.from(customerMap.values())
-      .sort((a, b) => b.totalRevenue - a.totalRevenue)
-      .slice(0, 5);
+    const veneziaStats = [];
+    for (const customer of veneziaCustomers || []) {
+      const { data: invoices } = await supabaseClient
+        .from('invoices')
+        .select('total_amount')
+        .eq('customer_id', customer.id)
+        .neq('status', 'storniert')
+        .neq('status', 'cancelled');
+
+      const invoiceCount = invoices?.length || 0;
+      const totalRevenue = invoices?.reduce((sum, inv) => sum + Number(inv.total_amount || 0), 0) || 0;
+
+      veneziaStats.push({
+        name: customer.name,
+        address: customer.address?.slice(0, 40) || '',
+        postal_code: customer.postal_code || extractPLZ(customer.address),
+        invoiceCount,
+        totalRevenue: totalRevenue.toFixed(2)
+      });
+
+      console.log(`${customer.name} | ${customer.address?.slice(0, 40)} | ${customer.postal_code || extractPLZ(customer.address)} | ${invoiceCount} Rechnungen | ${totalRevenue.toFixed(2)} €`);
+    }
+
+    // Step 7: Get new top 5 customers from view
+    const { data: topCustomersView } = await supabaseClient
+      .from('top_customers')
+      .select('*')
+      .order('revenue', { ascending: false })
+      .limit(5);
 
     return new Response(
       JSON.stringify({
@@ -188,10 +251,11 @@ serve(async (req) => {
         totalCorrections: corrections.length,
         errors: errors,
         validation: {
-          testInvoice: testInvoice,
-          topCustomers: topCustomersList
+          veneziaCustomers: veneziaStats,
+          topCustomers: topCustomersView || []
         },
-        affectedCustomers: affectedCustomerIds.length
+        affectedCustomers: affectedCustomerIds.length,
+        sampleCorrections: corrections.slice(0, 10)
       }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
