@@ -8,7 +8,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { TopCustomersDialog } from './TopCustomersDialog';
 import { ProductRevenueDialog } from './ProductRevenueDialog';
-import { extractLocation } from '@/lib/address-parser';
+import { extractLocation, extractPostalCode } from '@/lib/address-parser';
 
 export const Dashboard = () => {
   const navigate = useNavigate();
@@ -69,7 +69,8 @@ export const Dashboard = () => {
       const { data: allInvoices, error } = await supabase
         .from('invoices')
         .select('customer_id, total_amount, subtotal, customers(name, address, city, postal_code)')
-        .neq('status', 'storniert');
+        .neq('status', 'storniert')
+        .neq('status', 'cancelled');
 
       if (error) throw error;
       if (!allInvoices) return;
@@ -87,7 +88,7 @@ export const Dashboard = () => {
       allInvoices.forEach((inv: any) => {
         const name = inv.customers?.name || 'Unbekannt';
         const address = inv.customers?.address || '';
-        const postal = inv.customers?.postal_code || '';
+        const postal = inv.customers?.postal_code || extractPostalCode(address) || '';
         const location = extractLocation(address) || inv.customers?.city || 'Unbekannt';
 
         // Eindeutiger Key: Name + PLZ (wenn vorhanden), sonst Name + Adresse

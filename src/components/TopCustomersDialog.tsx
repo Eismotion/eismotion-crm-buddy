@@ -4,7 +4,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Button } from "@/components/ui/button";
 import { supabase } from '@/integrations/supabase/client';
 import { formatCurrency } from '@/data/mockData';
-import { extractLocation } from '@/lib/address-parser';
+import { extractLocation, extractPostalCode } from '@/lib/address-parser';
 import { useNavigate } from 'react-router-dom';
 import { ArrowUpDown, TrendingUp, TrendingDown } from 'lucide-react';
 import { format } from 'date-fns';
@@ -45,7 +45,8 @@ export function TopCustomersDialog({ open, onOpenChange }: TopCustomersDialogPro
       const { data: invoices, error } = await supabase
         .from('invoices')
         .select('customer_id, total_amount, invoice_date, customers(name, address, city, postal_code)')
-        .neq('status', 'storniert');
+        .neq('status', 'storniert')
+        .neq('status', 'cancelled');
 
       if (error) throw error;
       if (!invoices) return;
@@ -64,7 +65,7 @@ export function TopCustomersDialog({ open, onOpenChange }: TopCustomersDialogPro
       invoices.forEach((inv: any) => {
         const name = inv.customers?.name || 'Unbekannt';
         const address = inv.customers?.address || '';
-        const postal = inv.customers?.postal_code || '';
+        const postal = inv.customers?.postal_code || extractPostalCode(address) || '';
         const location = extractLocation(address) || inv.customers?.city || 'Unbekannt';
 
         // Eindeutiger Key: Name + PLZ (wenn vorhanden), sonst Name + Adresse
