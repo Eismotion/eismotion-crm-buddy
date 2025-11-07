@@ -1,0 +1,117 @@
+invoice_number,invoice_date,customer_name,address,postal_code,city,subtotal,total_amount
+01/2021/04,2021-01-06,"EISCAFÉ VENEZIA","Paolo Marrocu","","",354.96,430.28
+01/2021/11,2021-01-29,"Eiscafe Venezia","Grabenstr. 13","53424","Remagen",60.00,76.30
+02/2021/12,2021-02-05,"EIS VENEZIA","MANUFAKTUR","","",562.60,677.37
+02/2021/15,2021-02-09,"EIS VENEZIA","MANUFAKTUR","","",1050.00,1249.50
+02/2021/17,2021-02-17,"EIS VENEZIA","MANUFAKTUR","","",194.00,230.86
+03/2021/21,2021-03-09,"Eiscafe Venezia","Grabenstr. 13","53424","Remagen",169.00,201.11
+04/2021/39,2021-04-07,"EIS VENEZIA","MANUFAKTUR","","",175.00,208.25
+05/2021/68,2021-05-19,"EISCAFE' VENEZIA","Alte Bielefelder Str. 11, 33824 Werther","","",196.20,241.38
+05/2021/72,2021-05-21,"Eiscafe Venezia","Grabenstr. 13","53424","Remagen",562.02,676.73
+06/2021/102,2021-06-26,"EIS VENEZIA","MANUFAKTUR","","",1175.60,1398.96
+07/2021/111,2021-07-17,"EIS VENEZIA","MANUFAKTUR","","",1723.60,2051.08
+08/2021/119,2021-08-10,"Eiscafe Venezia","Grabenstr. 13","53424","Remagen",917.50,1091.83
+08/2021/120,2021-08-10,"Eiscafe Venezia","Grabenstr. 13","53424","Remagen",716.85,853.05
+08/2021/125,2021-08-23,"EIS VENEZIA","MANUFAKTUR","","",116.40,138.52
+09/2021/132,2021-09-28,"Eiscafe Venezia","Grabenstr. 13","53424","Remagen",51.90,61.77
+11/2021/135,2021-11-01,"EIS VENEZIA","MANUFAKTUR","","",362.00,430.78
+01/2022/06,2022-01-20,"EIS VENEZIA","MANUFAKTUR","","",806.90,960.21
+02/2022/19,2022-02-09,"Eiscafe Venezia","Grabenstr. 13","53424","Remagen",830.90,988.77
+02/2022/21,2022-02-13,"EIS VENEZIA","MANUFAKTUR","","",104.90,124.83
+03/2022/41,2022-03-08,"Eiscafe Venezia","Grabenstr. 13","53424","Remagen",286.30,340.70
+04/2022/61,2022-04-04,"Eiscafe Venezia","Grabenstr. 13","53424","Remagen",85.40,101.63
+04/2022/80,2022-04-29,"EIS VENEZIA","MANUFAKTUR","","",739.50,880.01
+05/2022/82,2022-05-02,"Eiscafe Venezia","Grabenstr. 13","53424","Remagen",175.00,208.25
+05/2022/92,2022-05-13,"Eiscafe Venezia","Grabenstr. 13","53424","Remagen",89.90,114.88
+07/2022/137,2022-07-25,"EIS VENEZIA","MANUFAKTUR","","",516.00,625.96
+08/2022/145,2022-08-10,"EIS VENEZIA","MANUFAKTUR","","",69.00,91.01
+08/2022/151,2022-08-27,"CAFFÈ CREME VENEZIA","Reichenstr. 20, 02625 Bautzen","","",323.30,393.62
+11/2022/167,2022-11-10,"EIS VENEZIA","MANUFAKTUR","","",150.00,178.50
+01/2023/189,2023-01-02,"Eiscafe Venezia (Werther)","Am Markt 30, 33824 Werther","33824","Werther",2589.00,3105.76
+01/2023/201,2023-01-26,"Eiscafe Venezia","Grabenstr. 13","53424","Remagen",305.00,371.86
+01/2023/205,2023-01-31,"Eiscafe Venezia","Grabenstr. 13","53424","Remagen",232.20,276.32
+02/2023/213,2023-02-03,"Eiscafe Venezia (Brakel)","Hanekamp 18, 33034 Brakel","33034","Brakel",292.80,358.24
+02/2023/214,2023-02-03,"Eiscafe Venezia (Brakel)","Hanekamp 18, 33034 Brakel","33034","Brakel",302.60,358.24
+02/2023/215,2023-02-03,"Eiscafe Venezia (Köln)","Frankfurter Str. 728, 51143 Köln","51143","Köln",257.00,305.20
+02/2023/225,2023-02-07,"Eiscafe Venezia (Forst)","Kirschstraßen 2, 76694 Forst","76694","Forst",1248.90,1484.54
+02/2023/226,2023-02-08,"Eiscafe Venezia (Remagen)","Grabenstr. 13, 53424 Remagen","53424","Remagen",361.90,442.10
+02/2023/227,2023-02-08,"Eiscafe Venezia","Marienplatz 15, 91275 Auerbach","91275","Auerbach",294.90,350.50
+02/2023/233,2023-02-10,"Eiscafe Venezia (Marktoberdorf)","Kaufbeurener Str. 1, 87616 Marktoberdorf","87616","Marktoberdorf",1502.90,1783.70
+02/2023/235,2023-02-24,"Eiscafe Venezia","Adolfstraße 45, 56112 Lahnstein","56112","Lahnstein",305.90,362.34
+03/2023/248,2023-03-07,"Eiscafe Venezia (Marktoberdorf)","Kaufbeurener Str. 1, 87616 Marktoberdorf","87616","Marktoberdorf",268.90,318.30
+03/2023/250,2023-03-08,"Eiscafe Venezia (Unbekannt)","Unbekannt","","Unbekannt",301.70,357.33
+03/2023/251,2023-03-09,"Eiscafe Venezia","Unterer Markt 6, 91275 Auerbach","91275","Auerbach",350.50,415.40
+03/2023/252,2023-03-09,"Eiscafe Venezia (Rodenbach)","Große Gasse 1, 63517 Rodenbach","63517","Rodenbach",1743.90,2072.42
+03/2023/254,2023-03-09,"Eiscafe Venezia","Schloßstr. 5-7, 66953 Pirmasens","66953","Pirmasens",231.50,277.84
+03/2023/262,2023-03-21,"Eiscafe Venezia (Brandenburg)","Steinstr. 28, 14776 Brandenburg","14776","Brandenburg",47.90,56.07
+03/2023/264,2023-03-22,"Eiscafe Venezia (Leipzig)","Ludwigsburger Str. 9, 04209 Leipzig","04209","Leipzig",372.00,439.85
+03/2023/265,2023-03-22,"Eiscafe Venezia (Unbekannt)","Unbekannt","","Unbekannt",301.70,357.33
+03/2023/274,2023-03-28,"Eiscafe Venezia (Unbekannt)","Unbekannt","","Unbekannt",1400.60,1666.73
+03/2023/278,2023-03-30,"Eiscafe Venezia","Westl. Karl-Friedrich-Str. 17-19, 75172 Pforzheim","75172","Pforzheim",231.50,277.84
+04/2023/291,2023-04-11,"EISCAFE VENEZIA","Marktplatz 4","","","368.80",437.18
+04/2023/294,2023-04-11,"Eiscafe Venezia","Stadtplatz 23, 93426 Roding","93426","Roding",332.90,395.90
+04/2023/295,2023-04-11,"EIS VENEZIA","Markt 26","","","1120.00",1332.80
+04/2023/297,2023-04-12,"Eiscafe Venezia (Rottweil)","Hauptstraße 53, 78628 Rottweil","78628","Rottweil",307.80,364.60
+04/2023/298,2023-04-13,"Eiscafe Venezia","Hochstr. 84, 56112 Lahnstein","56112","Lahnstein",305.90,362.34
+05/2023/316,2023-05-02,"Eiscafe Venezia (Brandenburg)","Steinstr. 28, 14776 Brandenburg","14776","Brandenburg",75.90,89.39
+05/2023/329,2023-05-11,"Eiscafe Venezia (Remagen)","Grabenstr. 13, 53424 Remagen","53424","Remagen",257.00,234.43
+05/2023/339,2023-05-16,"Eiscafe Venezia (Forst)","Kirschstraßen 2, 76694 Forst","76694","Forst",301.70,357.33
+06/2023/352,2023-06-05,"Eiscafe Venezia","Hauptstraße 32, 66953 Pirmasens","66953","Pirmasens",231.50,277.84
+06/2023/375,2023-06-23,"Eiscafe Venezia (Schneeberg)","Markt 26, 08289 Schneeberg","08289","Schneeberg",251.90,298.07
+07/2023/387,2023-07-06,"Eiscafe Venezia (Werther)","Am Markt 30, 33824 Werther","33824","Werther",357.10,420.62
+07/2023/402,2023-07-25,"Eiscafe Venezia","Schulstraße 11, 93426 Roding","93426","Roding",332.90,395.90
+10/2023/441,2023-10-24,"EISCAFE VENEZIA","Haupt Straße 42, 51143 Köln","51143","Köln",257.00,305.20
+11/2023/445,2023-11-11,"Eiscafe Venezia (Schneeberg)","Markt 26, 08289 Schneeberg","08289","Schneeberg",347.10,411.35
+11/2023/449,2023-11-20,"Eiscafe Venezia (Bad Vilbel)","Frankfurter Str. 96, 61118 Bad Vilbel","61118","Bad Vilbel",2519.10,2985.64
+11/2023/450,2023-11-27,"Eiscafe Venezia","Frankfurter Str. 96, 61118 Bad Vilbel","61118","Bad Vilbel",134.90,159.41
+01/2024/457,2024-01-01,"Eiscafe Venezia","Obere Kirschgasse 6, 91593 Burgbernheim","91593","Burgbernheim",288.90,342.09
+01/2024/458,2024-01-29,"Eiscafe Venezia (Sömmerda)","Langstr.7, 99610 Sömmerda","99610","Sömmerda",3205.40,3804.81
+01/2024/460,2024-01-30,"Eiscafe Venezia (Rottweil)","Hauptstraße 53, 78628 Rottweil","78628","Rottweil",2382.10,2820.37
+01/2024/469,2024-01-29,"Eiscafe Venezia (Schneeberg)","Markt 26, 08289 Schneeberg","08289","Schneeberg",133.90,158.40
+02/2024/482,2024-02-08,"Eiscafe Venezia","Hanauer Landstraße 3B, 63517 Rodenbach","63517","Rodenbach",1743.90,2072.45
+02/2024/484,2024-02-09,"Eiscafe Venezia (Forst)","Kirschstraßen 2, 76694 Forst","76694","Forst",1146.90,1358.19
+02/2024/487,2024-02-12,"Eiscafe Venezia (Jork)","Altländer Markt 2, 21635 Jork","21635","Jork",1250.90,1483.85
+02/2024/489,2024-02-12,"Eiscafe Venezia (Jork)","Altländer Markt 2, 21635 Jork","21635","Jork",198.90,233.86
+02/2024/490,2024-02-12,"Eiscafe Venezia (Bad Vilbel)","Frankfurter Str. 96, 61118 Bad Vilbel","61118","Bad Vilbel",134.10,159.41
+02/2024/492,2024-02-13,"Eiscafe Venezia","Frankfurter Str. 98, 61118 Bad Vilbe","61118","Bad Vilbe",870.90,1031.67
+02/2024/494,2024-02-14,"Eiscafe Venezia (Forst)","Kirschstraßen 2, 76694 Forst","76694","Forst",237.50,281.41
+02/2024/506,2024-02-20,"Eiscafe Venezia (Schneeberg)","Markt 26, 08289 Schneeberg","08289","Schneeberg",1000.90,1188.27
+03/2024/524,2024-03-02,"Eiscafe Venezia","Blumenstraße 18, 75172 Pforzheim","75172","Pforzheim",231.50,277.84
+03/2024/528,2024-03-05,"Eiscafe Venezia","Alte Bielefelder Str. 11, 33824 Werther","33824","Werther",370.10,438.72
+03/2024/536,2024-03-11,"Eiscafe Venezia","Benrather Str. 2, 36179 Bebra","36179","Bebra",533.50,633.16
+03/2024/543,2024-03-14,"Eiscafe Venezia (Boltenhagen)","Dünenweg 1c, 23946 Boltenhagen","23946","Boltenhagen",565.90,671.73
+03/2024/548,2024-03-18,"Eiscafe Venezia (Marktoberdorf)","Kaufbeurener Str. 1, 87616 Marktoberdorf","87616","Marktoberdorf",291.40,345.24
+03/2024/557,2024-03-20,"EISCAFE VENEZIA","Da Fonseca & Cipriano, Prudencio Gb R, Da Fonseca Alex","","","515.20",611.40
+03/2024/559,2024-03-21,"Eiscafe Venezia","Hauptstr. 65, 89250 Senden","89250","Senden",2402.90,2856.57
+03/2024/572,2024-03-25,"Eiscafe Venezia (Marktoberdorf)","Kaufbeurener Str. 1, 87616 Marktoberdorf","87616","Marktoberdorf",1995.90,2363.89
+04/2024/580,2024-04-05,"Eiscafe Venezia (Schneeberg)","Markt 26, 08289 Schneeberg","08289","Schneeberg",443.90,523.49
+04/2024/590,2024-04-15,"Eiscafe Venezia (Werther)","Am Markt 30, 33824 Werther","33824","Werther",191.90,226.80
+04/2024/591,2024-04-11,"Eiscafe Venezia","Kemptner Str. 27, 89250 Senden","89250","Senden",2402.90,2856.57
+04/2024/597,2024-04-19,"Eiscafe Venezia (Bad Vilbel)","Frankfurter Str. 96, 61118 Bad Vilbel","61118","Bad Vilbel",365.90,433.73
+04/2024/600,2024-04-22,"Eiscafe Venezia (Schneeberg)","Markt 26, 08289 Schneeberg","08289","Schneeberg",63.90,74.35
+05/2024/624,2024-05-07,"Eiscafe Venezia (Schneeberg)","Markt 26, 08289 Schneeberg","08289","Schneeberg",63.90,74.35
+05/2024/634,2024-05-18,"Eiscafe Venezia","Nürnbergerstrasse 46, 36179 Bebra","36179","Bebra",533.50,633.16
+05/2024/639,2024-05-27,"Eiscafe Venezia (Forst)","Kirschstraßen 2, 76694 Forst","76694","Forst",237.50,281.41
+06/2024/658,2024-06-10,"Eiscafe Venezia (Forst)","Kirschstraßen 2, 76694 Forst","76694","Forst",214.90,254.52
+06/2024/667,2024-06-18,"Eiscafe Venezia (Forst)","Kirschstraßen 2, 76694 Forst","76694","Forst",93.10,110.29
+08/2024/692,2024-08-07,"Eiscafe Venezia","Frankfurter Str. 96, 61118 Bad Vilbe","61118","Bad Vilbe",870.90,1031.67
+08/2024/693,2024-08-09,"Eiscafe Venezia (Schneeberg)","Markt 26, 08289 Schneeberg","08289","Schneeberg",136.90,161.41
+09/2024/716,2024-09-25,"Eiscafe Venezia","Holzmarkt 7, 38820 Halberstadt","38820","Halberstadt",652.90,772.25
+12/2024/743,2024-12-04,"Eiscafe Venezia (Forst)","Kirschstraßen 2, 76694 Forst","76694","Forst",1138.90,1348.72
+01/2025/759,2025-01-16,"Eismanufaktur & Café Venezia","Schloßstraße 2, 31655 Stadthagen","31655","Stadthagen",1226.60,1459.66
+01/2025/760,2025-01-16,"Eismanufaktur & Café Venezia","Schloßstraße 2, 31655 Stadthagen","31655","Stadthagen",143.00,170.17
+01/2025/763,2025-01-17,"Eiscafe Venezia Stadthagen","Obernstraße 29, 31655 Stadthagen","31655","Stadthagen",194.00,230.86
+01/2025/764,2025-01-17,"Eiscafe Venezia Stadthagen","Obernstraße 29, 31655 Stadthagen","31655","Stadthagen",171.40,203.97
+01/2025/768,2025-01-20,"Eiscafe Venezia Stadthagen","Obernstraße 29, 31655 Stadthagen","31655","Stadthagen",164.50,195.76
+03/2025/797,2025-03-03,"Eismanufaktur & Café Venezia","Schloßstraße 2, 31655 Stadthagen","31655","Stadthagen",1006.90,1198.21
+03/2025/798,2025-03-03,"Eismanufaktur & Café Venezia","Schloßstraße 2, 31655 Stadthagen","31655","Stadthagen",62.90,74.85
+03/2025/799,2025-03-04,"Eiscafe Venezia Stadthagen","Obernstraße 29, 31655 Stadthagen","31655","Stadthagen",75.40,89.73
+03/2025/800,2025-03-04,"Eiscafe Venezia Stadthagen","Obernstraße 29, 31655 Stadthagen","31655","Stadthagen",75.40,89.73
+03/2025/821,2025-03-15,"Eiscafe Venezia","Unbekannt","","",370.20,440.42
+04/2025/836,2025-04-01,"EISCAFE VENEZIA","Hauptstraße 159, 53757 Sankt Augustin","53757","Sankt Augustin",321.50,382.59
+05/2025/872,2025-05-08,"EICAFE VENEZIA","Alpenstraße 46, 82467 Garmisch Partenkirchen","82467","Garmisch Partenkirchen",257.40,304.56
+06/2025/899,2025-06-02,"EISCAFE VENEZIA","Langstraße 7, 99610 Sömmerda","99610","Sömmerda",301.70,356.01
+06/2025/915,2025-06-17,"EICAFE VENEZIA","Alpenstraße 46, 82467 Garmisch Partenkirchen","82467","Garmisch Partenkirchen",159.90,190.28
+07/2025/941,2025-07-11,"EISCAFE VENEZIA","Hauptstraße 159, 53757 Sankt Augustin","53757","Sankt Augustin",301.70,356.01
+07/2025/954,2025-07-15,"EISCAFE VENEZIA","Langstraße 7, 99610 Sömmerda","99610","Sömmerda",301.70,356.01
+07/2025/956,2025-07-15,"Eiscafe Venezia","Grabenstr. 13","53424","Remagen",282.50,333.35
