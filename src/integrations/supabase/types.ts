@@ -632,6 +632,72 @@ export type Database = {
           },
         ]
       }
+      invoices_backup_20251107: {
+        Row: {
+          created_at: string | null
+          custom_design: Json | null
+          custom_message: string | null
+          customer_feedback_rating: number | null
+          customer_feedback_text: string | null
+          customer_id: string | null
+          due_date: string | null
+          generated_leads: number | null
+          id: string
+          invoice_date: string
+          invoice_number: string
+          notes: string | null
+          status: string | null
+          subtotal: number
+          tax_amount: number | null
+          tax_rate: number | null
+          template_id: string | null
+          total_amount: number
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          custom_design?: Json | null
+          custom_message?: string | null
+          customer_feedback_rating?: number | null
+          customer_feedback_text?: string | null
+          customer_id?: string | null
+          due_date?: string | null
+          generated_leads?: number | null
+          id?: string
+          invoice_date?: string
+          invoice_number: string
+          notes?: string | null
+          status?: string | null
+          subtotal?: number
+          tax_amount?: number | null
+          tax_rate?: number | null
+          template_id?: string | null
+          total_amount?: number
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          custom_design?: Json | null
+          custom_message?: string | null
+          customer_feedback_rating?: number | null
+          customer_feedback_text?: string | null
+          customer_id?: string | null
+          due_date?: string | null
+          generated_leads?: number | null
+          id?: string
+          invoice_date?: string
+          invoice_number?: string
+          notes?: string | null
+          status?: string | null
+          subtotal?: number
+          tax_amount?: number | null
+          tax_rate?: number | null
+          template_id?: string | null
+          total_amount?: number
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       private_expenses: {
         Row: {
           amount: number
