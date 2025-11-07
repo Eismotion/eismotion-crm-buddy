@@ -41,79 +41,39 @@ export function TopCustomersDialog({ open, onOpenChange }: TopCustomersDialogPro
   const loadTopCustomers = async () => {
     setLoading(true);
     try {
-      // Hole alle nicht-stornierten Rechnungen mit Kundendaten
-      const { data: invoices, error } = await supabase
-        .from('invoices')
-        .select('customer_id, total_amount, invoice_date, customers(name, address, city, postal_code)')
-        .neq('status', 'storniert')
-        .neq('status', 'cancelled');
+      // Hole aggregierte Top-Kunden aus der View
+      const { data, error } = await supabase
+        .from('top_customers')
+        .select('*');
 
       if (error) throw error;
-      if (!invoices) return;
 
-      // Gruppiere nach Kunde
-      const customerMap = new Map<string, {
-        key: string;
-        id: string | null;
-        name: string;
-        location: string;
-        orderCount: number;
-        totalRevenue: number;
-        lastOrder: Date;
-      }>();
+      let rows = (data || []).map((row: any) => ({
+        name: row.name || 'Unbekannt',
+        address: row.address || '',
+        location: extractLocation(row.address || '') || 'Unbekannt',
+        orderCount: Number(row.orders || 0),
+        totalRevenue: Number(row.revenue || 0),
+        averageOrder: Number(row.average || 0),
+        lastOrder: row.last_order ? new Date(row.last_order) : null
+      }));
 
-      invoices.forEach((inv: any) => {
-        const name = inv.customers?.name || 'Unbekannt';
-        const address = inv.customers?.address || '';
-        const postal = inv.customers?.postal_code || extractPostalCode(address) || '';
-        const location = extractLocation(address) || inv.customers?.city || 'Unbekannt';
-
-        // Eindeutiger Key: Name + PLZ (wenn vorhanden), sonst Name + Adresse
-        const key = postal ? `${name}|${postal}` : `${name}|${address}`;
-
-        const revenue = Number(inv.total_amount || 0);
-        const invoiceDate = inv.invoice_date ? new Date(inv.invoice_date) : new Date();
-
-        const existing = customerMap.get(key);
-        if (existing) {
-          existing.totalRevenue += revenue;
-          existing.orderCount++;
-          if (invoiceDate > existing.lastOrder) {
-            existing.lastOrder = invoiceDate;
-          }
-          existing.id = inv.customer_id || existing.id;
-        } else {
-          customerMap.set(key, {
-            key,
-            id: inv.customer_id || null,
-            name,
-            location,
-            orderCount: 1,
-            totalRevenue: revenue,
-            lastOrder: invoiceDate
-          });
-        }
-      });
-
-      // Konvertiere zu Array und sortiere
-      let sorted = Array.from(customerMap.values());
-      
       if (sortBy === 'revenue') {
-        sorted.sort((a, b) => b.totalRevenue - a.totalRevenue);
+        rows.sort((a, b) => b.totalRevenue - a.totalRevenue);
       } else {
-        sorted.sort((a, b) => b.orderCount - a.orderCount);
+        rows.sort((a, b) => b.orderCount - a.orderCount);
       }
 
       // Top 50 + Rang hinzufügen
-      const top50 = sorted.slice(0, 50).map((customer, index) => ({
+      const top50 = rows.slice(0, 50).map((row, index) => ({
         rank: index + 1,
-        id: customer.id,
-        name: customer.name,
-        location: customer.location,
-        orderCount: customer.orderCount,
-        totalRevenue: customer.totalRevenue,
-        averageOrder: customer.totalRevenue / customer.orderCount,
-        lastOrder: customer.lastOrder.toISOString()
+        id: null,
+        name: row.name,
+        location: row.location,
+        orderCount: row.orderCount,
+        totalRevenue: row.totalRevenue,
+        averageOrder: row.averageOrder || (row.orderCount ? row.totalRevenue / row.orderCount : 0),
+        lastOrder: (row.lastOrder || new Date()).toISOString()
       }));
 
       setCustomers(top50);

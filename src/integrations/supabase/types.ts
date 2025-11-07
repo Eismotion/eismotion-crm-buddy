@@ -840,6 +840,18 @@ export type Database = {
         }
         Relationships: []
       }
+      top_customers: {
+        Row: {
+          address: string | null
+          average: number | null
+          last_order: string | null
+          name: string | null
+          orders: number | null
+          postal_code: string | null
+          revenue: number | null
+        }
+        Relationships: []
+      }
       top_products: {
         Row: {
           category: string | null

@@ -65,63 +65,24 @@ export const Dashboard = () => {
 
   const calculateTopCustomers = async () => {
     try {
-      // Hole alle Rechnungen (außer stornierte)
-      const { data: allInvoices, error } = await supabase
-        .from('invoices')
-        .select('customer_id, total_amount, subtotal, customers(name, address, city, postal_code)')
-        .neq('status', 'storniert')
-        .neq('status', 'cancelled');
+      const { data, error } = await supabase
+        .from('top_customers')
+        .select('*')
+        .order('revenue', { ascending: false })
+        .limit(3);
 
       if (error) throw error;
-      if (!allInvoices) return;
 
-      // Gruppiere nach Name + Adresse/PLZ statt nur nach Kunde
-      const customerMap = new Map<string, {
-        id: string | null;
-        name: string;
-        location: string;
-        totalGross: number;
-        totalNet: number;
-        invoiceCount: number;
-      }>();
+      const mapped = (data || []).map((row: any) => ({
+        id: null,
+        name: row.name || 'Unbekannt',
+        location: extractLocation(row.address || '') || 'Unbekannt',
+        totalGross: Number(row.revenue || 0),
+        totalNet: Number(row.revenue || 0),
+        invoiceCount: Number(row.orders || 0),
+      }));
 
-      allInvoices.forEach((inv: any) => {
-        const name = inv.customers?.name || 'Unbekannt';
-        const address = inv.customers?.address || '';
-        const postal = inv.customers?.postal_code || extractPostalCode(address) || '';
-        const location = extractLocation(address) || inv.customers?.city || 'Unbekannt';
-
-        // Eindeutiger Key: Name + PLZ (wenn vorhanden), sonst Name + Adresse
-        const key = postal ? `${name}|${postal}` : `${name}|${address}`;
-
-        const gross = Number(inv.total_amount || 0);
-        const net = Number(inv.subtotal || 0);
-
-        const existing = customerMap.get(key);
-        if (existing) {
-          existing.totalGross += gross;
-          existing.totalNet += net;
-          existing.invoiceCount++;
-          // id optional aktualisieren (letzter gesehener Kunde)
-          existing.id = inv.customer_id || existing.id;
-        } else {
-          customerMap.set(key, {
-            id: inv.customer_id || null,
-            name,
-            location,
-            totalGross: gross,
-            totalNet: net,
-            invoiceCount: 1
-          });
-        }
-      });
-
-      // Sortiere nach Brutto-Umsatz und nimm Top 3
-      const sorted = Array.from(customerMap.values())
-        .sort((a, b) => b.totalGross - a.totalGross)
-        .slice(0, 3);
-
-      setTopCustomers(sorted);
+      setTopCustomers(mapped);
     } catch (error) {
       console.error('Error calculating top customers:', error);
     }
