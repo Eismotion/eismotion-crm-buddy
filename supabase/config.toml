@@ -35,3 +35,7 @@ verify_jwt = false
 # Data maintenance: fix customer assignments based on PLZ and address
 [functions.fix-customer-assignments]
 verify_jwt = false
+
+# Data maintenance: split Venezia customers into separate locations
+[functions.split-venezia-customers]
+verify_jwt = false
