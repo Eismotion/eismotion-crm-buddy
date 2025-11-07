@@ -1,10 +1,14 @@
-import { Euro, Users, FileText, Snowflake, TrendingUp } from 'lucide-react';
+import { Euro, Users, FileText, Snowflake, TrendingUp, ChevronRight } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { formatCurrency } from '@/data/mockData';
 import { supabase } from '@/integrations/supabase/client';
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { TopCustomersDialog } from './TopCustomersDialog';
+import { ProductRevenueDialog } from './ProductRevenueDialog';
+import { extractLocation } from '@/lib/address-parser';
 
 export const Dashboard = () => {
   const navigate = useNavigate();
@@ -12,7 +16,10 @@ export const Dashboard = () => {
   const [invoices, setInvoices] = useState<any[]>([]);
   const [stats, setStats] = useState({ totalInvoices: 0, overdueInvoices: 0, totalRevenue: 0 });
   const [topProduct, setTopProduct] = useState<any>(null);
+  const [topProducts, setTopProducts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [showTopCustomersDialog, setShowTopCustomersDialog] = useState(false);
+  const [showProductRevenueDialog, setShowProductRevenueDialog] = useState(false);
 
   useEffect(() => {
     loadData();
@@ -20,11 +27,12 @@ export const Dashboard = () => {
 
   const loadData = async () => {
     try {
-      const [customersRes, invoicesRes, statsRes, topProductRes] = await Promise.all([
+      const [customersRes, invoicesRes, statsRes, topProductRes, topProductsRes] = await Promise.all([
         supabase.from('customers').select('*').order('created_at', { ascending: false }),
         supabase.from('invoices').select('*, customer:customers(name)').neq('status', 'bezahlt').order('created_at', { ascending: false }).limit(10),
         supabase.from('dashboard_stats').select('*').single(),
-        supabase.from('top_products').select('*').order('total_revenue', { ascending: false }).limit(1).single()
+        supabase.from('top_products').select('*').order('total_revenue', { ascending: false }).limit(1).maybeSingle(),
+        supabase.from('top_products').select('*').order('total_revenue', { ascending: false }).limit(5)
       ]);
 
       if (customersRes.data) setCustomers(customersRes.data);
@@ -37,6 +45,7 @@ export const Dashboard = () => {
         });
       }
       if (topProductRes.data) setTopProduct(topProductRes.data);
+      if (topProductsRes.data) setTopProducts(topProductsRes.data);
     } catch (error) {
       console.error('Error loading data:', error);
     } finally {
@@ -196,12 +205,20 @@ export const Dashboard = () => {
         </Card>
       </div>
 
-      {/* Two Column Layout */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      {/* Three Column Layout */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Top Customers */}
         <Card>
-          <CardHeader>
+          <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle>Beste Kunden</CardTitle>
+            <Button 
+              variant="ghost" 
+              size="sm"
+              onClick={() => setShowTopCustomersDialog(true)}
+              className="text-primary hover:text-primary/80"
+            >
+              Top 50 <ChevronRight className="h-4 w-4 ml-1" />
+            </Button>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
@@ -223,6 +240,52 @@ export const Dashboard = () => {
                     <div className="text-right">
                       <p className="font-bold">{formatCurrency(customer.totalGross)}</p>
                       <p className="text-sm text-muted-foreground">{customer.invoiceCount} Rechnungen</p>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Bestseller Products */}
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between">
+            <CardTitle>Bestseller Produkte</CardTitle>
+            <Button 
+              variant="ghost" 
+              size="sm"
+              onClick={() => setShowProductRevenueDialog(true)}
+              className="text-primary hover:text-primary/80"
+            >
+              Alle <ChevronRight className="h-4 w-4 ml-1" />
+            </Button>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {topProducts.length === 0 ? (
+                <p className="text-sm text-muted-foreground text-center py-4">
+                  Keine Produktdaten verfügbar
+                </p>
+              ) : (
+                topProducts.map((product, index) => (
+                  <div 
+                    key={product.id} 
+                    className="flex items-center justify-between p-2 hover:bg-muted/50 rounded-lg transition-colors"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-sm font-bold text-primary">
+                        {index + 1}
+                      </div>
+                      <div>
+                        <p className="font-medium text-sm">{product.name}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {Number(product.total_sold || 0).toFixed(0)} verkauft
+                        </p>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <p className="font-bold text-sm">{formatCurrency(Number(product.total_revenue || 0))}</p>
                     </div>
                   </div>
                 ))
@@ -260,6 +323,16 @@ export const Dashboard = () => {
           </CardContent>
         </Card>
       </div>
+
+      {/* Dialogs */}
+      <TopCustomersDialog 
+        open={showTopCustomersDialog} 
+        onOpenChange={setShowTopCustomersDialog} 
+      />
+      <ProductRevenueDialog 
+        open={showProductRevenueDialog} 
+        onOpenChange={setShowProductRevenueDialog} 
+      />
     </div>
   );
 };
