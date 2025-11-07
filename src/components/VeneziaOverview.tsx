@@ -3,8 +3,10 @@ import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, MapPin, Euro, FileText } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Loader2, MapPin, Euro, FileText, ExternalLink } from 'lucide-react';
 import { toast } from 'sonner';
+import { useNavigate } from 'react-router-dom';
 
 interface VeneziaCustomer {
   id: string;
@@ -19,6 +21,7 @@ interface VeneziaCustomer {
 export const VeneziaOverview = () => {
   const [customers, setCustomers] = useState<VeneziaCustomer[]>([]);
   const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
 
   useEffect(() => {
     loadVeneziaCustomers();
@@ -139,18 +142,25 @@ export const VeneziaOverview = () => {
               </TableHeader>
               <TableBody>
                 {customers.map((customer, index) => (
-                  <TableRow key={customer.id}>
+                  <TableRow 
+                    key={customer.id}
+                    className="cursor-pointer hover:bg-muted/50 transition-colors"
+                    onClick={() => navigate(`/customers/${customer.id}`)}
+                  >
                     <TableCell className="font-medium">
                       {index + 1}
                     </TableCell>
                     <TableCell>
-                      <div className="flex flex-col">
-                        <span className="font-medium">{customer.name}</span>
-                        {customer.postal_code && customer.city && (
-                          <span className="text-xs text-muted-foreground">
-                            {customer.postal_code} {customer.city}
-                          </span>
-                        )}
+                      <div className="flex items-center gap-2">
+                        <div className="flex flex-col flex-1">
+                          <span className="font-medium">{customer.name}</span>
+                          {customer.postal_code && customer.city && (
+                            <span className="text-xs text-muted-foreground">
+                              {customer.postal_code} {customer.city}
+                            </span>
+                          )}
+                        </div>
+                        <ExternalLink className="h-4 w-4 text-muted-foreground" />
                       </div>
                     </TableCell>
                     <TableCell>
