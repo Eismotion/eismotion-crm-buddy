@@ -1,4 +1,4 @@
-import { Package, LayoutDashboard, Users, FileText, ShoppingBag, BarChart3, Settings, Palette, Receipt, Calculator, LogOut, Wrench, Percent } from 'lucide-react';
+import { Package, LayoutDashboard, Users, FileText, ShoppingBag, BarChart3, Settings, Palette, Receipt, Calculator, LogOut, Wrench, Percent, IceCream } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
@@ -16,6 +16,7 @@ const navItems = [
   { id: 'customers', label: 'Kunden', icon: Users },
   { id: 'invoices', label: 'Rechnungen', icon: FileText },
   { id: 'import', label: 'Rechnungen importieren', icon: Package },
+  { id: 'venezia-overview', label: 'Venezia Übersicht', icon: IceCream },
   { id: 'fix-customers', label: 'Kunden-Fix Tool', icon: Wrench },
   { id: 'vat-fix', label: 'MwSt-Korrektur', icon: Percent },
   { id: 'incoming-invoices', label: 'Eingangsrechnungen', icon: Receipt },

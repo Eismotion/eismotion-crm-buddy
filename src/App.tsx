@@ -25,6 +25,7 @@ const App = () => (
             <Route path="/invoices" element={<Index />} />
             <Route path="/invoices/:id" element={<Index />} />
             <Route path="/import" element={<Index />} />
+            <Route path="/venezia-overview" element={<Index />} />
             <Route path="/incoming-invoices" element={<Index />} />
             <Route path="/accounting" element={<Index />} />
             <Route path="/design-studio" element={<Index />} />

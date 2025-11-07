@@ -14,6 +14,7 @@ import { Analytics } from '@/components/Analytics';
 import { Settings } from '@/components/Settings';
 import { CustomerFixTool } from '@/components/CustomerFixTool';
 import VATFixTool from '@/components/VATFixTool';
+import { VeneziaOverview } from '@/components/VeneziaOverview';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
@@ -29,6 +30,7 @@ const Index = () => {
     if (path.startsWith('/invoices/')) return 'invoices';
     if (path === '/invoices') return 'invoices';
     if (path === '/import') return 'import';
+    if (path === '/venezia-overview') return 'venezia-overview';
     if (path === '/incoming-invoices') return 'incoming-invoices';
     if (path === '/accounting') return 'accounting';
     if (path === '/design-studio') return 'design-studio';
@@ -48,6 +50,7 @@ const Index = () => {
       'customers': '/customers',
       'invoices': '/invoices',
       'import': '/import',
+      'venezia-overview': '/venezia-overview',
       'incoming-invoices': '/incoming-invoices',
       'accounting': '/accounting',
       'design-studio': '/design-studio',
@@ -101,6 +104,8 @@ const Index = () => {
         return <ProductManagement />;
       case 'analytics':
         return <Analytics />;
+      case 'venezia-overview':
+        return <VeneziaOverview />;
       case 'settings':
         return <Settings />;
       case 'fix-customers':
