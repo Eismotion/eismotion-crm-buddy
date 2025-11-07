@@ -12,7 +12,7 @@ import { de } from 'date-fns/locale';
 
 interface TopCustomer {
   rank: number;
-  id: string;
+  id: string | null;
   name: string;
   location: string;
   orderCount: number;
@@ -44,7 +44,7 @@ export function TopCustomersDialog({ open, onOpenChange }: TopCustomersDialogPro
       // Hole alle nicht-stornierten Rechnungen mit Kundendaten
       const { data: invoices, error } = await supabase
         .from('invoices')
-        .select('customer_id, total_amount, invoice_date, customers(name, address, city)')
+        .select('customer_id, total_amount, invoice_date, customers(name, address, city, postal_code)')
         .neq('status', 'storniert');
 
       if (error) throw error;
@@ -52,7 +52,8 @@ export function TopCustomersDialog({ open, onOpenChange }: TopCustomersDialogPro
 
       // Gruppiere nach Kunde
       const customerMap = new Map<string, {
-        id: string;
+        key: string;
+        id: string | null;
         name: string;
         location: string;
         orderCount: number;
@@ -61,24 +62,30 @@ export function TopCustomersDialog({ open, onOpenChange }: TopCustomersDialogPro
       }>();
 
       invoices.forEach((inv: any) => {
-        if (!inv.customer_id || !inv.customers) return;
+        const name = inv.customers?.name || 'Unbekannt';
+        const address = inv.customers?.address || '';
+        const postal = inv.customers?.postal_code || '';
+        const location = extractLocation(address) || inv.customers?.city || 'Unbekannt';
 
-        const customerId = inv.customer_id;
+        // Eindeutiger Key: Name + PLZ (wenn vorhanden), sonst Name + Adresse
+        const key = postal ? `${name}|${postal}` : `${name}|${address}`;
+
         const revenue = Number(inv.total_amount || 0);
         const invoiceDate = inv.invoice_date ? new Date(inv.invoice_date) : new Date();
-        const location = extractLocation(inv.customers.address) || inv.customers.city || 'Unbekannt';
 
-        const existing = customerMap.get(customerId);
+        const existing = customerMap.get(key);
         if (existing) {
           existing.totalRevenue += revenue;
           existing.orderCount++;
           if (invoiceDate > existing.lastOrder) {
             existing.lastOrder = invoiceDate;
           }
+          existing.id = inv.customer_id || existing.id;
         } else {
-          customerMap.set(customerId, {
-            id: customerId,
-            name: inv.customers.name,
+          customerMap.set(key, {
+            key,
+            id: inv.customer_id || null,
+            name,
             location,
             orderCount: 1,
             totalRevenue: revenue,
@@ -165,9 +172,9 @@ export function TopCustomersDialog({ open, onOpenChange }: TopCustomersDialogPro
               <TableBody>
                 {customers.map((customer) => (
                   <TableRow 
-                    key={customer.id}
+                    key={customer.rank + '-' + customer.id + '-' + customer.name}
                     className="cursor-pointer hover:bg-muted/50"
-                    onClick={() => handleCustomerClick(customer.id)}
+                    onClick={() => customer.id && handleCustomerClick(customer.id)}
                   >
                     <TableCell className="text-center font-medium">
                       {customer.rank}

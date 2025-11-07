@@ -68,39 +68,46 @@ export const Dashboard = () => {
       // Hole alle Rechnungen (außer stornierte)
       const { data: allInvoices, error } = await supabase
         .from('invoices')
-        .select('customer_id, total_amount, subtotal, customers(name, city)')
+        .select('customer_id, total_amount, subtotal, customers(name, address, city, postal_code)')
         .neq('status', 'storniert');
 
       if (error) throw error;
       if (!allInvoices) return;
 
-      // Gruppiere nach Kunde
+      // Gruppiere nach Name + Adresse/PLZ statt nur nach Kunde
       const customerMap = new Map<string, {
-        id: string;
+        id: string | null;
         name: string;
-        city: string;
+        location: string;
         totalGross: number;
         totalNet: number;
         invoiceCount: number;
       }>();
 
       allInvoices.forEach((inv: any) => {
-        if (!inv.customer_id || !inv.customers) return;
-        
-        const customerId = inv.customer_id;
-        const existing = customerMap.get(customerId);
+        const name = inv.customers?.name || 'Unbekannt';
+        const address = inv.customers?.address || '';
+        const postal = inv.customers?.postal_code || '';
+        const location = extractLocation(address) || inv.customers?.city || 'Unbekannt';
+
+        // Eindeutiger Key: Name + PLZ (wenn vorhanden), sonst Name + Adresse
+        const key = postal ? `${name}|${postal}` : `${name}|${address}`;
+
         const gross = Number(inv.total_amount || 0);
         const net = Number(inv.subtotal || 0);
 
+        const existing = customerMap.get(key);
         if (existing) {
           existing.totalGross += gross;
           existing.totalNet += net;
           existing.invoiceCount++;
+          // id optional aktualisieren (letzter gesehener Kunde)
+          existing.id = inv.customer_id || existing.id;
         } else {
-          customerMap.set(customerId, {
-            id: customerId,
-            name: inv.customers.name,
-            city: inv.customers.city || 'N/A',
+          customerMap.set(key, {
+            id: inv.customer_id || null,
+            name,
+            location,
             totalGross: gross,
             totalNet: net,
             invoiceCount: 1
@@ -229,13 +236,13 @@ export const Dashboard = () => {
               ) : (
                 topCustomers.map((customer) => (
                   <div 
-                    key={customer.id} 
+                    key={customer.name + '|' + customer.location}
                     className="flex items-center justify-between cursor-pointer hover:bg-muted/50 p-2 rounded-lg transition-colors"
-                    onClick={() => navigate(`/customers/${customer.id}`)}
+                    onClick={() => customer.id && navigate(`/customers/${customer.id}`)}
                   >
                     <div>
                       <p className="font-medium text-primary">{customer.name}</p>
-                      <p className="text-sm text-muted-foreground">{customer.city}</p>
+                      <p className="text-sm text-muted-foreground">{customer.location}</p>
                     </div>
                     <div className="text-right">
                       <p className="font-bold">{formatCurrency(customer.totalGross)}</p>
