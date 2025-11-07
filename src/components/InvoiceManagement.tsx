@@ -13,6 +13,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { AutoImport2023 } from './AutoImport2023';
+import { calculateVAT } from '@/lib/vat-calculator';
 
 export const InvoiceManagement = () => {
   const navigate = useNavigate();
@@ -243,6 +244,24 @@ export const InvoiceManagement = () => {
       const invoiceNumber = await generateInvoiceNumber();
       const today = new Date().toISOString().split('T')[0];
       
+      // Hole Kundendaten für MwSt-Berechnung
+      const { data: customerData, error: customerError } = await supabase
+        .from('customers')
+        .select('country, postal_code, address, vat_number, vat_validated')
+        .eq('id', selectedCustomerId)
+        .single();
+
+      if (customerError) throw customerError;
+
+      // Berechne korrekten MwSt-Satz
+      const vatResult = calculateVAT({
+        country: customerData.country,
+        postalCode: customerData.postal_code,
+        address: customerData.address,
+        taxId: customerData.vat_number,
+        isValidated: customerData.vat_validated
+      });
+
       const { data, error } = await supabase
         .from('invoices')
         .insert({
@@ -251,7 +270,7 @@ export const InvoiceManagement = () => {
           customer_id: selectedCustomerId,
           status: 'draft',
           subtotal: 0,
-          tax_rate: 19.00,
+          tax_rate: vatResult.rate * 100, // In Prozent speichern
           tax_amount: 0,
           total_amount: 0
         })
@@ -265,7 +284,7 @@ export const InvoiceManagement = () => {
       setShowCreateDialog(false);
       setSelectedCustomerId('');
       setCustomerSearch('');
-      toast.success('Rechnung erfolgreich erstellt');
+      toast.success(`Rechnung erstellt mit ${vatResult.rate * 100}% MwSt (${vatResult.reason})`);
       
       // Navigate to invoice details
       navigate(`/invoices/${data.id}`);

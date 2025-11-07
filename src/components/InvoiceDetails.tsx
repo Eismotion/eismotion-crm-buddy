@@ -13,6 +13,7 @@ import { InvoiceProductSelector } from './InvoiceProductSelector';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { formatCurrency } from '@/data/mockData';
+import { calculateVAT } from '@/lib/vat-calculator';
 
 export const InvoiceDetails = () => {
   const { id } = useParams<{ id: string }>();
@@ -76,8 +77,21 @@ export const InvoiceDetails = () => {
 
       if (itemsError) throw itemsError;
 
+      // Berechne MwSt-Satz basierend auf aktuellem Kunden
+      let taxRate = Number(invoice?.tax_rate ?? 19.0);
+      
+      if (customer) {
+        const vatResult = calculateVAT({
+          country: customer.country,
+          postalCode: customer.postal_code,
+          address: customer.address,
+          taxId: customer.vat_number,
+          isValidated: customer.vat_validated
+        });
+        taxRate = vatResult.rate * 100; // In Prozent
+      }
+
       const subtotal = (items || []).reduce((sum, item) => sum + Number(item.total_price || 0), 0);
-      const taxRate = Number(invoice?.tax_rate ?? 19.0);
       const taxAmount = subtotal * (taxRate / 100);
       const totalAmount = subtotal + taxAmount;
 
@@ -86,6 +100,7 @@ export const InvoiceDetails = () => {
         .from('invoices')
         .update({
           subtotal,
+          tax_rate: taxRate,
           tax_amount: taxAmount,
           total_amount: totalAmount,
         })
