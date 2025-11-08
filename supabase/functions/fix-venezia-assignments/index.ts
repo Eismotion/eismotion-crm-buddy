@@ -1,4 +1,4 @@
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.75.0';
 import { corsHeaders } from '../_shared/cors.ts';
 
 interface InvoiceData {
@@ -329,12 +329,12 @@ Deno.serve(async (req) => {
     
     if (allVeneziaCustomers) {
       for (const customer of allVeneziaCustomers) {
-        const { data: invoiceCount } = await supabase
+        const { count, error: countError } = await supabase
           .from('invoices')
           .select('id', { count: 'exact', head: true })
           .eq('customer_id', customer.id);
 
-        if (invoiceCount === null || (invoiceCount as any).count === 0) {
+        if ((count ?? 0) === 0) {
           await supabase
             .from('customers')
             .delete()
@@ -372,10 +372,11 @@ Deno.serve(async (req) => {
       }
     );
 
-  } catch (error) {
-    console.error('❌ Error in fix-venezia-assignments:', error);
+  } catch (err) {
+    console.error('❌ Error in fix-venezia-assignments:', err);
+    const message = err instanceof Error ? err.message : (typeof err === 'string' ? err : 'Unknown error');
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ error: message }),
       { 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 500 
