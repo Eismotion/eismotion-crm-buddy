@@ -43,3 +43,7 @@ verify_jwt = false
 # Data export: export all Venezia invoices as CSV
 [functions.export-venezia-invoices]
 verify_jwt = false
+
+# Data maintenance: fix all Venezia customer assignments
+[functions.fix-venezia-assignments]
+verify_jwt = false
