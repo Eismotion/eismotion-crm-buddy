@@ -7,7 +7,6 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { formatCurrency } from '@/data/mockData';
 import { supabase } from '@/integrations/supabase/client';
 import { useState, useEffect } from 'react';
@@ -20,13 +19,11 @@ export const InvoiceManagement = () => {
   const navigate = useNavigate();
   const [invoices, setInvoices] = useState<any[]>([]);
   const [customers, setCustomers] = useState<any[]>([]);
-  const [templates, setTemplates] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedYear, setSelectedYear] = useState('2025');
   const [searchQuery, setSearchQuery] = useState('');
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [selectedCustomerId, setSelectedCustomerId] = useState<string>('');
-  const [selectedTemplateId, setSelectedTemplateId] = useState<string>('');
   const [customerSearch, setCustomerSearch] = useState('');
   const [filteredCustomers, setFilteredCustomers] = useState<any[]>([]);
   const [yearCounts, setYearCounts] = useState<Record<number, number>>({});
@@ -46,7 +43,6 @@ export const InvoiceManagement = () => {
   useEffect(() => {
     loadInvoices();
     loadCustomers();
-    loadTemplates();
     loadYearCounts();
     
     // Check if we need to auto-import 2023 data
@@ -111,20 +107,6 @@ export const InvoiceManagement = () => {
       setFilteredCustomers(data || []);
     } catch (error) {
       console.error('Error loading customers:', error);
-    }
-  };
-
-  const loadTemplates = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('invoice_templates')
-        .select('*')
-        .order('name');
-
-      if (error) throw error;
-      setTemplates(data || []);
-    } catch (error) {
-      console.error('Error loading templates:', error);
     }
   };
 
@@ -286,7 +268,6 @@ export const InvoiceManagement = () => {
           invoice_number: invoiceNumber,
           invoice_date: today,
           customer_id: selectedCustomerId,
-          template_id: selectedTemplateId || null,
           status: 'draft',
           subtotal: 0,
           tax_rate: vatResult.rate * 100, // In Prozent speichern
@@ -302,7 +283,6 @@ export const InvoiceManagement = () => {
       await loadYearCounts();
       setShowCreateDialog(false);
       setSelectedCustomerId('');
-      setSelectedTemplateId('');
       setCustomerSearch('');
       toast.success(`Rechnung erstellt mit ${vatResult.rate * 100}% MwSt (${vatResult.reason})`);
       
@@ -747,31 +727,6 @@ export const InvoiceManagement = () => {
                 })()}
               </div>
             )}
-            
-            {/* Template Selection */}
-            <div className="space-y-2">
-              <Label htmlFor="templateSelect">Rechnungsvorlage (optional)</Label>
-              <Select
-                value={selectedTemplateId}
-                onValueChange={setSelectedTemplateId}
-              >
-                <SelectTrigger id="templateSelect">
-                  <SelectValue placeholder="Standard-Layout (ohne Hintergrund)" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="">Standard-Layout (ohne Hintergrund)</SelectItem>
-                  {templates.map(template => (
-                    <SelectItem key={template.id} value={template.id}>
-                      {template.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <p className="text-xs text-muted-foreground">
-                Templates können im Design-Studio verwaltet werden
-              </p>
-            </div>
-            
             <div className="flex gap-2 justify-end pt-4">
               <Button variant="outline" onClick={() => {
                 setShowCreateDialog(false);
