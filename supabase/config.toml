@@ -47,7 +47,3 @@ verify_jwt = false
 # Data maintenance: fix all Venezia customer assignments
 [functions.fix-venezia-assignments]
 verify_jwt = false
-
-# Data maintenance: fix all 0€ invoices by recalculating totals
-[functions.fix-zero-invoices]
-verify_jwt = false
