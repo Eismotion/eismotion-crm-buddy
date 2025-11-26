@@ -944,6 +944,7 @@ export type Database = {
         }
         Returns: Json
       }
+      delete_all_invoices_2020_2025: { Args: never; Returns: Json }
       get_country_vat_rate: { Args: { p_country: string }; Returns: number }
       get_invoice_counts_by_year: {
         Args: never
