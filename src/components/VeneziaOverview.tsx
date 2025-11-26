@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Loader2, MapPin, Euro, FileText, ExternalLink } from 'lucide-react';
+import { Loader2, MapPin, Euro, FileText, ExternalLink, RefreshCw } from 'lucide-react';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
 
@@ -21,6 +21,7 @@ interface VeneziaCustomer {
 export const VeneziaOverview = () => {
   const [customers, setCustomers] = useState<VeneziaCustomer[]>([]);
   const [loading, setLoading] = useState(true);
+  const [fixing, setFixing] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -55,6 +56,25 @@ export const VeneziaOverview = () => {
     }).format(amount);
   };
 
+  const fixVeneziaAssignments = async () => {
+    try {
+      setFixing(true);
+      toast.info('Starte Venezia-Zuordnungskorrektur...');
+
+      const { data, error } = await supabase.functions.invoke('fix-venezia-assignments');
+
+      if (error) throw error;
+
+      toast.success(data.message || 'Venezia-Zuordnungen erfolgreich korrigiert');
+      await loadVeneziaCustomers();
+    } catch (error: any) {
+      console.error('Error fixing Venezia assignments:', error);
+      toast.error(error.message || 'Fehler bei der Zuordnungskorrektur');
+    } finally {
+      setFixing(false);
+    }
+  };
+
   const totalRevenue = customers.reduce((sum, c) => sum + c.total_spent, 0);
   const totalInvoices = customers.reduce((sum, c) => sum + c.total_orders, 0);
 
@@ -68,11 +88,30 @@ export const VeneziaOverview = () => {
 
   return (
     <div className="p-6 space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold text-foreground">Eiscafe Venezia Übersicht</h1>
-        <p className="text-muted-foreground mt-2">
-          Alle Venezia-Standorte und ihre Umsätze
-        </p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold text-foreground">Eiscafe Venezia Übersicht</h1>
+          <p className="text-muted-foreground mt-2">
+            Alle Venezia-Standorte und ihre Umsätze
+          </p>
+        </div>
+        <Button 
+          onClick={fixVeneziaAssignments}
+          disabled={fixing}
+          variant="outline"
+        >
+          {fixing ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Korrigiere...
+            </>
+          ) : (
+            <>
+              <RefreshCw className="mr-2 h-4 w-4" />
+              Zuordnungen korrigieren
+            </>
+          )}
+        </Button>
       </div>
 
       {/* Summary Cards */}
